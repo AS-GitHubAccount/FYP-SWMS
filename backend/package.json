@@ -1,0 +1,43 @@
+{
+  "name": "swms-backend",
+  "version": "1.0.0",
+  "description": "Express + MySQL API for the SWMS warehouse app",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "restart": "lsof -ti:3000 | xargs kill -9 2>/dev/null; sleep 2; node server.js",
+    "dev": "nodemon server.js",
+    "migrate": "node scripts/run-migrations.js",
+    "test:db": "node scripts/test-db-connection.js",
+    "db:import": "node scripts/import-sql-dump.js",
+    "seed": "node seed.js",
+    "seed:alerts": "node scripts/seedAlerts.js",
+    "test:api": "node tests/api.test.js"
+  },
+  "keywords": [
+    "swms",
+    "warehouse",
+    "api"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^8.3.0",
+    "joi": "^18.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.1.1",
+    "mysql2": "^3.6.5",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^7.0.10",
+    "qrcode": "^1.5.4",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}

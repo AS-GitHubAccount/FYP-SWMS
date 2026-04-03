@@ -1,0 +1,1076 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - SWMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <!-- Libraries for PDF and Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        .report-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .report-btn.selected {
+            background: var(--primary) !important;
+            border-color: var(--primary) !important;
+            color: white !important;
+            font-weight: 600;
+        }
+        
+        @media print {
+            /* Hide everything except report content */
+            header,
+            .page-header,
+            .card-header button,
+            .card:not(#reportResults),
+            #reportResults .card-header button,
+            #reportResults .card-header {
+                display: none !important;
+            }
+            
+            /* Show only the report results */
+            body {
+                margin: 0;
+                padding: 20px;
+                font-size: 12pt;
+            }
+            
+            #reportResults {
+                display: block !important;
+                page-break-inside: avoid;
+                box-shadow: none;
+                border: none;
+                margin: 0;
+                padding: 0;
+            }
+            
+            #reportContent {
+                padding: 0 !important;
+            }
+            
+            /* Report title - show in print */
+            #printTitle {
+                display: block !important;
+                font-size: 18pt;
+                font-weight: bold;
+                margin-bottom: 15px;
+            }
+            
+            #reportTitle {
+                display: none !important;
+            }
+            
+            /* Summary paragraph */
+            #reportContent p {
+                margin-bottom: 15px;
+                font-size: 11pt;
+            }
+            
+            /* Ensure tables print properly */
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                page-break-inside: auto;
+                margin-top: 10px;
+            }
+            
+            table thead {
+                display: table-header-group;
+            }
+            
+            table tbody {
+                display: table-row-group;
+            }
+            
+            table tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            
+            table th,
+            table td {
+                border: 1px solid #000 !important;
+                padding: 6px 8px !important;
+                text-align: left;
+                font-size: 10pt;
+            }
+            
+            table th {
+                background-color: #f0f0f0 !important;
+                font-weight: bold;
+            }
+            
+            /* Hide badges and buttons in print */
+            .badge,
+            .btn {
+                display: none !important;
+            }
+            
+            /* Hide h3 tags in print (for movement report) */
+            h3 {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <a href="dashboard.html" class="logo">SWMS</a>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html"><i data-lucide="layout-dashboard" class="nav-icon"></i> Dashboard</a>
+                <a href="inventory.html"><i data-lucide="package" class="nav-icon"></i> Inventory</a>
+                <a href="alerts.html"><i data-lucide="bell" class="nav-icon"></i> Alerts</a>
+                <a href="reports.html" class="active"><i data-lucide="bar-chart-2" class="nav-icon"></i> Reports</a>
+                <a href="users.html" id="usersLink" style="display: none;"><i data-lucide="users" class="nav-icon"></i> Users</a>
+                <a href="suppliers.html"><i data-lucide="truck" class="nav-icon"></i> Suppliers</a>
+                <a href="warehouses.html"><i data-lucide="warehouse" class="nav-icon"></i> Warehouses</a>
+                <a href="approval.html" id="approvalCenterLink" style="display: none;"><i data-lucide="shield-check" class="nav-icon"></i> Approval</a>
+            </nav>
+        </aside>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()" aria-hidden="true"></div>
+        <div class="main-wrapper">
+            <header class="header">
+                <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="header-compact">
+                    <a href="notifications.html" class="notification-icon" style="position: relative; text-decoration: none; padding: 0.5rem; color: var(--text);">
+                        <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
+                        <span id="notificationBadge" class="badge badge-danger" style="position: absolute; top: -4px; right: -4px; font-size: 0.65rem; display: none; min-width: 16px; padding: 2px 5px;">0</span>
+                    </a>
+                    <div class="user-profile-wrap">
+                        <button id="profileAvatarBtn" class="profile-avatar-btn" type="button" onclick="toggleProfileDropdown(event)" aria-haspopup="true" aria-expanded="false" title="Account">
+                            <span class="profile-avatar-initial" id="profileAvatarInitial">U</span>
+                        </button>
+                        <div id="profileDropdown" class="profile-dropdown" style="display: none;" role="menu">
+                            <div class="profile-dropdown-header">
+                                <div class="profile-dropdown-name" id="profileUserName">User</div>
+                                <div class="profile-dropdown-email" id="profileUserEmail">user@example.com</div>
+                            </div>
+                            <a href="settings.html" class="profile-dropdown-item" role="menuitem">Settings</a>
+                            <button type="button" class="profile-dropdown-item profile-dropdown-logout" onclick="handleLogout(event)" role="menuitem">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+    <main class="container-fluid">
+        <div class="page-header">
+            <h1 class="page-title">Reports</h1>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Stock Reports</h2>
+                </div>
+                <div style="padding: 1.5rem;">
+                    <button id="btn-inventory" class="btn btn-primary report-btn" style="width: 100%; margin-bottom: 0.5rem;" onclick="generateReport('inventory')">Inventory Summary</button>
+                    <button id="btn-lowStock" class="btn btn-primary report-btn" style="width: 100%; margin-bottom: 0.5rem;" onclick="generateReport('lowStock')">Low Stock Alert</button>
+                    <button id="btn-expiry" class="btn btn-primary report-btn" style="width: 100%; margin-bottom: 0.5rem;" onclick="generateReport('expiry')">Expiry Report</button>
+                    <button id="btn-batch" class="btn btn-primary report-btn" style="width: 100%;" onclick="generateReport('batch')">Batch Details</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Transaction Reports</h2>
+                </div>
+                <div style="padding: 1.5rem;">
+                    <button id="btn-inRecords" class="btn btn-primary report-btn" style="width: 100%; margin-bottom: 0.5rem;" onclick="generateReport('inRecords')">Stock Receipts</button>
+                    <button id="btn-outRecords" class="btn btn-primary report-btn" style="width: 100%; margin-bottom: 0.5rem;" onclick="generateReport('outRecords')">Stock Issues</button>
+                    <button id="btn-movement" class="btn btn-primary report-btn" style="width: 100%; margin-bottom: 0.5rem;" onclick="generateReport('movement')">Stock Movement</button>
+                    <button id="btn-bookings" class="btn btn-primary report-btn" style="width: 100%;" onclick="generateReport('bookings')">Booking Report</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Date Range Reports</h2>
+                </div>
+                <div style="padding: 1.5rem;">
+                    <div class="form-group">
+                        <label for="fromDate" class="form-label">From Date</label>
+                        <input type="date" id="fromDate" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label for="toDate" class="form-label">To Date</label>
+                        <input type="date" id="toDate" class="form-input">
+                    </div>
+                    <button id="btn-dateRange" class="btn btn-primary report-btn" style="width: 100%;" onclick="generateDateRangeReport()">Generate Report</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="reportResults" class="card" style="display: none;">
+            <div class="card-header">
+                <h2 class="card-title" id="reportTitle">Report Results</h2>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-primary-green" onclick="exportToPDF()"><i data-lucide="download" style="width:14px;height:14px;margin-right:0.25rem;vertical-align:middle;"></i>Export PDF</button>
+                    <button class="btn btn-primary-green" onclick="exportToExcel()"><i data-lucide="file-spreadsheet" style="width:14px;height:14px;margin-right:0.25rem;vertical-align:middle;"></i>Export Excel</button>
+                    <button class="btn btn-primary-green" onclick="printReport()"><i data-lucide="printer" style="width:14px;height:14px;margin-right:0.25rem;vertical-align:middle;"></i>Print</button>
+                </div>
+            </div>
+            <div id="reportContent" style="padding: 1.5rem;">
+                <!-- Report content will be generated here -->
+            </div>
+        </div>
+        
+        <!-- Print-only title (hidden on screen, shown in print) -->
+        <div id="printTitle" style="display: none;"></div>
+    </main>
+
+        </div><!-- .main-wrapper -->
+    </div><!-- .app-layout -->
+
+    <script src="js/api-config.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/notifications.js"></script>
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('open');
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+        });
+
+        const userRole = sessionStorage.getItem('userRole') || 'Admin';
+        if (userRole === 'Admin' || userRole === 'ADMIN') {
+            document.getElementById('usersLink').style.display = 'block';
+        }
+
+        // Ensure storage is available
+        if (typeof window.storage === 'undefined') {
+            window.storage = {
+                get: function(key) {
+                    try {
+                        const item = localStorage.getItem(key);
+                        return item ? JSON.parse(item) : null;
+                    } catch(e) {
+                        return null;
+                    }
+                },
+                set: function(key, value) {
+                    try {
+                        localStorage.setItem(key, JSON.stringify(value));
+                    } catch(e) {
+                        console.error('Failed to save to storage', e);
+                    }
+                }
+            };
+        }
+
+        // Store current report type and data for export
+        let currentReportType = null;
+        let currentReportData = null;
+
+        // Function to update button selected state
+        function updateSelectedButton(reportType) {
+            // Remove selected class from all report buttons
+            const allButtons = document.querySelectorAll('.report-btn');
+            allButtons.forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            // Add selected class to the clicked button
+            const buttonId = 'btn-' + reportType;
+            const selectedButton = document.getElementById(buttonId);
+            if (selectedButton) {
+                selectedButton.classList.add('selected');
+            }
+        }
+
+        async function fetchReportDataFromAPI() {
+            try {
+                const token = sessionStorage.getItem('authToken');
+                const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+                const base = window.API_BASE_URL || 'http://localhost:3000/api';
+                const [invRes, batchRes] = await Promise.all([
+                    fetch(base + '/inventory', { headers }).catch(() => null),
+                    fetch(base + '/batches', { headers }).catch(() => null)
+                ]);
+                if (invRes && invRes.ok) {
+                    const d = await invRes.json();
+                    if (d.success && d.data) {
+                        const mapped = d.data.map(i => ({ id: i.productId, productId: i.productId, sku: i.sku, name: i.name, category: i.category || '', totalQty: i.totalQty || 0, available: i.available || 0, reserved: i.reserved || 0, minStock: i.minStock || 0, status: i.status, nonExpiredQty: i.nonExpiredQty, location: i.location }));
+                        window.storage.set('products', mapped);
+                    }
+                }
+                if (batchRes && batchRes.ok) {
+                    const d = await batchRes.json();
+                    if (d.success && d.data) window.storage.set('batches', d.data);
+                }
+            } catch (e) { console.warn('Report API fetch failed:', e.message); }
+        }
+
+        async function generateReport(type) {
+            await fetchReportDataFromAPI();
+            const reportResults = document.getElementById('reportResults');
+            const reportContent = document.getElementById('reportContent');
+            const reportTitle = document.getElementById('reportTitle');
+            let html = '';
+            let title = '';
+            currentReportType = type;
+
+            switch(type) {
+                case 'inventory':
+                    title = 'Inventory Summary Report';
+                    html = generateInventoryReport();
+                    currentReportData = window.storage.get('products') || [];
+                    break;
+                case 'lowStock':
+                    title = 'Low Stock Alert Report';
+                    html = generateLowStockReport();
+                    const products = window.storage.get('products') || [];
+                    currentReportData = products.filter(p => p.totalQty < p.minStock);
+                    break;
+                case 'expiry':
+                    title = 'Expiry Report';
+                    html = generateExpiryReport();
+                    const batches = window.storage.get('batches') || [];
+                    const today = new Date();
+                    const next30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+                    currentReportData = batches.filter(b => {
+                        const expiryDate = new Date(b.expiryDate);
+                        return expiryDate <= next30Days && expiryDate >= today && b.status === 'active';
+                    }).sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate));
+                    break;
+                case 'batch':
+                    title = 'Batch Details Report';
+                    html = generateBatchReport();
+                    currentReportData = window.storage.get('batches') || [];
+                    break;
+                case 'inRecords':
+                    title = 'Stock Receipts Report';
+                    html = generateInRecordsReport();
+                    currentReportData = window.storage.get('inRecords') || [];
+                    break;
+                case 'outRecords':
+                    title = 'Stock Issues Report';
+                    html = generateOutRecordsReport();
+                    currentReportData = window.storage.get('outRecords') || [];
+                    break;
+                case 'movement':
+                    title = 'Stock Movement Report';
+                    html = generateMovementReport();
+                    currentReportData = {
+                        inRecords: window.storage.get('inRecords') || [],
+                        outRecords: window.storage.get('outRecords') || []
+                    };
+                    break;
+                case 'bookings':
+                    title = 'Booking Report';
+                    html = generateBookingsReport();
+                    currentReportData = window.storage.get('bookings') || [];
+                    break;
+            }
+
+            reportTitle.textContent = title;
+            // Also set print title
+            const printTitle = document.getElementById('printTitle');
+            if (printTitle) {
+                printTitle.textContent = title;
+            }
+            reportContent.innerHTML = html;
+            reportResults.style.display = 'block';
+            reportResults.scrollIntoView({ behavior: 'smooth' });
+            
+            // Update button selected state
+            updateSelectedButton(type);
+        }
+
+        function generateInventoryReport() {
+            const products = (window.storage.get('products') || []).slice().sort((a, b) =>
+                String(a.sku || a.name || '').localeCompare(String(b.sku || b.name || ''), undefined, { sensitivity: 'base' })
+            );
+            let html = `<table class="table-container" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Product Name</th>
+                        <th>Category</th>
+                        <th>Total Qty</th>
+                        <th>Available</th>
+                        <th>Reserved</th>
+                        <th>Min Stock</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            products.forEach(product => {
+                const nonExpired = product.nonExpiredQty ?? product.available;
+                const allExpired = (product.totalQty || 0) > 0 && (nonExpired || 0) <= 0;
+                const status = product.available === 0 && product.totalQty === 0 ? 'Out of Stock' :
+                              product.available === 0 && product.totalQty > 0 ? 'Fully Reserved' :
+                              allExpired ? 'Expired' :
+                              product.totalQty < product.minStock ? 'Low Stock' : 'OK';
+                html += `<tr>
+                    <td>${product.sku}</td>
+                    <td>${product.name}</td>
+                    <td>${product.category}</td>
+                    <td>${product.totalQty || 0}</td>
+                    <td>${product.available || 0}</td>
+                    <td>${product.reserved || 0}</td>
+                    <td>${product.minStock || 0}</td>
+                    <td>${status}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            return html;
+        }
+
+        function generateLowStockReport() {
+            const products = window.storage.get('products') || [];
+            const lowStockProducts = products.filter(p => p.totalQty < p.minStock).sort((a, b) =>
+                String(a.sku || a.name || '').localeCompare(String(b.sku || b.name || ''), undefined, { sensitivity: 'base' })
+            );
+            
+            let html = `<p><strong>Total Low Stock Items: ${lowStockProducts.length}</strong></p>`;
+            html += `<table class="table-container" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Product Name</th>
+                        <th>Current Stock</th>
+                        <th>Min Stock</th>
+                        <th>Shortfall</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            lowStockProducts.forEach(product => {
+                const shortfall = product.minStock - product.totalQty;
+                html += `<tr>
+                    <td>${product.sku}</td>
+                    <td>${product.name}</td>
+                    <td>${product.totalQty || 0}</td>
+                    <td>${product.minStock || 0}</td>
+                    <td style="color: var(--danger-color);">${shortfall}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            return html;
+        }
+
+        function generateExpiryReport() {
+            const batches = window.storage.get('batches') || [];
+            const today = new Date();
+            const next30Days = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+            
+            const products = window.storage.get('products') || [];
+            const expiringBatches = batches.filter(b => {
+                const expiryDate = new Date(b.expiryDate);
+                return expiryDate <= next30Days && expiryDate >= today && b.status === 'active';
+            }).sort((a, b) => {
+                const dateCmp = new Date(a.expiryDate) - new Date(b.expiryDate);
+                if (dateCmp !== 0) return dateCmp;
+                const pa = products.find(p => p.id === a.productId), pb = products.find(p => p.id === b.productId);
+                return String(pa?.name || '').localeCompare(String(pb?.name || ''), undefined, { sensitivity: 'base' });
+            });
+            
+            let html = `<p><strong>Batches Expiring in Next 30 Days: ${expiringBatches.length}</strong></p>`;
+            html += `<table class="table-container" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Lot Code</th>
+                        <th>Expiry Date</th>
+                        <th>Quantity</th>
+                        <th>Days Until Expiry</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            expiringBatches.forEach(batch => {
+                const expiryDate = new Date(batch.expiryDate);
+                const daysUntil = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                const products = window.storage.get('products') || [];
+                const product = products.find(p => p.id === batch.productId);
+                
+                html += `<tr>
+                    <td>${product ? product.name : 'Unknown'}</td>
+                    <td>${batch.lotCode}</td>
+                    <td>${batch.expiryDate}</td>
+                    <td>${batch.quantityOnHand}</td>
+                    <td>${daysUntil} days</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            return html;
+        }
+
+        function generateBatchReport() {
+            const batches = (window.storage.get('batches') || []).slice();
+            const products = window.storage.get('products') || [];
+            batches.sort((a, b) => {
+                const pa = products.find(p => p.id === a.productId), pb = products.find(p => p.id === b.productId);
+                const nameCmp = String(pa?.name || '').localeCompare(String(pb?.name || ''), undefined, { sensitivity: 'base' });
+                if (nameCmp !== 0) return nameCmp;
+                return String(a.lotCode || '').localeCompare(String(b.lotCode || ''), undefined, { sensitivity: 'base' });
+            });
+            
+            let html = `<table class="table-container" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>Product</th>
+                        <th>Lot Code</th>
+                        <th>Expiry Date</th>
+                        <th>Qty On Hand</th>
+                        <th>Qty Reserved</th>
+                        <th>Available</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            batches.forEach(batch => {
+                const product = products.find(p => p.id === batch.productId);
+                const expiryDate = new Date(batch.expiryDate);
+                const today = new Date();
+                const daysUntil = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                const status = daysUntil < 0 ? 'Expired' : daysUntil <= 7 ? 'Near Expiry' : 'Active';
+                
+                html += `<tr>
+                    <td>${product ? product.name : 'Unknown'}</td>
+                    <td>${batch.lotCode}</td>
+                    <td>${batch.expiryDate}</td>
+                    <td>${batch.quantityOnHand}</td>
+                    <td>${batch.quantityReserved || 0}</td>
+                    <td>${batch.available || 0}</td>
+                    <td>${status}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            return html;
+        }
+
+        function generateInRecordsReport() {
+            const inRecords = (window.storage.get('inRecords') || []).slice().sort((a, b) =>
+                String(a.product || '').localeCompare(String(b.product || ''), undefined, { sensitivity: 'base' })
+            );
+            
+            let html = `<p><strong>Total Receipts: ${inRecords.length}</strong></p>`;
+            html += `<table class="table-container" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>Record ID</th>
+                        <th>Date</th>
+                        <th>Product</th>
+                        <th>Lot Code</th>
+                        <th>Quantity</th>
+                        <th>Supplier</th>
+                        <th>Received By</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            inRecords.forEach(record => {
+                html += `<tr>
+                    <td>${record.recordNumber || record.id}</td>
+                    <td>${record.date}</td>
+                    <td>${record.product}</td>
+                    <td>${record.lotCode}</td>
+                    <td>${record.qty}</td>
+                    <td>${record.supplier}</td>
+                    <td>${record.receivedBy}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            return html;
+        }
+
+        function generateOutRecordsReport() {
+            const outRecords = (window.storage.get('outRecords') || []).slice().sort((a, b) =>
+                String(a.product || '').localeCompare(String(b.product || ''), undefined, { sensitivity: 'base' })
+            );
+            
+            let html = `<p><strong>Total Issues: ${outRecords.length}</strong></p>`;
+            html += `<table class="table-container" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>Record ID</th>
+                        <th>Date</th>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Recipient</th>
+                        <th>Issued By</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            outRecords.forEach(record => {
+                html += `<tr>
+                    <td>${record.recordNumber || record.id}</td>
+                    <td>${record.date}</td>
+                    <td>${record.product}</td>
+                    <td>${record.qty}</td>
+                    <td>${record.recipient}</td>
+                    <td>${record.issuedBy}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            return html;
+        }
+
+        function generateMovementReport() {
+            const inRecords = window.storage.get('inRecords') || [];
+            const outRecords = window.storage.get('outRecords') || [];
+            
+            let html = `<h3>Stock In: ${inRecords.reduce((sum, r) => sum + (r.qty || 0), 0)} units</h3>`;
+            html += `<h3>Stock Out: ${outRecords.reduce((sum, r) => sum + (r.qty || 0), 0)} units</h3>`;
+            html += `<h3>Net Movement: ${inRecords.reduce((sum, r) => sum + (r.qty || 0), 0) - outRecords.reduce((sum, r) => sum + (r.qty || 0), 0)} units</h3>`;
+            
+            return html;
+        }
+
+        function generateBookingsReport() {
+            const bookings = (window.storage.get('bookings') || []).slice().sort((a, b) =>
+                String(a.reference || a.bookingNumber || a.id || '').localeCompare(String(b.reference || b.bookingNumber || b.id || ''), undefined, { sensitivity: 'base' })
+            );
+            
+            let html = `<p><strong>Total Bookings: ${bookings.length}</strong></p>`;
+            html += `<table class="table-container" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Requested By</th>
+                        <th>Requested Date</th>
+                        <th>Needed By</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            bookings.forEach(booking => {
+                html += `<tr>
+                    <td>${booking.reference || booking.id || '-'}</td>
+                    <td>${booking.product || booking.productName || '-'}</td>
+                    <td>${booking.quantity || booking.qty || 0}</td>
+                    <td>${booking.requestedBy || booking.requestedBy || '-'}</td>
+                    <td>${booking.requestedDate || booking.date || '-'}</td>
+                    <td>${booking.neededBy || booking.neededDate || '-'}</td>
+                    <td>${booking.status || '-'}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            return html;
+        }
+
+        function generateDateRangeReport() {
+            const fromDate = document.getElementById('fromDate').value;
+            const toDate = document.getElementById('toDate').value;
+            
+            if (!fromDate || !toDate) {
+                showNotification('Please select both from and to dates', 'error');
+                return;
+            }
+            
+            const inRecords = window.storage.get('inRecords') || [];
+            const outRecords = window.storage.get('outRecords') || [];
+            
+            const filteredIn = inRecords.filter(r => r.date >= fromDate && r.date <= toDate);
+            const filteredOut = outRecords.filter(r => r.date >= fromDate && r.date <= toDate);
+            
+            // Store current report data
+            currentReportType = 'dateRange';
+            currentReportData = {
+                fromDate: fromDate,
+                toDate: toDate,
+                filteredIn: filteredIn,
+                filteredOut: filteredOut
+            };
+            
+            let html = `<h3>Date Range: ${fromDate} to ${toDate}</h3>`;
+            html += `<p><strong>Stock In: ${filteredIn.length} records, ${filteredIn.reduce((sum, r) => sum + (r.qty || 0), 0)} units</strong></p>`;
+            html += `<p><strong>Stock Out: ${filteredOut.length} records, ${filteredOut.reduce((sum, r) => sum + (r.qty || 0), 0)} units</strong></p>`;
+            
+            const reportResults = document.getElementById('reportResults');
+            const reportContent = document.getElementById('reportContent');
+            const reportTitle = document.getElementById('reportTitle');
+            
+            reportTitle.textContent = `Date Range Report (${fromDate} to ${toDate})`;
+            reportContent.innerHTML = html;
+            reportResults.style.display = 'block';
+            reportResults.scrollIntoView({ behavior: 'smooth' });
+            
+            // Update button selected state
+            updateSelectedButton('dateRange');
+        }
+
+        function exportToPDF() {
+            const reportTitle = document.getElementById('reportTitle');
+            const reportContent = document.getElementById('reportContent');
+            
+            if (!reportTitle || !reportContent) {
+                showNotification('No report to export', 'error');
+                return;
+            }
+            
+            const title = reportTitle.textContent;
+            const contentElement = reportContent;
+            
+            // Check if libraries are loaded
+            if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
+                showNotification('PDF export libraries not loaded. Please refresh the page.', 'error');
+                return;
+            }
+            
+            showNotification('Generating PDF...', 'info');
+            
+            // Capture only #reportContent - avoid sidebar/header to prevent duplication
+            const targetEl = document.getElementById('reportContent');
+            const el = targetEl || contentElement;
+            html2canvas(el, {
+                scale: Math.min(2, window.devicePixelRatio || 1),
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff',
+                windowWidth: el.scrollWidth,
+                windowHeight: el.scrollHeight
+            }).then(canvas => {
+                const { jsPDF } = window.jspdf;
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const margin = 15;
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                const pageWidth = pdfWidth - margin * 2;
+                const pageHeight = pdfHeight - margin * 2 - 15;
+                const imgWidth = canvas.width;
+                const imgHeight = canvas.height;
+                const ratio = Math.min(pageWidth / imgWidth, pageHeight / imgHeight);
+                const scaledW = imgWidth * ratio;
+                const scaledH = imgHeight * ratio;
+                const imgX = margin;
+                const imgY = margin + 10;
+                pdf.setFontSize(16);
+                pdf.text(title, pdfWidth / 2, 12, { align: 'center' });
+                pdf.addImage(imgData, 'PNG', imgX, imgY, scaledW, scaledH);
+                // Single page only - scale to fit to prevent duplication
+                const fileName = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_' + new Date().toISOString().split('T')[0] + '.pdf';
+                pdf.save(fileName);
+                showNotification('PDF exported successfully', 'success');
+            }).catch(error => {
+                console.error('Error generating PDF:', error);
+                showNotification('Error generating PDF. Please try again.', 'error');
+            });
+        }
+
+        function exportToExcel() {
+            const reportTitle = document.getElementById('reportTitle');
+            
+            if (!reportTitle || !currentReportType || !currentReportData) {
+                showNotification('No report to export', 'error');
+                return;
+            }
+            
+            // Check if library is loaded
+            if (typeof XLSX === 'undefined') {
+                showNotification('Excel export library not loaded. Please refresh the page.', 'error');
+                return;
+            }
+            
+            showNotification('Generating Excel file...', 'info');
+            
+            let worksheetData = [];
+            let fileName = reportTitle.textContent.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_' + new Date().toISOString().split('T')[0] + '.xlsx';
+            
+            // Prepare data based on report type
+            switch(currentReportType) {
+                case 'inventory':
+                    worksheetData = [
+                        ['SKU', 'Product Name', 'Category', 'Total Qty', 'Available', 'Reserved', 'Min Stock', 'Status']
+                    ];
+                    currentReportData.forEach(product => {
+                        const nonExpired = product.nonExpiredQty ?? product.available;
+                        const allExpired = (product.totalQty || 0) > 0 && (nonExpired || 0) <= 0;
+                        const status = product.available === 0 && product.totalQty === 0 ? 'Out of Stock' :
+                                      product.available === 0 && product.totalQty > 0 ? 'Fully Reserved' :
+                                      allExpired ? 'Expired' :
+                                      product.totalQty < product.minStock ? 'Low Stock' : 'OK';
+                        worksheetData.push([
+                            product.sku || '',
+                            product.name || '',
+                            product.category || '',
+                            product.totalQty || 0,
+                            product.available || 0,
+                            product.reserved || 0,
+                            product.minStock || 0,
+                            status
+                        ]);
+                    });
+                    break;
+                    
+                case 'lowStock':
+                    worksheetData = [
+                        ['SKU', 'Product Name', 'Current Stock', 'Min Stock', 'Shortfall']
+                    ];
+                    currentReportData.forEach(product => {
+                        const shortfall = product.minStock - product.totalQty;
+                        worksheetData.push([
+                            product.sku || '',
+                            product.name || '',
+                            product.totalQty || 0,
+                            product.minStock || 0,
+                            shortfall
+                        ]);
+                    });
+                    break;
+                    
+                case 'expiry':
+                    worksheetData = [
+                        ['Product', 'Lot Code', 'Expiry Date', 'Quantity', 'Days Until Expiry']
+                    ];
+                    const products = window.storage.get('products') || [];
+                    const today = new Date();
+                    currentReportData.forEach(batch => {
+                        const product = products.find(p => p.id === batch.productId);
+                        const expiryDate = new Date(batch.expiryDate);
+                        const daysUntil = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+                        worksheetData.push([
+                            product ? product.name : 'Unknown',
+                            batch.lotCode || '',
+                            batch.expiryDate || '',
+                            batch.quantityOnHand || 0,
+                            daysUntil
+                        ]);
+                    });
+                    break;
+                    
+                case 'batch':
+                    worksheetData = [
+                        ['Product', 'Lot Code', 'Expiry Date', 'Qty On Hand', 'Qty Reserved', 'Available', 'Status']
+                    ];
+                    const batchProducts = window.storage.get('products') || [];
+                    const batchToday = new Date();
+                    currentReportData.forEach(batch => {
+                        const product = batchProducts.find(p => p.id === batch.productId);
+                        const expiryDate = new Date(batch.expiryDate);
+                        const daysUntil = Math.ceil((expiryDate - batchToday) / (1000 * 60 * 60 * 24));
+                        const status = daysUntil < 0 ? 'Expired' : daysUntil <= 7 ? 'Near Expiry' : 'Active';
+                        worksheetData.push([
+                            product ? product.name : 'Unknown',
+                            batch.lotCode || '',
+                            batch.expiryDate || '',
+                            batch.quantityOnHand || 0,
+                            batch.quantityReserved || 0,
+                            batch.available || 0,
+                            status
+                        ]);
+                    });
+                    break;
+                    
+                case 'inRecords':
+                    worksheetData = [
+                        ['Record ID', 'Date', 'Product', 'Lot Code', 'Quantity', 'Supplier', 'Received By']
+                    ];
+                    currentReportData.slice().reverse().forEach(record => {
+                        worksheetData.push([
+                            record.recordNumber || record.id || '',
+                            record.date || '',
+                            record.product || '',
+                            record.lotCode || '',
+                            record.qty || 0,
+                            record.supplier || '',
+                            record.receivedBy || ''
+                        ]);
+                    });
+                    break;
+                    
+                case 'outRecords':
+                    worksheetData = [
+                        ['Record ID', 'Date', 'Product', 'Quantity', 'Recipient', 'Issued By']
+                    ];
+                    currentReportData.slice().reverse().forEach(record => {
+                        worksheetData.push([
+                            record.recordNumber || record.id || '',
+                            record.date || '',
+                            record.product || '',
+                            record.qty || 0,
+                            record.recipient || '',
+                            record.issuedBy || ''
+                        ]);
+                    });
+                    break;
+                    
+                case 'movement':
+                    worksheetData = [
+                        ['Type', 'Total Records', 'Total Units']
+                    ];
+                    const stockIn = currentReportData.inRecords.reduce((sum, r) => sum + (r.qty || 0), 0);
+                    const stockOut = currentReportData.outRecords.reduce((sum, r) => sum + (r.qty || 0), 0);
+                    worksheetData.push(['Stock In', currentReportData.inRecords.length, stockIn]);
+                    worksheetData.push(['Stock Out', currentReportData.outRecords.length, stockOut]);
+                    worksheetData.push(['Net Movement', '', stockIn - stockOut]);
+                    break;
+                    
+                case 'bookings':
+                    worksheetData = [
+                        ['Reference', 'Product', 'Quantity', 'Requested By', 'Requested Date', 'Needed By', 'Status']
+                    ];
+                    currentReportData.forEach(booking => {
+                        worksheetData.push([
+                            booking.reference || booking.id || '-',
+                            booking.product || booking.productName || '-',
+                            booking.quantity || booking.qty || 0,
+                            booking.requestedBy || '-',
+                            booking.requestedDate || booking.date || '-',
+                            booking.neededBy || booking.neededDate || '-',
+                            booking.status || '-'
+                        ]);
+                    });
+                    break;
+                    
+                case 'dateRange':
+                    worksheetData = [
+                        ['Date Range Report', currentReportData.fromDate, 'to', currentReportData.toDate],
+                        [],
+                        ['Type', 'Total Records', 'Total Units']
+                    ];
+                    const dateStockIn = currentReportData.filteredIn.reduce((sum, r) => sum + (r.qty || 0), 0);
+                    const dateStockOut = currentReportData.filteredOut.reduce((sum, r) => sum + (r.qty || 0), 0);
+                    worksheetData.push(['Stock In', currentReportData.filteredIn.length, dateStockIn]);
+                    worksheetData.push(['Stock Out', currentReportData.filteredOut.length, dateStockOut]);
+                    break;
+            }
+            
+            // Create workbook and worksheet
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+            
+            // Set column widths
+            const maxWidths = worksheetData[0].map((_, colIndex) => {
+                return Math.max(...worksheetData.map(row => {
+                    const cellValue = row[colIndex] ? String(row[colIndex]).length : 0;
+                    return cellValue;
+                }));
+            });
+            
+            ws['!cols'] = maxWidths.map(width => ({ wch: Math.min(width + 2, 50) }));
+            
+            // Add worksheet to workbook
+            XLSX.utils.book_append_sheet(wb, ws, 'Report');
+            
+            // Save file
+            XLSX.writeFile(wb, fileName);
+            showNotification('Excel file exported successfully', 'success');
+        }
+
+        function printReport() {
+            const reportTitle = document.getElementById('reportTitle');
+            const reportContent = document.getElementById('reportContent');
+            
+            if (!reportTitle || !reportContent) {
+                showNotification('No report to print', 'error');
+                return;
+            }
+            
+            // Get the report content
+            const title = reportTitle.textContent;
+            const content = reportContent.innerHTML;
+            
+            // Create a new window with only the report content
+            const printWindow = window.open('', '_blank', 'width=800,height=600');
+            
+            if (!printWindow) {
+                showNotification('Please allow popups to print the report', 'error');
+                return;
+            }
+            
+            // Write the print-friendly HTML
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>${title}</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            margin: 20px;
+                            font-size: 12pt;
+                        }
+                        h1 {
+                            font-size: 18pt;
+                            font-weight: bold;
+                            margin-bottom: 15px;
+                        }
+                        p {
+                            margin-bottom: 15px;
+                            font-size: 11pt;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-top: 10px;
+                        }
+                        table thead {
+                            display: table-header-group;
+                        }
+                        table tbody {
+                            display: table-row-group;
+                        }
+                        table tr {
+                            page-break-inside: avoid;
+                        }
+                        table th,
+                        table td {
+                            border: 1px solid #000;
+                            padding: 6px 8px;
+                            text-align: left;
+                            font-size: 10pt;
+                        }
+                        table th {
+                            background-color: #f0f0f0;
+                            font-weight: bold;
+                        }
+                        @media print {
+                            body {
+                                margin: 0;
+                                padding: 20px;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>${title}</h1>
+                    ${content}
+                </body>
+                </html>
+            `);
+            
+            printWindow.document.close();
+            
+            // Wait for content to load, then print
+            printWindow.onload = function() {
+                setTimeout(function() {
+                    printWindow.print();
+                    // Optionally close the window after printing
+                    // printWindow.close();
+                }, 250);
+            };
+        }
+    </script>
+</body>
+</html>

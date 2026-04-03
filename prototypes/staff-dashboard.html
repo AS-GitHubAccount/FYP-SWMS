@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Dashboard - SWMS</title>
+    <script>
+        // Redirect to unified dashboard (both Admin and Staff use dashboard.html with role-based content)
+        (function() {
+            const base = window.location.pathname.includes('/prototypes/') ? '' : (window.location.pathname.includes('/prototypes') ? '../' : '');
+            window.location.replace((base || '') + 'dashboard.html');
+        })();
+    </script>
+</head>
+<body>
+    <header class="header">
+        <div class="nav-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding-bottom: 0; font-size: 1.2rem;">
+                <a href="dashboard.html" class="logo" style="font-size: 1.8rem;">SWMS</a>
+                <div class="user-info" style="font-size: 1.1rem;">
+                    <a href="notifications.html" class="notification-icon" style="position: relative; font-size: 2rem; text-decoration: none; background: none; border: none; padding: 0.5rem; cursor: pointer; color: var(--text-primary);">
+                        🔔
+                        <span id="notificationBadge" class="badge badge-danger" style="position: absolute; top: -8px; right: -8px; font-size: 0.7rem; display: none; min-width: 18px; padding: 2px 6px;">0</span>
+                    </a>
+                    <div class="user-profile-wrap">
+                        <button id="profileAvatarBtn" class="profile-avatar-btn" type="button" onclick="toggleProfileDropdown(event)" aria-haspopup="true" aria-expanded="false" title="Account">
+                            <span class="profile-avatar-initial" id="profileAvatarInitial">U</span>
+                        </button>
+                        <div id="profileDropdown" class="profile-dropdown" style="display: none;" role="menu">
+                            <div class="profile-dropdown-header">
+                                <div class="profile-dropdown-name" id="profileUserName">User</div>
+                                <div class="profile-dropdown-email" id="profileUserEmail">user@example.com</div>
+                            </div>
+                            <a href="settings.html" class="profile-dropdown-item" role="menuitem">Settings</a>
+                            <button type="button" class="profile-dropdown-item profile-dropdown-logout" onclick="handleLogout(event)" role="menuitem">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <nav class="nav-links" style="display: flex; flex-wrap: nowrap; white-space: nowrap; overflow-x: hidden; width: 100%; padding-top: 0; font-size: 1.8rem; font-weight: bold; gap: 0.5rem;">
+                <a href="staff-dashboard.html" class="active" style="padding: 0.5rem 0.5rem;">Dashboard</a>
+                <a href="inventory.html" style="padding: 0.5rem 0.5rem;">Inventory</a>
+                <a href="alerts.html" style="padding: 0.5rem 0.5rem;">Alert</a>
+                <a href="reports.html" style="padding: 0.5rem 0.5rem;">Reports</a>
+                <a href="approval.html" id="approvalCenterLink" style="display: none; padding: 0.5rem 0.5rem;">Approval</a>
+                <a href="users.html" id="usersLink" style="display: none; padding: 0.5rem 0.5rem;">User</a>
+                <a href="suppliers.html" style="padding: 0.5rem 0.5rem;">Supplier</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <h1 class="page-title">Dashboard</h1>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div style="display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+            <div class="card" style="min-width: 180px; max-width: 220px; flex: 0 1 auto;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1rem;">
+                    <div style="font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: bold;">Total Products</div>
+                    <div style="font-size: 2rem; font-weight: bold; color: var(--primary-color);" id="totalProducts">0</div>
+                </div>
+            </div>
+            <div class="card" style="min-width: 180px; max-width: 220px; flex: 0 1 auto;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1rem;">
+                    <div style="font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: bold;">Total Stock Units</div>
+                    <div style="font-size: 2rem; font-weight: bold; color: var(--success-color);" id="totalStock">0</div>
+                </div>
+            </div>
+            <div class="card" style="min-width: 180px; max-width: 220px; flex: 0 1 auto;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1rem;">
+                    <div style="font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: bold;">Active Alerts</div>
+                    <div style="font-size: 2rem; font-weight: bold; color: var(--warning-color);" id="activeAlerts">0</div>
+                </div>
+            </div>
+            <div class="card" style="min-width: 180px; max-width: 220px; flex: 0 1 auto;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1rem;">
+                    <div style="font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: bold;">My Bookings</div>
+                    <div style="font-size: 2rem; font-weight: bold; color: var(--info-color);" id="myBookings">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Quick Actions</h3>
+                </div>
+                <div style="padding: 1rem;">
+                    <a href="inventory.html?tab=receiving" class="btn btn-primary" style="width: 100%; margin-bottom: 0.5rem;">Receive Stock</a>
+                    <a href="inventory.html?tab=issuing" class="btn btn-success" style="width: 100%; margin-bottom: 0.5rem;">Issue Stock</a>
+                    <a href="inventory.html?tab=booking" class="btn btn-info" style="width: 100%;">Create Booking</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Alerts -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header">
+                <h2 class="card-title">Active Alerts</h2>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Product</th>
+                            <th>Message</th>
+                            <th>Priority</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alertsTableBody">
+                        <!-- Alerts will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- My Bookings -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">My Bookings</h2>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Reference</th>
+                            <th>Product</th>
+                            <th>Quantity</th>
+                            <th>Requested Date</th>
+                            <th>Needed By</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="myBookingsTableBody">
+                        <!-- Bookings will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/api-config.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/notifications.js"></script>
+    <script>
+        const userRole = 'Staff';
+
+        // Ensure storage is available
+        if (typeof window.storage === 'undefined') {
+            window.storage = {
+                get: function(key) {
+                    try {
+                        const item = localStorage.getItem(key);
+                        return item ? JSON.parse(item) : null;
+                    } catch(e) {
+                        return null;
+                    }
+                },
+                set: function(key, value) {
+                    try {
+                        localStorage.setItem(key, JSON.stringify(value));
+                    } catch(e) {
+                        console.error('Failed to save to storage', e);
+                    }
+                }
+            };
+        }
+
+        function loadDashboard() {
+            // Load products
+            const products = window.storage.get('products') || [];
+            document.getElementById('totalProducts').textContent = products.length;
+            
+            // Calculate total stock
+            const totalStock = products.reduce((sum, p) => sum + (p.totalQty || 0), 0);
+            document.getElementById('totalStock').textContent = totalStock.toLocaleString();
+            
+            // Load alerts
+            const alerts = window.storage.get('alerts') || [];
+            const activeAlerts = alerts.filter(a => !a.resolved);
+            document.getElementById('activeAlerts').textContent = activeAlerts.length;
+            renderAlerts(activeAlerts);
+            
+            // Load my bookings
+            const bookings = window.storage.get('bookings') || [];
+            const userName = sessionStorage.getItem('userName') || 'Staff Member';
+            const myBookings = bookings.filter(b => b.requestedBy === userName);
+            document.getElementById('myBookings').textContent = myBookings.length;
+            renderMyBookings(myBookings);
+        }
+
+        function renderAlerts(alerts) {
+            const tbody = document.getElementById('alertsTableBody');
+            
+            if (alerts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem;">No active alerts</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = alerts.slice(0, 10).map(alert => {
+                const priorityBadge = alert.priority === 'CRITICAL' ? 'badge-danger' :
+                                     alert.priority === 'WARN' ? 'badge-warning' : 'badge-info';
+                return `
+                    <tr>
+                        <td>${alert.type || 'Alert'}</td>
+                        <td>${alert.product || 'N/A'}</td>
+                        <td>${alert.message || 'No message'}</td>
+                        <td><span class="badge ${priorityBadge}">${alert.priority || 'INFO'}</span></td>
+                        <td>${alert.date || 'N/A'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderMyBookings(bookings) {
+            const tbody = document.getElementById('myBookingsTableBody');
+            
+            if (bookings.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 2rem;">No bookings found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = bookings.map(booking => {
+                const statusBadge = booking.status === 'approved' ? 'badge-success' :
+                                   booking.status === 'pending' ? 'badge-warning' :
+                                   booking.status === 'fulfilled' ? 'badge-primary' :
+                                   booking.status === 'cancelled' ? 'badge-danger' : 'badge-secondary';
+                return `
+                    <tr>
+                        <td>${booking.reference}</td>
+                        <td>${booking.product}</td>
+                        <td>${booking.quantity} units</td>
+                        <td>${booking.requestedDate}</td>
+                        <td>${booking.neededBy}</td>
+                        <td><span class="badge ${statusBadge}">${booking.status}</span></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Initialize
+        loadDashboard();
+    </script>
+</body>
+</html>

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - SWMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <a href="dashboard.html" class="logo">SWMS</a>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html"><i data-lucide="layout-dashboard" class="nav-icon"></i> Dashboard</a>
+                <a href="inventory.html"><i data-lucide="package" class="nav-icon"></i> Inventory</a>
+                <a href="alerts.html"><i data-lucide="bell" class="nav-icon"></i> Alerts</a>
+                <a href="reports.html"><i data-lucide="bar-chart-2" class="nav-icon"></i> Reports</a>
+                <a href="users.html" id="usersLink" class="active" style="display: none;"><i data-lucide="users" class="nav-icon"></i> Users</a>
+                <a href="suppliers.html"><i data-lucide="truck" class="nav-icon"></i> Suppliers</a>
+                <a href="warehouses.html"><i data-lucide="warehouse" class="nav-icon"></i> Warehouses</a>
+                <a href="approval.html" id="approvalCenterLink" style="display: none;"><i data-lucide="shield-check" class="nav-icon"></i> Approval</a>
+            </nav>
+        </aside>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()" aria-hidden="true"></div>
+        <div class="main-wrapper">
+            <header class="header">
+                <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="header-compact">
+                    <a href="notifications.html" class="notification-icon" style="position: relative; text-decoration: none; padding: 0.5rem; color: var(--text);">
+                        <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
+                        <span id="notificationBadge" class="badge badge-danger" style="position: absolute; top: -4px; right: -4px; font-size: 0.65rem; display: none; min-width: 16px; padding: 2px 5px;">0</span>
+                    </a>
+                    <div class="user-profile-wrap">
+                        <button id="profileAvatarBtn" class="profile-avatar-btn" type="button" onclick="toggleProfileDropdown(event)" aria-haspopup="true" aria-expanded="false" title="Account">
+                            <span class="profile-avatar-initial" id="profileAvatarInitial">U</span>
+                        </button>
+                        <div id="profileDropdown" class="profile-dropdown" style="display: none;" role="menu">
+                            <div class="profile-dropdown-header">
+                                <div class="profile-dropdown-name" id="profileUserName">User</div>
+                                <div class="profile-dropdown-email" id="profileUserEmail">user@example.com</div>
+                            </div>
+                            <a href="settings.html" class="profile-dropdown-item" role="menuitem">Settings</a>
+                            <button type="button" class="profile-dropdown-item profile-dropdown-logout" onclick="handleLogout(event)" role="menuitem">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+    <main class="container-fluid">
+        <div class="page-header">
+            <h1 class="page-title">User Management</h1>
+        </div>
+
+        <!-- Search & Filter -->
+        <div class="search-filter-bar">
+            <input type="text" id="searchInput" class="form-input" placeholder="Search users by name, email, role, or status..." oninput="filterUsers()">
+        </div>
+
+         <!-- Users Table -->
+         <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Users (<span id="userCount">4</span>)</h2>
+                <button class="btn btn-primary" onclick="showAddUserModal()">Add User</button>
+            </div>
+            <div class="table-container">
+                <table id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Created</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- Users will be loaded from database dynamically -->
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                                <span class="loading-spinner" style="margin-right: 0.5rem;"></span>Loading users...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+        </div><!-- .main-wrapper -->
+    </div><!-- .app-layout -->
+
+    <!-- Add/Edit User Modal -->
+    <div id="userModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New User</h2>
+                <button class="modal-close" onclick="closeUserModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm" novalidate onsubmit="event.preventDefault(); saveUser();">
+                    <div class="form-group">
+                        <label for="userName" class="form-label">Full Name</label>
+                        <input type="text" id="userName" class="form-input" required>
+                        <span class="error-message" id="userNameError"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="userEmail" class="form-label">Email</label>
+                        <input type="email" id="userEmail" class="form-input" required>
+                        <span class="error-message" id="userEmailError"></span>
+                    </div>
+                    <div class="form-group" id="inviteInfoGroup">
+                        <p class="form-help" id="inviteHelpText" style="font-size: 0.875rem; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+                            <strong>Invitation only:</strong> the user will receive an email with a secure link to choose their own password. No shared or admin-set passwords.
+                        </p>
+                    </div>
+                    <div class="form-group">
+                        <label for="userRoleSelect" class="form-label">Position</label>
+                        <select id="userRoleSelect" class="form-select" required>
+                            <option value="Staff">Warehouse Staff</option>
+                            <option value="Admin">Administrator</option>
+                        </select>
+                        <span class="error-message" id="userRoleError"></span>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-outline" onclick="closeUserModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="userModalSubmitBtn">
+                            <i data-lucide="save" style="width:14px;height:14px;"></i><span id="userModalSubmitLabel">Send invitation</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api-config.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/notifications.js"></script>
+    <script>
+        const API_BASE_URL = typeof window.getSwmsApiBase === 'function' ? window.getSwmsApiBase() : (window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api');
+        
+        // Set user role from session - redirect Staff (User Management is Admin only)
+        const userRole = sessionStorage.getItem('userRole') || 'Admin';
+        if (userRole !== 'Admin' && userRole !== 'ADMIN') {
+            window.location.href = 'dashboard.html';
+        }
+
+        // Load users from database
+        async function loadUsers() {
+            try {
+                console.log('Loading users from database...');
+                const response = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/users`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json().catch(() => ({}));
+
+                if (response.status === 429) {
+                    console.warn('User list request hit rate limit (429). Backing off silently.');
+                    const tbody = document.getElementById('usersTableBody');
+                    if (tbody) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                                    Data temporarily unavailable. Please wait a moment and try again.
+                                </td>
+                            </tr>
+                        `;
+                    }
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error(result && (result.error || result.message) || `Failed to load users: ${response.status}`);
+                }
+                console.log('Users loaded:', result);
+
+                if (result.success && result.data) {
+                    renderUsers(result.data);
+                    document.getElementById('userCount').textContent = result.count || result.data.length;
+                } else {
+                    throw new Error('Invalid response format');
+                }
+            } catch (error) {
+                console.error('Error loading users:', error);
+                
+                // Better error message
+                let errorMessage = 'Failed to load users: ' + (error && error.message ? error.message : 'Unknown error');
+                if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
+                    errorMessage = 'Cannot connect to backend server. Please make sure backend is running at http://localhost:3000';
+                }
+                
+                showNotification(errorMessage, 'error');
+                document.getElementById('usersTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 2rem; color: var(--danger-color);">
+                            <div style="margin-bottom: 1rem;">
+                                <i data-lucide="alert-triangle" style="width:32px;height:32px;color:var(--warning-color);"></i>
+                                <div style="font-weight: bold; margin-bottom: 0.5rem;">Error loading users</div>
+                                <div style="font-size: 0.875rem; color: var(--text-secondary);">
+                                    ${errorMessage}
+                                </div>
+                                <div style="margin-top: 1rem; font-size: 0.875rem;">
+                                    ${error.message && error.message.includes('429')
+                                        ? 'Too many requests for user data. Please wait a moment and try again.'
+                                        : 'If the backend is stopped, start it and refresh this page.'}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Render users in table (default sort: ID descending)
+        function renderUsers(users) {
+            const tbody = document.getElementById('usersTableBody');
+            if (users && users.length > 0) {
+                users = [...users].sort((a, b) => (Number(b.userId) || 0) - (Number(a.userId) || 0));
+            }
+            if (!users || users.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                            No users found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = users.map(user => {
+                const roleBadge = user.role === 'ADMIN' ? 'badge-primary' : 'badge-secondary';
+                const roleText = user.role === 'ADMIN' ? 'Admin' : 'Staff';
+                
+                // Format date
+                let formattedDate = user.createdAt || 'N/A';
+                if (formattedDate !== 'N/A' && formattedDate) {
+                    try {
+                        const date = new Date(formattedDate);
+                        formattedDate = date.toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                        });
+                    } catch (e) {
+                        // Keep original if parsing fails
+                    }
+                }
+
+                const pending = user.invitationPending === true || String(user.accountStatus || '').toUpperCase() === 'PENDING_INVITE';
+                const statusBadge = pending ? 'badge-warning' : 'badge-success';
+                const statusText = pending ? 'Pending' : 'Active';
+
+                // Disable delete for current user or last admin
+                const isCurrentUser = user.email === sessionStorage.getItem('userEmail');
+                const isAdmin = user.role === 'ADMIN';
+                const deleteDisabled = isCurrentUser || (isAdmin && users.filter(u => u.role === 'ADMIN').length <= 1);
+
+                return `
+                    <tr>
+                        <td>${user.userId || '-'}</td>
+                        <td>${user.name || 'N/A'}</td>
+                        <td>${user.email || 'N/A'}</td>
+                        <td><span class="badge ${roleBadge}">${roleText}</span></td>
+                        <td>${formattedDate}</td>
+                        <td><span class="badge ${statusBadge}">${statusText}</span></td>
+                        <td style="white-space: normal;">
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center;">
+                            <button type="button" class="btn btn-sm btn-outline" onclick="editUser(${user.userId})">Edit</button>
+                            <button type="button" class="btn btn-sm btn-outline btn-danger" onclick="deleteUser(${user.userId})" ${deleteDisabled ? 'disabled' : ''}>Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Update user count
+            document.getElementById('userCount').textContent = users.length;
+        }
+
+        function showAddUserModal() {
+            const modal = document.getElementById('userModal');
+            const form = document.getElementById('userForm');
+            
+            // Reset form
+            form.reset();
+            
+            // Set modal title
+            document.getElementById('modalTitle').textContent = 'Add New User';
+            
+            // Set add mode
+            form.setAttribute('data-mode', 'add');
+            form.removeAttribute('data-user-id');
+            
+            document.getElementById('inviteInfoGroup').style.display = '';
+            document.getElementById('inviteHelpText').innerHTML = '<strong>Invitation only:</strong> the user will receive an email with a secure link to choose their own password.';
+            var sl = document.getElementById('userModalSubmitLabel');
+            if (sl) sl.textContent = 'Send invitation';
+            
+            // Show modal
+            modal.style.display = 'flex';
+            
+            console.log('Add user modal opened');
+        }
+
+        async function editUser(userId) {
+            try {
+                // Fetch user data from API
+                const response = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/users/${userId}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load user data');
+                }
+
+                const result = await response.json();
+                
+                if (result.success && result.data) {
+                    const user = result.data;
+            document.getElementById('userModal').style.display = 'flex';
+            document.getElementById('modalTitle').textContent = 'Edit User';
+                    document.getElementById('userName').value = user.name || '';
+                    document.getElementById('userEmail').value = user.email || '';
+                    document.getElementById('userRoleSelect').value = user.role === 'ADMIN' ? 'Admin' : 'Staff';
+                    document.getElementById('inviteInfoGroup').style.display = 'none';
+                    var sl2 = document.getElementById('userModalSubmitLabel');
+                    if (sl2) sl2.textContent = 'Save changes';
+                    
+                    // Set edit mode
+                    document.getElementById('userForm').setAttribute('data-mode', 'edit');
+                    document.getElementById('userForm').setAttribute('data-user-id', userId);
+                } else {
+                    throw new Error('Invalid user data');
+                }
+            } catch (error) {
+                console.error('Error loading user:', error);
+                showNotification('Failed to load user data: ' + error.message, 'error');
+            }
+        }
+
+        async function resendInvitation(userId) {
+            try {
+                const response = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/users/${userId}/resend-invitation`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json().catch(() => ({}));
+                if (result.success) {
+                    showNotification(result.message || 'Invitation sent.', 'success');
+                } else {
+                    throw new Error(result.error || 'Failed to resend invitation');
+                }
+            } catch (error) {
+                console.error(error);
+                showNotification(error.message || 'Failed to resend invitation', 'error');
+            }
+        }
+
+        async function sendPasswordReset(userId) {
+            const ok = await (window.showConfirmWindow || function(t, m) { return Promise.resolve(confirm(m)); })(
+                'Reset password',
+                'Send this user an email with a new temporary password? Their previous password will stop working once the email is sent.'
+            );
+            if (!ok) return;
+            try {
+                const response = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/users/${userId}/send-password-reset`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json().catch(() => ({}));
+                if (result.success) {
+                    showNotification(result.message || 'Reset email sent.', 'success');
+                } else {
+                    throw new Error(result.error || 'Failed to send reset email');
+                }
+            } catch (error) {
+                console.error(error);
+                showNotification(error.message || 'Failed to send reset email', 'error');
+            }
+        }
+
+        async function deleteUser(userId) {
+            const ok = await (window.showConfirmWindow || function(t,m){return Promise.resolve(confirm(m));})('Delete User', 'Are you sure you want to delete this user? This action cannot be undone.');
+            if (!ok) return;
+
+            try {
+                const response = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('User deleted successfully', 'success');
+                    loadUsers(); // Reload users list
+                } else {
+                    throw new Error(result.error || 'Failed to delete user');
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                showNotification('Failed to delete user: ' + error.message, 'error');
+            }
+        }
+
+        async function saveUser() {
+            const form = document.getElementById('userForm');
+            const mode = form.getAttribute('data-mode') || 'add';
+            const userId = form.getAttribute('data-user-id');
+            
+            const name = document.getElementById('userName').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            const role = document.getElementById('userRoleSelect').value;
+
+            // Clear previous errors
+            const errorMessages = form.querySelectorAll('.error-message');
+            errorMessages.forEach(msg => msg.textContent = '');
+            const errorFields = form.querySelectorAll('.form-input.error, .form-select.error');
+            errorFields.forEach(field => field.classList.remove('error'));
+            
+            // Validation
+            let hasError = false;
+            
+            if (!name) {
+                showFieldError('userName', 'Name is required');
+                hasError = true;
+            }
+            
+            if (!email) {
+                showFieldError('userEmail', 'Email is required');
+                hasError = true;
+            } else if (!isValidEmail(email)) {
+                showFieldError('userEmail', 'Please enter a valid email address');
+                hasError = true;
+            }
+
+            if (hasError) {
+                return;
+            }
+
+            // Disable submit button
+            const submitButton = form.querySelector('button[type="submit"]');
+            const originalButtonText = submitButton.innerHTML;
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="loading-spinner" style="margin-right: 0.5rem;"></span>Saving...';
+
+            try {
+                let response;
+                const userData = {
+                    name,
+                    email: email.toLowerCase(),
+                    role: role === 'Admin' ? 'ADMIN' : 'STAFF'
+                };
+
+                if (mode === 'add') {
+                    // Create new user
+                    console.log('Creating new user:', userData);
+                    response = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/users`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(userData)
+                    });
+                } else {
+                    // Update existing user
+                    console.log('Updating user:', userId, userData);
+                    response = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/users/${userId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(userData)
+                    });
+                }
+
+                const result = await response.json();
+                console.log('Save user response:', result);
+
+                if (result.success) {
+                    showNotification(result.message || 'User saved successfully', 'success');
+            closeUserModal();
+                    loadUsers(); // Reload users list
+                } else {
+                    throw new Error(result.error || (mode === 'add' ? 'Failed to add user' : 'Failed to save user'));
+                }
+            } catch (error) {
+                console.error('Error saving user:', error);
+                const failPrefix = mode === 'add' ? 'Failed to add user: ' : 'Failed to save user: ';
+                showNotification(failPrefix + error.message, 'error');
+            } finally {
+                // Re-enable submit button
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalButtonText;
+            }
+        }
+        
+        function showFieldError(fieldId, message) {
+            const field = document.getElementById(fieldId);
+            if (!field) return;
+            
+            const errorId = fieldId + 'Error';
+            let errorElement = document.getElementById(errorId);
+            
+            if (!errorElement) {
+                errorElement = document.createElement('span');
+                errorElement.className = 'error-message';
+                errorElement.id = errorId;
+                field.parentNode.appendChild(errorElement);
+            }
+            
+            errorElement.textContent = message;
+            field.classList.add('error');
+        }
+        
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        function closeUserModal() {
+            const modal = document.getElementById('userModal');
+            const form = document.getElementById('userForm');
+            
+            // Hide modal
+            modal.style.display = 'none';
+            
+            // Reset form
+            form.reset();
+            form.removeAttribute('data-mode');
+            form.removeAttribute('data-user-id');
+            
+            // Clear any error messages
+            const errorMessages = form.querySelectorAll('.error-message');
+            errorMessages.forEach(msg => msg.textContent = '');
+            
+            console.log('User modal closed');
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('userModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeUserModal();
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('userModal');
+                if (modal && modal.style.display === 'flex') {
+                    closeUserModal();
+                }
+            }
+        });
+
+        function filterUsers() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#usersTableBody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('open');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+            const ul = document.getElementById('usersLink');
+            const al = document.getElementById('auditLink');
+            const sl = document.getElementById('settingsLink');
+            const ml = document.getElementById('myAccountLink');
+            if (ul) ul.style.display = '';
+            if (al) al.style.display = '';
+            if (sl) sl.style.display = '';
+            if (ml) ml.style.display = 'none';
+            loadUsers();
+        });
+    </script>
+</body>
+</html>

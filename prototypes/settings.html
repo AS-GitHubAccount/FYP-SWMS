@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - SWMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Single long settings page: all sections visible, scroll to review. */
+        .settings-panel { display: block; }
+        .settings-panel.active { display: block; }
+        .settings-panel h2 { margin: 0 0 1rem; font-size: 1.125rem; font-weight: 600; color: var(--text, #111827); }
+        .settings-footer {
+            position: sticky; bottom: 0; left: 0; right: 0;
+            margin-top: 2rem;
+            padding: 1rem 1.5rem; background: #fff; border-top: 1px solid #E5E7EB;
+            display: flex; gap: 0.75rem; align-items: center; box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+        }
+        .settings-footer .btn-save { background: #15803D; color: #fff; border: 1px solid #166534; }
+        .settings-footer .btn-save:hover { background: #166534; color: #fff; }
+        .settings-footer .btn-reset { background: #f3f4f6; color: #6b7280; border: 1px solid #E5E7EB; }
+        .settings-footer .btn-reset:hover { background: #e5e7eb; color: #374151; }
+        .form-hint { font-size: 0.8125rem; color: var(--text-secondary, #6b7280); margin-top: 0.25rem; }
+        .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+        .toggle-row label { flex: 1; min-width: 200px; }
+        .toggle-switch { position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #d1d5db; border-radius: 26px; transition: 0.2s; }
+        .toggle-slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .toggle-switch input:checked + .toggle-slider { background: #15803D; }
+        .toggle-switch input:checked + .toggle-slider:before { transform: translateX(22px); }
+        /* Consistent inner padding + top breathing room (matches Control Center spec) */
+        #settingsPanelsWrap { padding: 24px; }
+        .settings-page-top-spacer { height: 32px; flex-shrink: 0; }
+        .top-tabs-nav { display: none !important; }
+
+        .settings-content {
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .settings-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 1rem;
+        }
+
+        /* Identity header */
+        .settings-identity {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 0 0 16px 0;
+        }
+        .settings-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            border: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 22px;
+            flex-shrink: 0;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+        }
+        .settings-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        .settings-identity-name {
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.2;
+            color: var(--text-main);
+        }
+        .settings-identity-email {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body class="settings-page">
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <a href="dashboard.html" class="logo">SWMS</a>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html"><i data-lucide="layout-dashboard" class="nav-icon"></i> Dashboard</a>
+                <a href="inventory.html"><i data-lucide="package" class="nav-icon"></i> Inventory</a>
+                <a href="alerts.html"><i data-lucide="bell" class="nav-icon"></i> Alerts</a>
+                <a href="reports.html"><i data-lucide="bar-chart-2" class="nav-icon"></i> Reports</a>
+                <a href="users.html" id="usersLink" style="display: none;"><i data-lucide="users" class="nav-icon"></i> Users</a>
+                <a href="suppliers.html"><i data-lucide="truck" class="nav-icon"></i> Suppliers</a>
+                <a href="warehouses.html"><i data-lucide="warehouse" class="nav-icon"></i> Warehouses</a>
+                <a href="approval.html" id="approvalCenterLink" style="display: none;"><i data-lucide="shield-check" class="nav-icon"></i> Approval</a>
+            </nav>
+        </aside>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()" aria-hidden="true"></div>
+        <div class="main-wrapper">
+            <header class="header">
+                <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="header-compact">
+                    <a href="notifications.html" class="notification-icon" style="position: relative; text-decoration: none; padding: 0.5rem; color: var(--text);">
+                        <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
+                        <span id="notificationBadge" class="badge badge-danger" style="position: absolute; top: -4px; right: -4px; font-size: 0.65rem; display: none; min-width: 16px; padding: 2px 5px;">0</span>
+                    </a>
+                    <div class="user-profile-wrap">
+                        <button id="profileAvatarBtn" class="profile-avatar-btn" type="button" onclick="toggleProfileDropdown(event)" aria-haspopup="true" aria-expanded="false" title="Account">
+                            <span class="profile-avatar-initial" id="profileAvatarInitial">U</span>
+                        </button>
+                        <div id="profileDropdown" class="profile-dropdown" style="display: none;" role="menu">
+                            <div class="profile-dropdown-header">
+                                <div class="profile-dropdown-name" id="profileUserName">User</div>
+                                <div class="profile-dropdown-email" id="profileUserEmail">user@example.com</div>
+                            </div>
+                            <a href="settings.html" class="profile-dropdown-item" role="menuitem">Settings</a>
+                            <button type="button" class="profile-dropdown-item profile-dropdown-logout" onclick="handleLogout(event)" role="menuitem">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="container-fluid">
+                <div class="settings-page-top-spacer" aria-hidden="true"></div>
+                <div class="page-header">
+                    <h1 class="page-title">Settings</h1>
+                </div>
+
+                <!-- Hidden in single-page mode -->
+                <nav class="top-tabs-nav" aria-label="Settings categories">
+                    <a href="javascript:void(0)" class="top-tab settings-tab active" data-tab="account" aria-selected="true">Account</a>
+                    <a href="javascript:void(0)" class="top-tab settings-tab" data-tab="system">Localization</a>
+                    <a href="javascript:void(0)" class="top-tab settings-tab" data-tab="inventory">Inventory lifecycle</a>
+                    <a href="javascript:void(0)" class="top-tab settings-tab" data-tab="security-notifications">Access, notifications &amp; authorization</a>
+                </nav>
+                <div class="content-spacer"></div>
+                <!-- Main content card (full width) -->
+                <div class="top-tabs-content-card">
+                        <div id="settingsLoading" style="display: none; padding: 2rem; text-align: center; color: var(--text-secondary);">Loading settings...</div>
+                        <div id="settingsPanelsWrap">
+                        <div class="settings-content">
+                        <div id="panel-account" class="settings-panel active">
+                            <div class="settings-identity">
+                                <div class="settings-avatar" aria-hidden="true">
+                                    <img id="settingsProfileAvatarImage" alt="Profile avatar">
+                                    <span id="settingsProfileAvatarInitial">A</span>
+                                </div>
+                                <input type="file" id="settingsProfileAvatarInput" accept="image/*" style="display: none;">
+                                <div>
+                                    <div class="settings-identity-name" id="settingsProfileName">Admin</div>
+                                    <div class="settings-identity-email" id="settingsProfileEmail">admin@swms.com</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="panel-system" class="settings-panel settings-card">
+                            <h2 style="margin: 0 0 1rem;">Localization &amp; Display</h2>
+                            <div class="form-group" style="margin-bottom: 1rem;">
+                                <label class="form-label" for="setting-timezone">Primary Timezone</label>
+                                <select id="setting-timezone" class="form-select" style="max-width: 280px;">
+                                    <option value="UTC">UTC</option>
+                                    <option value="America/New_York">Eastern (US)</option>
+                                    <option value="America/Chicago">Central (US)</option>
+                                    <option value="America/Denver">Mountain (US)</option>
+                                    <option value="America/Los_Angeles">Pacific (US)</option>
+                                    <option value="Europe/London">London</option>
+                                    <option value="Europe/Paris">Paris</option>
+                                    <option value="Europe/Berlin">Berlin</option>
+                                    <option value="Asia/Dubai">Dubai</option>
+                                    <option value="Asia/Kolkata">India</option>
+                                    <option value="Asia/Hong_Kong">Hong Kong</option>
+                                    <option value="Asia/Singapore">Singapore</option>
+                                    <option value="Asia/Tokyo">Tokyo</option>
+                                    <option value="Australia/Sydney">Sydney</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="setting-dateFormat">Date Display Format</label>
+                                <select id="setting-dateFormat" class="form-select" style="max-width: 200px;">
+                                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="setting-systemCurrency">Reporting Currency</label>
+                                <select id="setting-systemCurrency" class="form-select" style="max-width: min(100%, 28rem); width: 100%;"></select>
+                            </div>
+                        </div>
+
+                        <div id="panel-inventory" class="settings-panel settings-card">
+                            <h2 style="margin: 0 0 1rem;">Inventory Lifecycle</h2>
+
+                            <div class="form-group">
+                                <label class="form-label" for="setting-nearExpiryDays">Expiry Warning Lead Time</label>
+                                <input type="number" id="setting-nearExpiryDays" class="form-input" min="1" max="365" placeholder="30" style="max-width: 120px;">
+                                <p class="form-hint">Number of days <strong>before</strong> a batch’s expiry date when NEAR_EXPIRY alerts should start.</p>
+                            </div>
+                        </div>
+
+                        <div id="panel-access-security" class="settings-panel settings-card">
+                            <h2 style="margin: 0 0 1rem;">Access &amp; Security</h2>
+
+                            <div style="margin-bottom: 1.25rem;">
+                                <button type="button" class="btn btn-primary-green" id="settingsChangePasswordOpenBtn" style="margin-top: 0.25rem;">
+                                    <i data-lucide="key" style="width: 14px; height: 14px;"></i> Update Credentials
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="panel-notification-preferences" class="settings-panel settings-card">
+                            <h2 style="margin: 0 0 1rem;">Notification Preferences</h2>
+
+                            <div class="toggle-row">
+                                <label>
+                                    <strong>Email Alert Routing</strong>
+                                    <p class="form-hint">Send email for low stock, near expiry, and system alerts. Requires SMTP in backend.</p>
+                                </label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="setting-emailNotificationsEnabled">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="toggle-row">
+                                <label>
+                                    <strong>Audible Critical Alerts</strong>
+                                    <p class="form-hint">Play a sound when critical alerts appear.</p>
+                                </label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="setting-browserSoundOnAlert">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="toggle-row">
+                                <label>
+                                    <strong>Desktop Push Notifications</strong>
+                                    <p class="form-hint">Show browser pop-ups for critical alerts when this tab is open.</p>
+                                </label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="setting-browserNotificationsEnabled">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <p id="emailConfigStatus" class="form-hint" style="margin-top: 0.5rem;"></p>
+                        </div>
+
+                        <div id="panel-high-authorization" class="settings-panel settings-card">
+                            <h2 style="margin: 0 0 1rem;">High-Level Authorization</h2>
+                            <div class="form-group" style="margin-top: 0;">
+                                <label class="form-label">Administrative Safe Word</label>
+                                <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                                    <label class="toggle-switch" title="Enable or disable administrative safe word for critical actions">
+                                        <input type="checkbox" id="setting-approvalTokenEnabled">
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <button type="button" class="btn btn-primary-green btn-sm" id="settingsApprovalTokenOpenBtn">
+                                        <i data-lucide="shield-check" style="width: 14px; height: 14px;"></i> Change Safe Word
+                                    </button>
+                                </div>
+                                <p id="settingsApprovalTokenMessage" class="form-hint" style="margin-top: 0.5rem;"></p>
+                                <p class="form-hint">When enabled, certain high-stakes admin actions require this safe word. Attempts are audited.</p>
+                            </div>
+                        </div>
+                        </div><!-- .settings-content -->
+                        </div><!-- #settingsPanelsWrap -->
+                </div><!-- .top-tabs-content-card -->
+
+                <footer class="settings-footer">
+                    <button type="button" class="btn btn-save btn-sm" id="settingsSaveBtn">
+                        <i data-lucide="check" style="width: 16px; height: 16px;"></i> Save Changes
+                    </button>
+                </footer>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="js/api-config.js"></script>
+    <script src="js/app.js?v=3"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/reportingCurrencies.js?v=1"></script>
+    <script src="js/settings.js?v=4"></script>
+    <!-- Update credentials (password) modal -->
+    <div id="settingsPwModal" class="modal" style="display: none;" aria-hidden="true">
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="settingsPwModalTitle">
+            <div class="modal-header">
+                <h2 id="settingsPwModalTitle">Update credentials</h2>
+                <button type="button" class="btn btn-ghost" id="settingsPwModalCloseBtn" aria-label="Close">&times;</button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label class="form-label" for="setting-currentPassword">Current Password</label>
+                    <input type="password" id="setting-currentPassword" class="form-input" placeholder="Current password" style="max-width: 340px;" autocomplete="current-password">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label class="form-label" for="setting-newPassword">New Password</label>
+                    <input type="password" id="setting-newPassword" class="form-input" placeholder="New password" style="max-width: 340px;" autocomplete="new-password">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label class="form-label" for="setting-confirmPassword">Confirm Password</label>
+                    <input type="password" id="setting-confirmPassword" class="form-input" placeholder="Confirm new password" style="max-width: 340px;" autocomplete="new-password">
+                </div>
+
+                <p id="settingsPasswordMessage" class="form-hint" style="margin-top: 0.25rem;"></p>
+
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem;">
+                    <button type="button" class="btn btn-outline btn-sm" id="settingsPwCancelBtn">Cancel</button>
+                    <button type="button" class="btn btn-primary-green" id="settingsPwConfirmBtn">
+                        <i data-lucide="key" style="width: 14px; height: 14px;"></i> Save password
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="settingsApprovalTokenModal" class="modal" style="display: none;" aria-hidden="true">
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="settingsApprovalTokenModalTitle">
+            <div class="modal-header">
+                <h2 id="settingsApprovalTokenModalTitle">Administrative safe word</h2>
+                <button type="button" class="btn btn-ghost" id="settingsApprovalTokenModalCloseBtn" aria-label="Close">&times;</button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label class="form-label" for="setting-currentApprovalToken">Current safe word</label>
+                    <input type="password" id="setting-currentApprovalToken" class="form-input" placeholder="Required when changing or turning off an existing safe word" style="max-width: 340px;" autocomplete="current-password">
+                </div>
+                <div class="form-group" style="margin-bottom: 0.75rem;">
+                    <label class="form-label" for="setting-newApprovalToken">New safe word</label>
+                    <input type="password" id="setting-newApprovalToken" class="form-input" placeholder="New administrative safe word" style="max-width: 340px;" autocomplete="new-password">
+                </div>
+                <div class="form-group" style="margin-bottom: 1rem;">
+                    <label class="form-label" for="setting-confirmApprovalToken">Confirm safe word</label>
+                    <input type="password" id="setting-confirmApprovalToken" class="form-input" placeholder="Confirm new safe word" style="max-width: 340px;" autocomplete="new-password">
+                </div>
+
+                <p id="settingsApprovalTokenModalMessage" class="form-hint" style="margin-top: 0.25rem;"></p>
+
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem;">
+                    <button type="button" class="btn btn-outline btn-sm" id="settingsApprovalTokenCancelBtn">Cancel</button>
+                    <button type="button" class="btn btn-primary-green btn-sm" id="settingsApprovalTokenConfirmBtn">
+                        <i data-lucide="shield-check" style="width: 14px; height: 14px;"></i> Save safe word
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        function toggleSidebar() {
+            const s = document.getElementById('sidebar');
+            const o = document.getElementById('sidebarOverlay');
+            if (s) s.classList.toggle('open');
+            if (o) o.classList.toggle('open');
+        }
+        ['usersLink', 'auditLink', 'approvalCenterLink'].forEach(function(id) {
+            const el = document.getElementById(id);
+            if (el) el.style.display = '';
+        });
+        if (typeof updateNavFromSettings === 'function') updateNavFromSettings();
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+            if (typeof window.settingsInit === 'function') window.settingsInit();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receive Stock - SWMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <header class="header">
+        <div class="nav-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding-bottom: 0; font-size: 1.2rem;">
+                <a href="dashboard.html" class="logo" style="font-size: 1.8rem;">SWMS</a>
+                <div class="user-info" style="font-size: 1.1rem;">
+                    <a href="notifications.html" class="notification-icon" style="position: relative; font-size: 2rem; text-decoration: none; background: none; border: none; padding: 0.5rem; cursor: pointer; color: var(--text-primary);">
+                        🔔
+                        <span id="notificationBadge" class="badge badge-danger" style="position: absolute; top: -8px; right: -8px; font-size: 0.7rem; display: none; min-width: 18px; padding: 2px 6px;">0</span>
+                    </a>
+                    <div class="user-profile-wrap">
+                        <button id="profileAvatarBtn" class="profile-avatar-btn" type="button" onclick="toggleProfileDropdown(event)" aria-haspopup="true" aria-expanded="false" title="Account">
+                            <span class="profile-avatar-initial" id="profileAvatarInitial">U</span>
+                        </button>
+                        <div id="profileDropdown" class="profile-dropdown" style="display: none;" role="menu">
+                            <div class="profile-dropdown-header">
+                                <div class="profile-dropdown-name" id="profileUserName">User</div>
+                                <div class="profile-dropdown-email" id="profileUserEmail">user@example.com</div>
+                            </div>
+                            <a href="settings.html" class="profile-dropdown-item" role="menuitem">Settings</a>
+                            <button type="button" class="profile-dropdown-item profile-dropdown-logout" onclick="handleLogout(event)" role="menuitem">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <nav class="nav-links" style="display: flex; flex-wrap: nowrap; white-space: nowrap; overflow-x: hidden; width: 100%; padding-top: 0; font-size: 1.8rem; font-weight: bold; gap: 0.5rem;">
+                <a href="dashboard.html" style="padding: 0.5rem 0.5rem;">Dashboard</a>
+                <a href="inventory.html" class="active" style="padding: 0.5rem 0.5rem;">Inventory</a>
+                <a href="alerts.html" style="padding: 0.5rem 0.5rem;">Alert</a>
+                <a href="reports.html" style="padding: 0.5rem 0.5rem;">Reports</a>
+                <a href="approval.html" id="approvalCenterLink" style="display: none; padding: 0.5rem 0.5rem;">Approval</a>
+                <a href="users.html" id="usersLink" style="display: none; padding: 0.5rem 0.5rem;">User</a>
+                <a href="suppliers.html" style="padding: 0.5rem 0.5rem;">Supplier</a>
+            </nav>
+        </div>
+    </header>
+
+
+    <main class="container">
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 class="page-title">Issued Records</h1>
+                <p class="page-subtitle">History of all outgoing stock movements</p>
+            </div>
+            <a href="inventory.html?tab=issuing" class="btn btn-primary">+ Issue New Stock</a>
+        </div>
+
+        <!-- Filters -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div class="card-body">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div>
+                        <label class="form-label">Search</label>
+                        <input type="text" id="searchInput" class="form-input" placeholder="Product, lot code, recipient...">
+                    </div>
+                    <div>
+                        <label class="form-label">Date From</label>
+                        <input type="date" id="dateFrom" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Date To</label>
+                        <input type="date" id="dateTo" class="form-input">
+                    </div>
+                    <div style="display: flex; align-items: flex-end;">
+                        <button class="btn btn-primary" onclick="filterRecords()" style="width: 100%;">Filter</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Records Table -->
+        <div class="card">
+            <div class="card-body" style="padding: 0;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Record #</th>
+                            <th>Date</th>
+                            <th>Product</th>
+                            <th>Lot Code</th>
+                            <th>Quantity</th>
+                            <th>Recipient</th>
+                            <th>Issued By</th>
+                            <th>Booking</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="10" style="text-align: center; padding: 20px;">
+                                <i class="fas fa-spinner fa-spin"></i> Loading records...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Edit Record Modal Backdrop -->
+    <div id="editRecordModalBackdrop" onclick="closeEditModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 999;"></div>
+
+    <!-- Edit Record Modal -->
+    <div id="editRecordModal" class="card" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; background: white;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 class="card-title">Edit Issuing Record</h2>
+            <button onclick="closeEditModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+        <form id="editRecordForm" novalidate onsubmit="return saveRecordChanges(event)">
+            <input type="hidden" id="editRecordId" value="">
+            <div class="form-group">
+                <label class="form-label">Record Number</label>
+                <input type="text" class="form-input" id="editRecordNumber" readonly style="background-color: #f5f5f5;">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Product</label>
+                <input type="text" class="form-input" id="editProductName" readonly style="background-color: #f5f5f5;">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Lot Code</label>
+                <input type="text" class="form-input" id="editLotCode" readonly style="background-color: #f5f5f5;">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Quantity *</label>
+                <input type="number" class="form-input" id="editQuantity" required min="1">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Recipient *</label>
+                <input type="text" class="form-input" id="editRecipient" required placeholder="Recipient name">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Issued Date *</label>
+                <input type="date" class="form-input" id="editIssuedDate" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Notes</label>
+                <textarea class="form-input" id="editNotes" rows="3" placeholder="Additional notes"></textarea>
+            </div>
+            <div class="actions" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <button type="button" class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="js/api-config.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/database.js"></script>
+    <script>
+        // Set user role from session
+        const userRole = sessionStorage.getItem('userRole') || 'Admin';
+        const userId = parseInt(sessionStorage.getItem('userId') || '0');
+        const userName = sessionStorage.getItem('userName') || localStorage.getItem('userName') || null;
+        if (userRole === 'Admin' || userRole === 'ADMIN') {
+            document.getElementById('usersLink').style.display = 'inline-block';
+        }
+
+        let allRecords = [];
+        let filteredRecords = [];
+        
+        // Check if user can edit a record
+        function canEditRecord(record) {
+            const isAdmin = userRole === 'Admin' || userRole === 'ADMIN';
+            // issuedBy now stores the name, not the ID, so compare names
+            const isOwner = record.issuedBy === userName || record.issuedByName === userName;
+            return isAdmin || isOwner;
+        }
+
+        // Load records from database
+        async function loadRecords() {
+            try {
+                const tbody = document.querySelector('table tbody');
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px;"><i class="fas fa-spinner fa-spin"></i> Loading records...</td></tr>';
+
+                const token = sessionStorage.getItem('authToken');
+                if (!token || !window.dbAPI || typeof window.dbAPI.loadIssuingRecords !== 'function') {
+                    const fallback = (window.storage && typeof window.storage.get === 'function') ? (window.storage.get('outRecords') || []) : [];
+                    allRecords = Array.isArray(fallback) ? fallback : [];
+                } else {
+                    allRecords = await window.dbAPI.loadIssuingRecords();
+                }
+                filteredRecords = allRecords;
+                displayRecords();
+            } catch (error) {
+                console.error('Error loading records:', error);
+                const tbody = document.querySelector('table tbody');
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: red;">Error loading records. Make sure backend is running.</td></tr>';
+            }
+        }
+
+        // Display records in table
+        function displayRecords() {
+            const tbody = document.querySelector('table tbody');
+            tbody.innerHTML = '';
+            
+            if (filteredRecords.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px;">No issuing records found. Issue some stock to see records here.</td></tr>';
+                return;
+            }
+            
+            filteredRecords.forEach(record => {
+                const row = document.createElement('tr');
+                const canEdit = canEditRecord(record);
+                const editButton = canEdit 
+                    ? `<button class="btn btn-sm btn-primary" onclick="editRecord(${record.recordId})" style="margin-left: 0.5rem;">Edit</button>`
+                    : '';
+                row.innerHTML = `
+                    <td>${record.recordId ?? '-'}</td>
+                    <td>${record.recordNumber || 'N/A'}</td>
+                    <td>${record.issuedDate ? new Date(record.issuedDate).toLocaleDateString() : 'N/A'}</td>
+                    <td>${record.productName || 'N/A'}</td>
+                    <td>${record.lotCode || 'N/A'}</td>
+                    <td>${record.quantity || 0}</td>
+                    <td>${record.recipient || 'N/A'}</td>
+                    <td>${record.issuedByName || 'N/A'}</td>
+                    <td><span class="badge badge-secondary">-</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline" onclick="viewRecord('${record.recordNumber}')">View</button>
+                        ${editButton}
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function filterRecords() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const dateFrom = document.getElementById('dateFrom').value;
+            const dateTo = document.getElementById('dateTo').value;
+            
+            filteredRecords = allRecords.filter(record => {
+                const matchesSearch = !searchTerm || 
+                    (record.productName && record.productName.toLowerCase().includes(searchTerm)) ||
+                    (record.lotCode && record.lotCode.toLowerCase().includes(searchTerm)) ||
+                    (record.recipient && record.recipient.toLowerCase().includes(searchTerm));
+                
+                const recordDate = record.issuedDate ? new Date(record.issuedDate) : null;
+                const matchesDateFrom = !dateFrom || !recordDate || recordDate >= new Date(dateFrom);
+                const matchesDateTo = !dateTo || !recordDate || recordDate <= new Date(dateTo);
+                
+                return matchesSearch && matchesDateFrom && matchesDateTo;
+            });
+            
+            displayRecords();
+        }
+
+        function viewRecord(recordNumber) {
+            const record = allRecords.find(r => r.recordNumber === recordNumber);
+            if (!record) {
+                showNotification('Record not found', 'error');
+                return;
+            }
+            
+            // Check if user can edit this record
+            const canEdit = window.canEditRecord ? window.canEditRecord(record) : canEditRecord(record);
+            
+            // Create and show view modal (similar format to edit modal)
+            const modal = document.createElement('div');
+            modal.id = 'viewRecordModal';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;';
+            
+            const content = `
+                <div class="card" style="max-width: 700px; width: 90%; max-height: 90vh; overflow-y: auto; background: white; position: relative;">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2 class="card-title">Issuing Record Details</h2>
+                        <button onclick="this.closest('#viewRecordModal').remove()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">Record Number</label>
+                            <input type="text" class="form-input" value="${record.recordNumber || ''}" readonly style="background-color: #f5f5f5;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Product</label>
+                            <input type="text" class="form-input" value="${record.productName || 'N/A'}" readonly style="background-color: #f5f5f5;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">SKU</label>
+                            <input type="text" class="form-input" value="${record.productSku || 'N/A'}" readonly style="background-color: #f5f5f5;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Lot Code</label>
+                            <input type="text" class="form-input" value="${record.lotCode || 'N/A'}" readonly style="background-color: #f5f5f5;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Quantity</label>
+                            <input type="text" class="form-input" value="${record.quantity || 0} units" readonly style="background-color: #f5f5f5;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Recipient</label>
+                            <input type="text" class="form-input" value="${record.recipient || 'N/A'}" readonly style="background-color: #f5f5f5;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Issued Date</label>
+                            <input type="text" class="form-input" value="${record.issuedDate ? new Date(record.issuedDate).toLocaleDateString() : 'N/A'}" readonly style="background-color: #f5f5f5;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Issued By</label>
+                            <input type="text" class="form-input" value="${record.issuedByName || record.issuedBy || 'N/A'}" readonly style="background-color: #f5f5f5;">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Expiry Date</label>
+                            <input type="text" class="form-input" value="${record.expiryDate ? new Date(record.expiryDate).toLocaleDateString() : 'N/A'}" readonly style="background-color: #f5f5f5;">
+                        </div>
+                        ${record.notes ? `
+                        <div class="form-group">
+                            <label class="form-label">Notes</label>
+                            <textarea class="form-input" rows="3" readonly style="background-color: #f5f5f5;">${record.notes}</textarea>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <div class="actions" style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem; padding: 1rem; border-top: 1px solid #e0e0e0;">
+                        ${canEdit ? `
+                            <button type="button" class="btn btn-primary" onclick="switchToEditMode(${record.recordId})">Edit</button>
+                            <button type="button" class="btn btn-outline" onclick="this.closest('#viewRecordModal').remove()">Close</button>
+                        ` : `
+                            <button type="button" class="btn btn-outline" onclick="this.closest('#viewRecordModal').remove()">Close</button>
+                        `}
+                    </div>
+                </div>
+            `;
+            
+            modal.innerHTML = content;
+            document.body.appendChild(modal);
+            
+            // Close on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+        
+        function switchToEditMode(recordId) {
+            // Close view modal
+            const viewModal = document.getElementById('viewRecordModal');
+            if (viewModal) {
+                viewModal.remove();
+            }
+            // Open edit modal
+            editRecord(recordId);
+        }
+
+        function editRecord(recordId) {
+            const record = allRecords.find(r => r.recordId === recordId);
+            if (!record) {
+                showNotification('Record not found', 'error');
+                return;
+            }
+            
+            // Check permission again
+            if (!canEditRecord(record)) {
+                showNotification('You do not have permission to edit this record', 'error');
+                return;
+            }
+            
+            // Populate form
+            document.getElementById('editRecordId').value = record.recordId;
+            document.getElementById('editRecordNumber').value = record.recordNumber || '';
+            document.getElementById('editProductName').value = record.productName || '';
+            document.getElementById('editLotCode').value = record.lotCode || '';
+            document.getElementById('editQuantity').value = record.quantity || '';
+            document.getElementById('editRecipient').value = record.recipient || '';
+            document.getElementById('editIssuedDate').value = record.issuedDate ? record.issuedDate.split('T')[0] : '';
+            document.getElementById('editNotes').value = record.notes || '';
+            
+            // Show modal
+            document.getElementById('editRecordModalBackdrop').style.display = 'block';
+            document.getElementById('editRecordModal').style.display = 'block';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editRecordModalBackdrop').style.display = 'none';
+            document.getElementById('editRecordModal').style.display = 'none';
+            document.getElementById('editRecordForm').reset();
+        }
+
+        async function saveRecordChanges(event) {
+            event.preventDefault();
+            
+            const recordId = parseInt(document.getElementById('editRecordId').value);
+            const updateData = {
+                quantity: parseInt(document.getElementById('editQuantity').value),
+                recipient: document.getElementById('editRecipient').value.trim(),
+                issuedDate: document.getElementById('editIssuedDate').value,
+                notes: document.getElementById('editNotes').value.trim() || null,
+                userId: userId,
+                userRole: userRole
+            };
+            
+            try {
+                const result = await window.dbAPI.updateIssuingRecord(recordId, updateData);
+                if (result.success) {
+                    showNotification('Record updated successfully', 'success');
+                    closeEditModal();
+                    loadRecords(); // Reload records
+                } else {
+                    showNotification(result.error || 'Failed to update record', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating record:', error);
+                showNotification('Error updating record: ' + error.message, 'error');
+            }
+        }
+
+
+        // Load records on page load
+        document.addEventListener('DOMContentLoaded', loadRecords);
+    </script>
+</body>
+</html>

@@ -1,0 +1,1263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SWMS API Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #ffffff;
+            color: #030213;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Landing Page Styles */
+        .landing-page {
+            display: block;
+        }
+
+        .landing-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .landing-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #030213;
+            margin-bottom: 0.75rem;
+        }
+
+        .landing-header p {
+            font-size: 1rem;
+            color: #6c757d;
+        }
+
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .module-card {
+            background: #f5f5f5;
+            border-radius: 0.625rem;
+            padding: 2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .module-card:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            transform: translateY(-4px);
+        }
+
+        .module-card h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #030213;
+            text-align: center;
+            text-transform: capitalize;
+        }
+
+        /* Module Detail Page Styles */
+        .module-detail-page {
+            display: none;
+        }
+
+        .back-button {
+            margin-bottom: 2rem;
+            padding: 0.75rem 1.5rem;
+            background: #f5f5f5;
+            color: #030213;
+            font-weight: 600;
+            border-radius: 0.625rem;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .back-button:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .module-detail-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .module-detail-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #030213;
+            margin-bottom: 0.75rem;
+            text-transform: capitalize;
+        }
+
+        .endpoints-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .endpoint-card {
+            background: #f5f5f5;
+            border-radius: 0.625rem;
+            padding: 2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .endpoint-card:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            transform: translateY(-4px);
+        }
+
+        .endpoint-card h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #030213;
+            text-align: center;
+            text-transform: capitalize;
+        }
+
+        /* Endpoint Detail Page Styles */
+        .endpoint-detail-page {
+            display: none;
+        }
+
+        .endpoint-detail-header {
+            margin-bottom: 2rem;
+        }
+
+        .method-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 0.625rem;
+            font-weight: 700;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .method-get { background: #d1ecf1; color: #0c5460; }
+        .method-post { background: #d4edda; color: #155724; }
+        .method-put { background: #fff3cd; color: #856404; }
+        .method-delete { background: #f8d7da; color: #721c24; }
+
+        .endpoint-detail-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #030213;
+            margin-bottom: 0.75rem;
+            text-transform: capitalize;
+        }
+
+        .endpoint-detail-header p {
+            font-size: 1rem;
+            color: #6c757d;
+        }
+
+        .actions-section {
+            background: #f5f5f5;
+            border-radius: 0.625rem;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .actions-section h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #030213;
+            margin-bottom: 1.5rem;
+        }
+
+        .actions-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .action-item {
+            background: #ffffff;
+            border-radius: 0.625rem;
+            padding: 1.25rem;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+        }
+
+        .action-item:hover {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        }
+
+        .action-item h3 {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: #030213;
+            margin-bottom: 0.5rem;
+        }
+
+        .action-item p {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: #6c757d;
+        }
+
+        .footer a {
+            color: #6c757d;
+            text-decoration: underline;
+            transition: color 0.2s;
+        }
+
+        .footer a:hover {
+            color: #030213;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .landing-header h1,
+            .module-detail-header h1,
+            .endpoint-detail-header h1 {
+                font-size: 2rem;
+            }
+
+            .modules-grid,
+            .endpoints-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Landing Page -->
+        <div id="landingPage" class="landing-page">
+            <div class="landing-header">
+                <h1>SWMS API Documentation</h1>
+                <p>Smart Warehouse Management System | Backend API</p>
+            </div>
+
+            <div class="modules-grid" id="modulesGrid">
+                <!-- Modules will be dynamically loaded -->
+            </div>
+
+            <footer class="footer">
+                <p>SWMS Backend API V1.0.0 | <a href="/health">Health Check</a> | <a href="/api/inventory">Unified Inventory API</a></p>
+            </footer>
+        </div>
+
+        <!-- Module Detail Page -->
+        <div id="moduleDetailPage" class="module-detail-page">
+            <button class="back-button" onclick="goBackToHome()">
+                <span>←</span>
+                <span>Back To Home</span>
+            </button>
+
+            <div class="module-detail-header">
+                <h1 id="moduleTitle">Module</h1>
+            </div>
+
+            <div class="endpoints-grid" id="endpointsGrid">
+                <!-- Endpoints will be dynamically loaded -->
+            </div>
+
+            <footer class="footer">
+                <p>SWMS Backend API V1.0.0 | <a href="/health">Health Check</a> | <a href="/api/inventory">Unified Inventory API</a></p>
+            </footer>
+        </div>
+
+        <!-- Endpoint Detail Page -->
+        <div id="endpointDetailPage" class="endpoint-detail-page">
+            <button class="back-button" onclick="goBackToModule()">
+                <span>←</span>
+                <span id="backToModuleText">Back To Module</span>
+            </button>
+
+            <div class="endpoint-detail-header">
+                <span id="methodBadge" class="method-badge"></span>
+                <h1 id="endpointTitle">Endpoint</h1>
+                <p id="endpointDescription">Description</p>
+            </div>
+
+            <div class="actions-section" id="actionsSection">
+                <h2>Actions</h2>
+                <ul class="actions-list" id="actionsList">
+                    <!-- Actions will be dynamically loaded -->
+                </ul>
+            </div>
+
+            <footer class="footer">
+                <p>SWMS Backend API V1.0.0 | <a href="/health">Health Check</a> | <a href="/api/inventory">Unified Inventory API</a></p>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        // API Modules Data Structure
+        const modules = [
+            {
+                id: 'authentication',
+                title: 'Authentication',
+                endpoints: [
+                    {
+                        method: 'POST',
+                        path: '/api/auth/login',
+                        title: 'Login',
+                        description: 'Authenticate user with email and password credentials',
+                        actions: [
+                            { name: 'Send Credentials', description: 'Submit email and password for authentication' },
+                            { name: 'Receive Token', description: 'Obtain JWT token upon successful authentication' },
+                            { name: 'Store Session', description: 'Save authentication token for subsequent requests' },
+                            { name: 'Handle Errors', description: 'Process authentication failures and display appropriate messages' }
+                        ]
+                    },
+                    {
+                        method: 'POST',
+                        path: '/api/auth/register',
+                        title: 'Register',
+                        description: 'Register a new user account with required information',
+                        actions: [
+                            { name: 'Validate Input', description: 'Check email format, password strength, and required fields' },
+                            { name: 'Create Account', description: 'Generate new user account in the system' },
+                            { name: 'Send Verification', description: 'Email verification link to the registered address' },
+                            { name: 'Return Response', description: 'Provide registration confirmation and next steps' }
+                        ]
+                    },
+                    {
+                        method: 'POST',
+                        path: '/api/auth/forgot-password',
+                        title: 'Forgot Password',
+                        description: 'Request a password reset link via email',
+                        actions: [
+                            { name: 'Verify Email', description: 'Check if email exists in the system' },
+                            { name: 'Generate Token', description: 'Create secure password reset token' },
+                            { name: 'Send Reset Link', description: 'Email password reset link to user' },
+                            { name: 'Set Expiration', description: 'Token expires after 24 hours for security' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'products',
+                title: 'Products',
+                endpoints: [
+                    {
+                        method: 'GET',
+                        path: '/api/products',
+                        title: 'List All Products',
+                        description: 'Retrieve a complete list of all products in the system',
+                        actions: [
+                            { name: 'Fetch Products', description: 'Query database for all product records' },
+                            { name: 'Apply Filters', description: 'Filter by category, status, or search term' },
+                            { name: 'Paginate Results', description: 'Return paginated data with metadata' },
+                            { name: 'Sort Data', description: 'Order by name, date, or custom field' }
+                        ]
+                    },
+                    {
+                        method: 'GET',
+                        path: '/api/products/:id',
+                        title: 'Get Product By ID',
+                        description: 'Retrieve detailed information for a specific product',
+                        actions: [
+                            { name: 'Validate ID', description: 'Check if product ID is valid format' },
+                            { name: 'Fetch Details', description: 'Retrieve complete product information' },
+                            { name: 'Include Relations', description: 'Load related batches and inventory data' },
+                            { name: 'Return Response', description: 'Send product details or 404 error' }
+                        ]
+                    },
+                    {
+                        method: 'POST',
+                        path: '/api/products',
+                        title: 'Create New Product',
+                        description: 'Add a new product to the inventory system',
+                        actions: [
+                            { name: 'Validate Data', description: 'Ensure all required fields are provided' },
+                            { name: 'Check Duplicates', description: 'Verify product SKU is unique' },
+                            { name: 'Create Record', description: 'Insert new product into database' },
+                            { name: 'Initialize Inventory', description: 'Set up initial inventory tracking' }
+                        ]
+                    },
+                    {
+                        method: 'PUT',
+                        path: '/api/products/:id',
+                        title: 'Update Product',
+                        description: 'Modify existing product information',
+                        actions: [
+                            { name: 'Validate ID', description: 'Ensure product exists before update' },
+                            { name: 'Update Fields', description: 'Modify specified product attributes' },
+                            { name: 'Log Changes', description: 'Record audit trail of modifications' },
+                            { name: 'Return Updated', description: 'Send back updated product data' }
+                        ]
+                    },
+                    {
+                        method: 'DELETE',
+                        path: '/api/products/:id',
+                        title: 'Delete Product',
+                        description: 'Remove a product from the system',
+                        actions: [
+                            { name: 'Check Dependencies', description: 'Verify no active inventory or bookings' },
+                            { name: 'Soft Delete', description: 'Mark product as deleted rather than removing' },
+                            { name: 'Archive Data', description: 'Move to archive for historical records' },
+                            { name: 'Update Relations', description: 'Handle cascading deletions if needed' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'inventory',
+                title: 'Inventory',
+                endpoints: [
+                    {
+                        method: 'GET',
+                        path: '/api/inventory',
+                        title: 'List Inventory Items',
+                        description: 'Retrieve all inventory items with current stock levels',
+                        actions: [
+                            { name: 'Fetch Inventory', description: 'Get all inventory records with quantities' },
+                            { name: 'Calculate Totals', description: 'Sum up stock levels across all batches' },
+                            { name: 'Apply Filters', description: 'Filter by location, status, or product' },
+                            { name: 'Include Alerts', description: 'Show low stock or expiry warnings' }
+                        ]
+                    },
+                    {
+                        method: 'GET',
+                        path: '/api/inventory/bookings',
+                        title: 'List All Bookings',
+                        description: 'View all inventory booking records',
+                        actions: [
+                            { name: 'Query Bookings', description: 'Retrieve booking records from database' },
+                            { name: 'Filter Status', description: 'Show pending, approved, or cancelled bookings' },
+                            { name: 'Sort By Date', description: 'Order by booking date or required date' },
+                            { name: 'Include Details', description: 'Show product and requester information' }
+                        ]
+                    },
+                    {
+                        method: 'POST',
+                        path: '/api/inventory/bookings',
+                        title: 'Create Booking',
+                        description: 'Reserve inventory items for future use',
+                        actions: [
+                            { name: 'Validate Request', description: 'Check product availability and quantity' },
+                            { name: 'Reserve Stock', description: 'Lock inventory for booking period' },
+                            { name: 'Create Record', description: 'Insert booking into system' },
+                            { name: 'Notify Approver', description: 'Send notification to approval authority' }
+                        ]
+                    },
+                    {
+                        method: 'GET',
+                        path: '/api/inventory/issuing',
+                        title: 'List Issuing Records',
+                        description: 'View all stock issuing transactions',
+                        actions: [
+                            { name: 'Fetch Records', description: 'Retrieve all issuing transaction history' },
+                            { name: 'Filter Period', description: 'Filter by date range or time period' },
+                            { name: 'Group By User', description: 'View issuances by requester or approver' },
+                            { name: 'Export Data', description: 'Generate reports for analysis' }
+                        ]
+                    },
+                    {
+                        method: 'POST',
+                        path: '/api/inventory/issuing',
+                        title: 'Issue Stock',
+                        description: 'Process stock issuance from inventory',
+                        actions: [
+                            { name: 'Apply FEFO', description: 'Use First Expired First Out allocation' },
+                            { name: 'Update Quantities', description: 'Reduce stock levels in system' },
+                            { name: 'Create Transaction', description: 'Record issuing transaction details' },
+                            { name: 'Generate Document', description: 'Create picking slip or delivery note' }
+                        ]
+                    },
+                    {
+                        method: 'GET',
+                        path: '/api/inventory/receiving',
+                        title: 'List Receiving Records',
+                        description: 'View all stock receiving transactions',
+                        actions: [
+                            { name: 'Fetch Records', description: 'Retrieve all receiving transaction history' },
+                            { name: 'Filter Supplier', description: 'View receipts by supplier or PO number' },
+                            { name: 'Check Quality', description: 'Review quality inspection results' },
+                            { name: 'Track Status', description: 'Monitor pending vs completed receipts' }
+                        ]
+                    },
+                    {
+                        method: 'POST',
+                        path: '/api/inventory/receiving',
+                        title: 'Receive Stock',
+                        description: 'Process incoming stock into inventory',
+                        actions: [
+                            { name: 'Verify Delivery', description: 'Confirm quantities and product details' },
+                            { name: 'Create Batches', description: 'Generate batch records with expiry dates' },
+                            { name: 'Update Inventory', description: 'Increase stock levels in system' },
+                            { name: 'Record Receipt', description: 'Log receiving transaction with timestamp' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'bookings',
+                title: 'Bookings',
+                endpoints: [
+                    {
+                        method: 'GET',
+                        path: '/api/inventory/bookings',
+                        title: 'List All Bookings',
+                        description: 'Retrieve all booking records in the system',
+                        actions: [
+                            { name: 'Query Database', description: 'Fetch all booking records' },
+                            { name: 'Apply Filters', description: 'Filter by status, date, or user' },
+                            { name: 'Sort Results', description: 'Order by priority or date' },
+                            { name: 'Return Data', description: 'Send paginated booking list' }
+                        ]
+                    },
+                    {
+                        method: 'GET',
+                        path: '/api/inventory/bookings/:id',
+                        title: 'Get Booking By ID',
+                        description: 'View detailed information for a specific booking',
+                        actions: [
+                            { name: 'Validate ID', description: 'Check booking exists in system' },
+                            { name: 'Fetch Details', description: 'Retrieve complete booking information' },
+                            { name: 'Load Relations', description: 'Include product and user details' },
+                            { name: 'Return Response', description: 'Send booking details or error' }
+                        ]
+                    },
+                    {
+                        method: 'POST',
+                        path: '/api/inventory/bookings',
+                        title: 'Create Booking',
+                        description: 'Create a new inventory booking reservation',
+                        actions: [
+                            { name: 'Validate Input', description: 'Check all required fields present' },
+                            { name: 'Check Availability', description: 'Verify sufficient stock available' },
+                            { name: 'Reserve Items', description: 'Lock inventory for booking' },
+                            { name: 'Send Notification', description: 'Alert approver of new booking' }
+                        ]
+                    },
+                    {
+                        method: 'PUT',
+                        path: '/api/inventory/bookings/:id/approve',
+                        title: 'Approve Booking',
+                        description: 'Approve a pending booking request',
+                        actions: [
+                            { name: 'Verify Authority', description: 'Check user has approval permission' },
+                            { name: 'Update Status', description: 'Change booking status to approved' },
+                            { name: 'Confirm Reserve', description: 'Finalize inventory reservation' },
+                            { name: 'Notify Requester', description: 'Send approval notification' }
+                        ]
+                    },
+                    {
+                        method: 'PUT',
+                        path: '/api/inventory/bookings/:id/cancel',
+                        title: 'Cancel Booking',
+                        description: 'Cancel an existing booking reservation',
+                        actions: [
+                            { name: 'Validate Request', description: 'Ensure booking can be cancelled' },
+                            { name: 'Release Stock', description: 'Free up reserved inventory' },
+                            { name: 'Update Status', description: 'Mark booking as cancelled' },
+                            { name: 'Log Action', description: 'Record cancellation in audit log' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'issuing',
+                title: 'Issuing',
+                endpoints: [
+                    {
+                        method: 'GET',
+                        path: '/api/inventory/issuing',
+                        title: 'List Issuing Records',
+                        description: 'View all stock issuing transactions',
+                        actions: [
+                            { name: 'Fetch Transactions', description: 'Retrieve issuing history' },
+                            { name: 'Filter Period', description: 'Filter by date range' },
+                            { name: 'Group By Product', description: 'Aggregate by product type' },
+                            { name: 'Calculate Totals', description: 'Sum quantities issued' }
+                        ]
+                    },
+                    {
+                        method: 'GET',
+                        path: '/api/inventory/issuing/:id',
+                        title: 'Get Issuing Record',
+                        description: 'Retrieve details of a specific issuing transaction',
+                        actions: [
+                            { name: 'Validate ID', description: 'Check transaction exists' },
+                            { name: 'Fetch Details', description: 'Get complete transaction data' },
+                            { name: 'Include Batches', description: 'Show which batches were used' },
+                            { name: 'Return Response', description: 'Send transaction details' }
+                        ]
+                    },
+                    {
+                        method: 'POST',
+                        path: '/api/inventory/issuing',
+                        title: 'Issue Stock (FEFO)',
+                        description: 'Issue stock using First Expired First Out method',
+                        actions: [
+                            { name: 'Apply FEFO Logic', description: 'Select batches by earliest expiry' },
+                            { name: 'Allocate Quantity', description: 'Distribute across selected batches' },
+                            { name: 'Update Stock', description: 'Reduce inventory quantities' },
+                            { name: 'Create Transaction', description: 'Record issuing details' }
+                        ]
+                    },
+                    {
+                        method: 'GET',
+                        path: '/api/inventory/issuing/fefo/preview/:productId/:quantity',
+                        title: 'Preview FEFO',
+                        description: 'Preview FEFO allocation before issuing stock',
+                        actions: [
+                            { name: 'Query Batches', description: 'Find all available batches' },
+                            { name: 'Sort By Expiry', description: 'Order batches by expiration date' },
+                            { name: 'Calculate Split', description: 'Show how quantity will be allocated' },
+                            { name: 'Return Preview', description: 'Display allocation without committing' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'receiving',
+                title: 'Receiving',
+                endpoints: [
+                    {
+                        method: 'GET',
+                        path: '/api/inventory/receiving',
+                        title: 'List Receiving Records',
+                        description: 'View all stock receiving transactions',
+                        actions: [
+                            { name: 'Fetch Records', description: 'Retrieve receiving history' },
+                            { name: 'Filter Supplier', description: 'Filter by supplier name' },
+                            { name: 'Sort By Date', description: 'Order by receiving date' },
+                            { name: 'Return List', description: 'Send paginated results' }
+                        ]
+                    },
+                    {
+                        method: 'GET',
+                        path: '/api/inventory/receiving/:id',
+                        title: 'Get Receiving Record',
+                        description: 'Retrieve details of a specific receiving transaction',
+                        actions: [
+                            { name: 'Validate ID', description: 'Check record exists' },
+                            { name: 'Fetch Details', description: 'Get transaction information' },
+                            { name: 'Include Batches', description: 'Show created batch records' },
+                            { name: 'Return Data', description: 'Send complete details' }
+                        ]
+                    },
+                    {
+                        method: 'POST',
+                        path: '/api/inventory/receiving',
+                        title: 'Receive Stock',
+                        description: 'Process and record incoming stock delivery',
+                        actions: [
+                            { name: 'Validate Delivery', description: 'Verify delivery information' },
+                            { name: 'Create Batches', description: 'Generate batch records' },
+                            { name: 'Update Inventory', description: 'Increase stock levels' },
+                            { name: 'Record Receipt', description: 'Save receiving transaction' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'batches',
+                title: 'Batches',
+                endpoints: [
+                    {
+                        method: 'GET',
+                        path: '/api/batches',
+                        title: 'List All Batches',
+                        description: 'Retrieve all product batches in the system',
+                        actions: [
+                            { name: 'Query Batches', description: 'Fetch all batch records' },
+                            { name: 'Filter Status', description: 'Show active, expired, or depleted' },
+                            { name: 'Sort By Expiry', description: 'Order by expiration date' },
+                            { name: 'Return Results', description: 'Send batch list with details' }
+                        ]
+                    },
+                    {
+                        method: 'GET',
+                        path: '/api/batches/:id',
+                        title: 'Get Batch By ID',
+                        description: 'View detailed information for a specific batch',
+                        actions: [
+                            { name: 'Validate ID', description: 'Check batch exists' },
+                            { name: 'Fetch Details', description: 'Retrieve batch information' },
+                            { name: 'Calculate Available', description: 'Show remaining quantity' },
+                            { name: 'Return Data', description: 'Send batch details' }
+                        ]
+                    },
+                    {
+                        method: 'GET',
+                        path: '/api/batches/product/:productId',
+                        title: 'Get Batches For Product',
+                        description: 'List all batches for a specific product',
+                        actions: [
+                            { name: 'Validate Product', description: 'Check product exists' },
+                            { name: 'Query Batches', description: 'Find all related batches' },
+                            { name: 'Sort By Date', description: 'Order by expiry or receipt date' },
+                            { name: 'Return List', description: 'Send filtered batch list' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'alerts',
+                title: 'Alerts',
+                endpoints: [
+                    {
+                        method: 'GET',
+                        path: '/api/alerts',
+                        title: 'List All Alerts',
+                        description: 'View all system alerts and notifications',
+                        actions: [
+                            { name: 'Fetch Alerts', description: 'Retrieve all active alerts' },
+                            { name: 'Filter Type', description: 'Filter by alert type or severity' },
+                            { name: 'Sort Priority', description: 'Order by priority level' },
+                            { name: 'Return Results', description: 'Send alert list' }
+                        ]
+                    },
+                    {
+                        method: 'GET',
+                        path: '/api/alerts/:id',
+                        title: 'Get Alert By ID',
+                        description: 'Retrieve details of a specific alert',
+                        actions: [
+                            { name: 'Validate ID', description: 'Check alert exists' },
+                            { name: 'Fetch Details', description: 'Get alert information' },
+                            { name: 'Include Context', description: 'Show related records' },
+                            { name: 'Return Data', description: 'Send alert details' }
+                        ]
+                    },
+                    {
+                        method: 'POST',
+                        path: '/api/alerts/resolve/:id',
+                        title: 'Resolve Alert',
+                        description: 'Mark an alert as resolved or handled',
+                        actions: [
+                            { name: 'Validate Alert', description: 'Check alert can be resolved' },
+                            { name: 'Update Status', description: 'Mark as resolved' },
+                            { name: 'Log Action', description: 'Record who resolved it' },
+                            { name: 'Send Confirmation', description: 'Return success response' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'users',
+                title: 'Users',
+                endpoints: [
+                    {
+                        method: 'GET',
+                        path: '/api/users',
+                        title: 'List All Users',
+                        description: 'Retrieve all user accounts in the system',
+                        actions: [
+                            { name: 'Query Users', description: 'Fetch user records' },
+                            { name: 'Filter Role', description: 'Filter by user role or status' },
+                            { name: 'Apply Pagination', description: 'Return paginated results' },
+                            { name: 'Exclude Sensitive', description: 'Remove password fields' }
+                        ]
+                    },
+                    {
+                        method: 'GET',
+                        path: '/api/users/:id',
+                        title: 'Get User By ID',
+                        description: 'View detailed information for a specific user',
+                        actions: [
+                            { name: 'Validate ID', description: 'Check user exists' },
+                            { name: 'Fetch Profile', description: 'Retrieve user information' },
+                            { name: 'Include Permissions', description: 'Show role and permissions' },
+                            { name: 'Return Data', description: 'Send user details' }
+                        ]
+                    },
+                    {
+                        method: 'POST',
+                        path: '/api/users',
+                        title: 'Create User',
+                        description: 'Add a new user account to the system',
+                        actions: [
+                            { name: 'Validate Input', description: 'Check required fields' },
+                            { name: 'Hash Password', description: 'Encrypt password securely' },
+                            { name: 'Create Account', description: 'Insert user record' },
+                            { name: 'Send Welcome', description: 'Email welcome message' }
+                        ]
+                    },
+                    {
+                        method: 'PUT',
+                        path: '/api/users/:id',
+                        title: 'Update User',
+                        description: 'Modify existing user account information',
+                        actions: [
+                            { name: 'Validate User', description: 'Ensure user exists' },
+                            { name: 'Update Fields', description: 'Modify specified attributes' },
+                            { name: 'Log Changes', description: 'Record audit trail' },
+                            { name: 'Return Updated', description: 'Send updated user data' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'notifications',
+                title: 'Notifications',
+                endpoints: [
+                    {
+                        method: 'GET',
+                        path: '/api/notifications',
+                        title: 'Get User Notifications',
+                        description: 'Retrieve all notifications for the current user',
+                        actions: [
+                            { name: 'Fetch Notifications', description: 'Get user notifications' },
+                            { name: 'Filter Unread', description: 'Show unread first' },
+                            { name: 'Sort By Date', description: 'Order by timestamp' },
+                            { name: 'Return List', description: 'Send notification data' }
+                        ]
+                    },
+                    {
+                        method: 'POST',
+                        path: '/api/notifications/:id/read',
+                        title: 'Mark As Read',
+                        description: 'Mark a notification as read or acknowledged',
+                        actions: [
+                            { name: 'Validate Notification', description: 'Check notification exists' },
+                            { name: 'Update Status', description: 'Mark as read' },
+                            { name: 'Update Count', description: 'Decrease unread counter' },
+                            { name: 'Return Success', description: 'Send confirmation' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'audit',
+                title: 'Audit',
+                endpoints: [
+                    {
+                        method: 'GET',
+                        path: '/api/audit',
+                        title: 'List Audit Logs',
+                        description: 'View all system audit logs and activity records',
+                        actions: [
+                            { name: 'Query Logs', description: 'Fetch audit records' },
+                            { name: 'Filter Period', description: 'Filter by date range' },
+                            { name: 'Filter User', description: 'Show logs for specific user' },
+                            { name: 'Return Results', description: 'Send audit log data' }
+                        ]
+                    },
+                    {
+                        method: 'GET',
+                        path: '/api/audit/table/:tableName',
+                        title: 'Get Logs For Table',
+                        description: 'Retrieve audit logs for a specific database table',
+                        actions: [
+                            { name: 'Validate Table', description: 'Check table name is valid' },
+                            { name: 'Query Logs', description: 'Fetch logs for table' },
+                            { name: 'Include Changes', description: 'Show before/after values' },
+                            { name: 'Return Data', description: 'Send filtered logs' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'wizard',
+                title: 'Wizard',
+                endpoints: [
+                    {
+                        method: 'GET',
+                        path: '/api/wizard',
+                        title: 'Get Available Wizard Types',
+                        description: 'List all available wizard types and workflows',
+                        actions: [
+                            { name: 'Fetch Wizards', description: 'Get available wizard types' },
+                            { name: 'Check Permissions', description: 'Filter by user access' },
+                            { name: 'Return List', description: 'Send wizard options' },
+                            { name: 'Include Descriptions', description: 'Provide wizard details' }
+                        ]
+                    },
+                    {
+                        method: 'POST',
+                        path: '/api/wizard/start',
+                        title: 'Start Wizard Session',
+                        description: 'Initialize a new wizard workflow session',
+                        actions: [
+                            { name: 'Validate Type', description: 'Check wizard type exists' },
+                            { name: 'Create Session', description: 'Initialize wizard state' },
+                            { name: 'Return First Step', description: 'Send initial wizard screen' },
+                            { name: 'Track Progress', description: 'Monitor wizard completion' }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        // State Management
+        let currentModule = null;
+        let currentEndpoint = null;
+
+        // Initialize Landing Page
+        function initLandingPage() {
+            const modulesGrid = document.getElementById('modulesGrid');
+            modulesGrid.innerHTML = '';
+
+            modules.forEach(module => {
+                const card = document.createElement('div');
+                card.className = 'module-card';
+                card.onclick = () => showModuleDetail(module);
+                card.innerHTML = `<h2>${module.title}</h2>`;
+                modulesGrid.appendChild(card);
+            });
+        }
+
+        // Show Module Detail Page
+        function showModuleDetail(module) {
+            currentModule = module;
+            
+            document.getElementById('landingPage').style.display = 'none';
+            document.getElementById('moduleDetailPage').style.display = 'block';
+            document.getElementById('endpointDetailPage').style.display = 'none';
+
+            document.getElementById('moduleTitle').textContent = module.title;
+
+            const endpointsGrid = document.getElementById('endpointsGrid');
+            endpointsGrid.innerHTML = '';
+
+            module.endpoints.forEach(endpoint => {
+                const card = document.createElement('div');
+                card.className = 'endpoint-card';
+                card.onclick = () => showEndpointDetail(endpoint);
+                card.innerHTML = `<h2>${endpoint.title}</h2>`;
+                endpointsGrid.appendChild(card);
+            });
+        }
+
+        // Show Endpoint Detail Page
+        function showEndpointDetail(endpoint) {
+            currentEndpoint = endpoint;
+
+            document.getElementById('landingPage').style.display = 'none';
+            document.getElementById('moduleDetailPage').style.display = 'none';
+            document.getElementById('endpointDetailPage').style.display = 'block';
+
+            const methodBadge = document.getElementById('methodBadge');
+            methodBadge.textContent = endpoint.method;
+            methodBadge.className = `method-badge method-${endpoint.method.toLowerCase()}`;
+
+            document.getElementById('endpointTitle').textContent = endpoint.title;
+            document.getElementById('endpointDescription').textContent = endpoint.description;
+            document.getElementById('backToModuleText').textContent = `Back To ${currentModule.title}`;
+
+            // Show data section for GET endpoints and automatically fetch data
+            if (endpoint.method === 'GET') {
+                document.getElementById('dataSection').style.display = 'block';
+                document.getElementById('actionsSection').style.display = 'none';
+                // Automatically fetch data when viewing GET endpoints
+                clearData();
+                fetchEndpointData();
+            } else {
+                document.getElementById('dataSection').style.display = 'none';
+                document.getElementById('actionsSection').style.display = 'block';
+                
+                // Show actions for non-GET endpoints
+                const actionsList = document.getElementById('actionsList');
+                actionsList.innerHTML = '';
+
+                if (endpoint.actions) {
+                    endpoint.actions.forEach((action, index) => {
+                        const li = document.createElement('li');
+                        li.className = 'action-item';
+                        li.innerHTML = `
+                            <h3>${index + 1}. ${action.name}</h3>
+                            <p>${action.description}</p>
+                        `;
+                        actionsList.appendChild(li);
+                    });
+                }
+            }
+        }
+
+        // Fetch data from API endpoint
+        async function fetchEndpointData() {
+            if (!currentEndpoint) return;
+
+            const dataDisplay = document.getElementById('dataDisplay');
+            const dataLoading = document.getElementById('dataLoading');
+            const dataError = document.getElementById('dataError');
+
+            // Show loading
+            dataLoading.style.display = 'block';
+            dataDisplay.style.display = 'none';
+            dataError.style.display = 'none';
+
+            try {
+                // Build URL - try to get a real ID from list endpoint first
+                let url = window.location.origin + currentEndpoint.path;
+                
+                // Replace path parameters with sample values or try to get real IDs
+                if (currentEndpoint.path.includes(':id')) {
+                    // Try to get a real ID from the list endpoint
+                    const listPath = currentEndpoint.path.replace('/:id', '');
+                    try {
+                        const listResponse = await fetch(window.location.origin + listPath);
+                        const listData = await listResponse.json();
+                        if (listData.success && listData.data && listData.data.length > 0) {
+                            const firstItem = listData.data[0];
+                            const itemId = firstItem.recordId || firstItem.id || firstItem.productId || firstItem.userId || firstItem.bookingId || firstItem.alertId || firstItem.notificationId || 1;
+                            url = window.location.origin + currentEndpoint.path.replace(':id', itemId);
+                        } else {
+                            url = window.location.origin + currentEndpoint.path.replace(':id', '1');
+                        }
+                    } catch (e) {
+                        url = window.location.origin + currentEndpoint.path.replace(':id', '1');
+                    }
+                } else if (currentEndpoint.path.includes(':productId')) {
+                    url = window.location.origin + currentEndpoint.path.replace(':productId', '1');
+                } else if (currentEndpoint.path.includes(':tableName')) {
+                    url = window.location.origin + currentEndpoint.path.replace(':tableName', 'products');
+                } else if (currentEndpoint.path.includes(':sessionId')) {
+                    url = window.location.origin + currentEndpoint.path.replace(':sessionId', 'test');
+                }
+                
+                const response = await fetch(url, {
+                    method: currentEndpoint.method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                // Hide loading
+                dataLoading.style.display = 'none';
+
+                if (response.ok) {
+                    // Display data
+                    dataDisplay.style.display = 'block';
+                    
+                    // If data is an array, show each item with actions
+                    if (Array.isArray(data.data) && data.data.length > 0) {
+                        let html = '<div style="margin-bottom: 1rem; font-weight: 600; color: #030213;">Found ' + data.data.length + ' items:</div>';
+                        
+                        data.data.forEach((item, index) => {
+                            const itemId = item.recordId || item.id || item.productId || item.userId || item.bookingId || item.alertId || item.notificationId || index;
+                            html += `
+                                <div class="data-item">
+                                    <div class="data-item-header">
+                                        <div class="data-item-title">Item #${index + 1}</div>
+                                        <div class="data-item-actions">
+                                            <button class="data-item-btn" onclick="viewItemDetails(${index})">View</button>
+                                            <button class="data-item-btn" onclick="copyItemData(${index})">Copy</button>
+                                            ${itemId ? `<button class="data-item-btn" onclick="testItemEndpoint(${itemId})">Test</button>` : ''}
+                                        </div>
+                                    </div>
+                                    <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.5rem;">
+                                        ${getItemPreview(item)}
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        // Store data for actions
+                        window.currentData = data.data;
+                        dataDisplay.innerHTML = html;
+                    } else if (data.data && typeof data.data === 'object') {
+                        // Single object - show full details with all fields
+                        window.currentData = [data.data];
+                        const dataObj = data.data;
+                        
+                        // Create a formatted display showing all fields
+                        let html = '<div class="data-item">';
+                        html += '<div class="data-item-header">';
+                        html += '<div class="data-item-title">Data Content</div>';
+                        html += '<div class="data-item-actions">';
+                        html += '<button class="data-item-btn" onclick="viewItemDetails(0)">View Full</button>';
+                        html += '<button class="data-item-btn" onclick="copyItemData(0)">Copy</button>';
+                        html += '</div></div>';
+                        
+                        // Show data fields in a structured way
+                        html += '<div style="margin-top: 1rem;">';
+                        Object.keys(dataObj).forEach(key => {
+                            const value = dataObj[key];
+                            const displayValue = value === null ? '<em>null</em>' : 
+                                               value === undefined ? '<em>undefined</em>' :
+                                               typeof value === 'string' ? `"${value}"` :
+                                               typeof value === 'object' ? JSON.stringify(value) :
+                                               String(value);
+                            html += `
+                                <div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #dee2e6;">
+                                    <div style="font-weight: 600; color: #030213; margin-bottom: 0.25rem;">${key}</div>
+                                    <div style="color: #6c757d; font-family: 'Courier New', monospace; font-size: 0.875rem;">${displayValue}</div>
+                                </div>
+                            `;
+                        });
+                        html += '</div></div>';
+                        
+                        dataDisplay.innerHTML = html;
+                    } else {
+                        // Raw JSON display
+                        dataDisplay.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    }
+                } else {
+                    // Show error
+                    dataError.style.display = 'block';
+                    dataError.textContent = `Error ${response.status}: ${data.message || data.error || 'Request failed'}`;
+                }
+            } catch (error) {
+                dataLoading.style.display = 'none';
+                dataError.style.display = 'block';
+                dataError.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        // Get preview text for item
+        function getItemPreview(item) {
+            const keys = Object.keys(item).slice(0, 3);
+            return keys.map(key => {
+                const value = item[key];
+                if (value === null || value === undefined) return '';
+                const displayValue = typeof value === 'string' && value.length > 30 
+                    ? value.substring(0, 30) + '...' 
+                    : String(value);
+                return `<strong>${key}:</strong> ${displayValue}`;
+            }).filter(Boolean).join(' | ');
+        }
+
+        // View item details
+        function viewItemDetails(index) {
+            if (!window.currentData || !window.currentData[index]) return;
+            
+            const item = window.currentData[index];
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1000;
+            `;
+            
+            modal.innerHTML = `
+                <div style="background: white; padding: 2rem; border-radius: 0.625rem; max-width: 600px; max-height: 80vh; overflow-y: auto; position: relative;">
+                    <button onclick="this.closest('div').parentElement.remove()" style="position: absolute; top: 1rem; right: 1rem; background: #f5f5f5; border: none; padding: 0.5rem; border-radius: 0.375rem; cursor: pointer;">✕</button>
+                    <h3 style="margin-bottom: 1rem; color: #030213;">Item Details</h3>
+                    <pre style="background: #f5f5f5; padding: 1rem; border-radius: 0.5rem; overflow-x: auto;">${JSON.stringify(item, null, 2)}</pre>
+                    <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                        <button onclick="copyItemData(${index}); this.closest('div').parentElement.parentElement.remove();" class="action-btn">Copy Data</button>
+                        <button onclick="this.closest('div').parentElement.remove()" class="action-btn secondary">Close</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        // Copy item data to clipboard
+        function copyItemData(index) {
+            if (!window.currentData || !window.currentData[index]) return;
+            
+            const item = window.currentData[index];
+            const jsonString = JSON.stringify(item, null, 2);
+            
+            navigator.clipboard.writeText(jsonString).then(() => {
+                alert('Item data copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy data');
+            });
+        }
+
+        // Test endpoint for specific item
+        function testItemEndpoint(itemId) {
+            if (!currentEndpoint) return;
+            
+            // Replace :id in path with actual item ID
+            const url = window.location.origin + currentEndpoint.path.replace(':id', itemId).replace(':productId', itemId).replace(':recordId', itemId);
+            window.open(url, '_blank');
+        }
+
+        // Copy endpoint URL to clipboard
+        function copyEndpointUrl() {
+            if (!currentEndpoint) return;
+
+            const url = window.location.origin + currentEndpoint.path;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('URL copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+
+        // Test endpoint (open in new tab)
+        function testEndpoint() {
+            if (!currentEndpoint) return;
+
+            const url = window.location.origin + currentEndpoint.path.replace(':id', '1').replace(':productId', '1').replace(':tableName', 'products').replace(':sessionId', 'test');
+            window.open(url, '_blank');
+        }
+
+        // Clear displayed data
+        function clearData() {
+            document.getElementById('dataDisplay').style.display = 'none';
+            document.getElementById('dataLoading').style.display = 'none';
+            document.getElementById('dataError').style.display = 'none';
+            document.getElementById('dataDisplay').innerHTML = '';
+            document.getElementById('dataError').textContent = '';
+            window.currentData = null;
+        }
+
+        // Navigation Functions
+        function goBackToHome() {
+            document.getElementById('landingPage').style.display = 'block';
+            document.getElementById('moduleDetailPage').style.display = 'none';
+            document.getElementById('endpointDetailPage').style.display = 'none';
+            currentModule = null;
+            currentEndpoint = null;
+        }
+
+        function goBackToModule() {
+            if (currentModule) {
+                showModuleDetail(currentModule);
+            } else {
+                goBackToHome();
+            }
+        }
+
+        // Initialize on page load
+        initLandingPage();
+    </script>
+</body>
+</html>

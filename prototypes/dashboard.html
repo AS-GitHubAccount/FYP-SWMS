@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SWMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <a href="dashboard.html" class="logo">SWMS</a>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="active"><i data-lucide="layout-dashboard" class="nav-icon"></i> Dashboard</a>
+                <a href="inventory.html"><i data-lucide="package" class="nav-icon"></i> Inventory</a>
+                <a href="alerts.html"><i data-lucide="bell" class="nav-icon"></i> Alerts</a>
+                <a href="reports.html"><i data-lucide="bar-chart-2" class="nav-icon"></i> Reports</a>
+                <a href="users.html" id="usersLink" style="display: none;"><i data-lucide="users" class="nav-icon"></i> Users</a>
+                <a href="suppliers.html"><i data-lucide="truck" class="nav-icon"></i> Suppliers</a>
+                <a href="warehouses.html"><i data-lucide="warehouse" class="nav-icon"></i> Warehouses</a>
+                <a href="approval.html" id="approvalCenterLink" style="display: none;"><i data-lucide="shield-check" class="nav-icon"></i> Approval</a>
+            </nav>
+        </aside>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()" aria-hidden="true"></div>
+        <div class="main-wrapper">
+    <header class="header">
+                <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="header-compact">
+                    <a href="notifications.html" class="notification-icon" style="position: relative; text-decoration: none; padding: 0.5rem; color: var(--text);">
+                        <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
+                        <span id="notificationBadge" class="badge badge-danger" style="position: absolute; top: -4px; right: -4px; font-size: 0.65rem; display: none; min-width: 16px; padding: 2px 5px;">0</span>
+                    </a>
+                    <div class="user-profile-wrap">
+                        <button id="profileAvatarBtn" class="profile-avatar-btn" type="button" onclick="toggleProfileDropdown(event)" aria-haspopup="true" aria-expanded="false" title="Account">
+                            <span class="profile-avatar-initial" id="profileAvatarInitial">U</span>
+                        </button>
+                        <div id="profileDropdown" class="profile-dropdown" style="display: none;" role="menu">
+                            <div class="profile-dropdown-header">
+                                <div class="profile-dropdown-name" id="profileUserName">User</div>
+                                <div class="profile-dropdown-email" id="profileUserEmail">user@example.com</div>
+                            </div>
+                            <a href="settings.html" class="profile-dropdown-item" role="menuitem">Settings</a>
+                            <button type="button" class="profile-dropdown-item profile-dropdown-logout" onclick="handleLogout(event)" role="menuitem">Logout</button>
+                        </div>
+                    </div>
+        </div>
+    </header>
+
+    <main class="container-fluid">
+        <!-- Page Header: Title + Quick Actions + Last Updated + Refresh -->
+        <div class="dashboard-page-header">
+            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <h1 class="page-title">Dashboard</h1>
+                <div class="quick-actions-bar">
+                    <a href="inventory.html?tab=booking" class="btn btn-quick-action"><i data-lucide="calendar-check" style="width:14px;height:14px;"></i> Booking</a>
+                    <a href="inventory.html?tab=purchasing" class="btn btn-quick-action"><i data-lucide="shopping-cart" style="width:14px;height:14px;"></i> Purchasing</a>
+                    <a href="inventory.html?tab=receiving" class="btn btn-quick-action"><i data-lucide="package-plus" style="width:14px;height:14px;"></i> Receiving</a>
+                    <a href="inventory.html?tab=issuing" class="btn btn-quick-action"><i data-lucide="package-minus" style="width:14px;height:14px;"></i> Issuing</a>
+        </div>
+            </div>
+            <div class="dashboard-header-meta">
+                <span id="lastUpdatedText">Last updated: —</span>
+                <button type="button" class="btn btn-ghost" onclick="refreshDashboard()" title="Refresh"><i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Refresh</button>
+            </div>
+        </div>
+
+        <!-- Mini Stats Row -->
+        <div class="mini-stats-row">
+            <div class="mini-stat" onclick="window.location.href='inventory.html?tab=inventory'">
+                <div class="mini-stat-icon"><i data-lucide="package"></i></div>
+                <div class="mini-stat-content">
+                    <div class="mini-stat-label">Total Stock</div>
+                    <div class="mini-stat-value" id="totalStock">—</div>
+                        </div>
+                    </div>
+            <div class="mini-stat" onclick="window.location.href='alerts.html'">
+                <div class="mini-stat-icon warn"><i data-lucide="trending-down"></i></div>
+                <div class="mini-stat-content">
+                    <div class="mini-stat-label">Low Stock</div>
+                    <div class="mini-stat-value" id="lowStockCount">—</div>
+                </div>
+                        </div>
+            <div class="mini-stat" onclick="window.location.href='alerts.html'">
+                <div class="mini-stat-icon danger"><i data-lucide="alert-circle"></i></div>
+                <div class="mini-stat-content">
+                    <div class="mini-stat-label">Out of Stock</div>
+                    <div class="mini-stat-value" id="outOfStockCount">—</div>
+                    </div>
+                </div>
+            <div class="mini-stat" onclick="window.location.href='alerts.html'">
+                <div class="mini-stat-icon warn"><i data-lucide="bell"></i></div>
+                <div class="mini-stat-content">
+                    <div class="mini-stat-label">Active Alerts</div>
+                    <div class="mini-stat-value" id="activeAlerts">—</div>
+                        </div>
+                    </div>
+            <div class="mini-stat" onclick="window.location.href='alerts.html?type=maintenance_due'">
+                <div class="mini-stat-icon"><i data-lucide="wrench"></i></div>
+                <div class="mini-stat-content">
+                    <div class="mini-stat-label">Maintenance Due</div>
+                    <div class="mini-stat-value" id="maintenanceDueCount">—</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bento: Live Operations (70%) | Priority Alerts (30%) -->
+        <div class="dashboard-bento">
+            <div class="dashboard-bento-main">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Live Operations</h2>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="inventory.html?tab=issuing&section=records" class="btn btn-outline" style="font-size: 0.8125rem;">Issued Records</a>
+                            <a href="inventory.html?tab=receiving&section=records" class="btn btn-outline" style="font-size: 0.8125rem;">Received Records</a>
+                        </div>
+                        </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>User</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentActivityTableBody">
+                                <tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">Loading…</td></tr>
+                            </tbody>
+                        </table>
+                        </div>
+                    </div>
+                </div>
+            <div class="dashboard-bento-side">
+                <div class="priority-list">
+                    <div class="priority-list-header">
+                        <span>Action Items</span>
+                        <a href="notifications.html" class="btn btn-outline" style="font-size: 0.8125rem; padding: 0.35rem 0.65rem;">View Inbox</a>
+                    </div>
+                    <div class="priority-list-body" id="priorityListBody">
+                        <div class="priority-list-empty">Loading…</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="dashboard-charts-row">
+            <div class="card" style="min-width: 0;">
+                <div class="card-header">
+                    <h3 class="card-title" style="font-size: 1rem; margin: 0;">Product Distribution</h3>
+                </div>
+                <div style="position: relative; height: 260px;">
+                    <canvas id="productDistributionChart"></canvas>
+                    <div id="productDistributionNoData" style="position: absolute; inset: 0; display: none; align-items: center; justify-content: center; font-size: 0.875rem; color: var(--text-muted); background: var(--bg); border-radius: 6px;">No Data Available</div>
+                </div>
+            </div>
+            <div class="card" style="min-width: 0;">
+                <div class="card-header">
+                    <h3 class="card-title" style="font-size: 1rem; margin: 0;">Monthly Stock Movement</h3>
+                </div>
+                <div style="position: relative; height: 260px;">
+                    <canvas id="monthlyMovementChart"></canvas>
+                    <div id="monthlyMovementNoData" style="position: absolute; inset: 0; display: none; align-items: center; justify-content: center; font-size: 0.875rem; color: var(--text-muted); background: var(--bg); border-radius: 6px;">No Data Available</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+        </div><!-- .main-wrapper -->
+    </div><!-- .app-layout -->
+
+    <script src="js/api-config.js"></script>
+    <script src="js/app.js?v=3"></script>
+    <script src="js/notifications.js"></script>
+    <script>
+        // handleLogout function is now in app.js (shared)
+        const userRole = sessionStorage.getItem('userRole') || 'Admin';
+        if (userRole === 'Admin' || userRole === 'ADMIN') {
+            // Show admin-only nav links
+            ['usersLink', 'approvalCenterLink', 'auditLink'].forEach(function(id) {
+                const el = document.getElementById(id);
+                if (el) el.style.display = '';
+            });
+        } else {
+            const usersLink = document.getElementById('usersLink');
+            if (usersLink) usersLink.style.display = 'none';
+            const approvalCenterLink = document.getElementById('approvalCenterLink');
+            if (approvalCenterLink) approvalCenterLink.style.display = 'none';
+        }
+
+        const API_BASE_URL = typeof window.getSwmsApiBase === 'function' ? window.getSwmsApiBase() : (window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api');
+        if (typeof window.storage === 'undefined') {
+            window.storage = {
+                get: k => { try { const v = localStorage.getItem('swms_' + k); return v ? JSON.parse(v) : null; } catch(e) { return null; } },
+                set: (k, v) => { try { localStorage.setItem('swms_' + k, JSON.stringify(v)); } catch(e) {} }
+            };
+        }
+
+        // Chart instances
+        let productDistributionChart = null;
+        let monthlyMovementChart = null;
+
+        // Format date as "DD MMM YYYY HH:mm" for Live Operations table
+        function formatDateDDMMMYYYYHHmm(dateVal) {
+            if (!dateVal || dateVal === 'N/A') return 'N/A';
+            const d = new Date(dateVal);
+            if (isNaN(d.getTime())) return 'N/A';
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = d.toLocaleString('en-GB', { month: 'short' });
+            const year = d.getFullYear();
+            const hours = String(d.getHours()).padStart(2, '0');
+            const mins = String(d.getMinutes()).padStart(2, '0');
+            return `${day} ${month} ${year} ${hours}:${mins}`;
+        }
+
+        // Commercial Muted palette: Green, Blue (IT), Amber
+        const CHART_COLORS = {
+            primary: '#4D7C0F',
+            inbound: '#4D7C0F',
+            outbound: '#92400E',
+            itAssets: '#1E40AF',
+            palette: ['#4D7C0F', '#1E40AF', '#92400E', '#65a30d', '#1e3a8a', '#b45309', '#15803d', '#64748b']
+        };
+
+        // Initialize Product Distribution Chart (Pie/Doughnut) from API data
+        function initProductDistributionChart(apiResponse) {
+            const ctx = document.getElementById('productDistributionChart');
+            const noDataEl = document.getElementById('productDistributionNoData');
+            if (!ctx) return;
+            if (productDistributionChart) {
+                productDistributionChart.destroy();
+                productDistributionChart = null;
+            }
+            const labels = (apiResponse && apiResponse.data && apiResponse.data.labels) ? apiResponse.data.labels : [];
+            const values = (apiResponse && apiResponse.data && apiResponse.data.values) ? apiResponse.data.values : [];
+            const hasData = labels.length > 0 && values.some(v => v > 0);
+            if (noDataEl) {
+                noDataEl.style.display = hasData ? 'none' : 'flex';
+            }
+            if (!hasData) return;
+            const total = values.reduce((a, b) => a + b, 0);
+            productDistributionChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: CHART_COLORS.palette.slice(0, labels.length),
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 12, padding: 8, font: { size: 10 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.parsed || 0;
+                                    const pct = total ? ((value / total) * 100).toFixed(1) : 0;
+                                    return `${context.label}: ${value.toLocaleString()} units (${pct}%)`;
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [{
+                    id: 'datalabels',
+                    afterDatasetsDraw: function(chart) {
+                        const c = chart.ctx;
+                        const tot = chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        chart.data.datasets.forEach((dataset, i) => {
+                            const meta = chart.getDatasetMeta(i);
+                            meta.data.forEach((element, index) => {
+                                const value = dataset.data[index];
+                                const pct = tot ? ((value / tot) * 100).toFixed(1) : 0;
+                                const pos = element.tooltipPosition();
+                                c.save();
+                                c.fillStyle = '#333';
+                                c.font = 'bold 12px Arial';
+                                c.textAlign = 'center';
+                                c.textBaseline = 'middle';
+                                c.fillText(pct + '%', pos.x, pos.y);
+                                c.restore();
+                            });
+                        });
+                    }
+                }]
+            });
+        }
+
+        // Initialize Monthly Movement Chart (Line) from API data
+        function initMonthlyMovementChart(apiResponse) {
+            const ctx = document.getElementById('monthlyMovementChart');
+            const noDataEl = document.getElementById('monthlyMovementNoData');
+            if (!ctx) return;
+            if (monthlyMovementChart) {
+                monthlyMovementChart.destroy();
+                monthlyMovementChart = null;
+            }
+            const labels = (apiResponse && apiResponse.data && apiResponse.data.labels) ? apiResponse.data.labels : [];
+            const inData = (apiResponse && apiResponse.data && apiResponse.data.in) ? apiResponse.data.in : [];
+            const outData = (apiResponse && apiResponse.data && apiResponse.data.out) ? apiResponse.data.out : [];
+            const totalIn = inData.reduce((a, b) => a + b, 0);
+            const totalOut = outData.reduce((a, b) => a + b, 0);
+            const hasData = totalIn > 0 || totalOut > 0;
+            if (noDataEl) {
+                noDataEl.style.display = hasData ? 'none' : 'flex';
+            }
+            if (!hasData) return;
+            monthlyMovementChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Stock In',
+                            data: inData,
+                            borderColor: CHART_COLORS.inbound,
+                            backgroundColor: 'rgba(77, 124, 15, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Stock Out',
+                            data: outData,
+                            borderColor: CHART_COLORS.outbound,
+                            backgroundColor: 'rgba(146, 64, 14, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 12, padding: 8, font: { size: 10 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${(context.parsed.y || 0).toLocaleString()} units`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Dashboard request burst protection (prevents 429 spam on rapid tab switches)
+        const DASHBOARD_MIN_AUTO_REFRESH_MS = 8000;
+        let dashboardLoadInFlight = false;
+        let lastDashboardLoadAt = 0;
+        let dashboardRateLimitedUntil = 0;
+
+        // Refresh: re-trigger alert scanner (sync with backend) then reload dashboard data
+        async function refreshDashboard() {
+            const apiBase = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : (typeof window.getSwmsApiBase === 'function' ? window.getSwmsApiBase() : (window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api'));
+            try {
+                const h = { 'Content-Type': 'application/json' };
+                const t = (typeof window.getAuthToken === 'function' ? window.getAuthToken() : sessionStorage.getItem('authToken')) || '';
+                if (t) h['Authorization'] = 'Bearer ' + t;
+                await fetch(apiBase + '/alerts/check', { method: 'GET', headers: h }).catch(function() {});
+            } catch (e) {}
+            safeLoadDashboard(true);
+        }
+
+        // Load dashboard data from API — per-section try/catch so one failure does not block others
+        // forceLoad=true for explicit user actions; false for auto refresh hooks.
+        async function loadDashboard(forceLoad) {
+            const now = Date.now();
+            const isForced = forceLoad === true;
+            if (dashboardLoadInFlight) return;
+            if (!isForced && now < dashboardRateLimitedUntil) return;
+            if (!isForced && (now - lastDashboardLoadAt) < DASHBOARD_MIN_AUTO_REFRESH_MS) return;
+            dashboardLoadInFlight = true;
+            lastDashboardLoadAt = now;
+            const getHeaders = () => {
+                const h = { 'Content-Type': 'application/json' };
+                const t = (typeof window.getAuthToken === 'function' ? window.getAuthToken() : sessionStorage.getItem('authToken')) || '';
+                if (t) h['Authorization'] = 'Bearer ' + t;
+                return h;
+            };
+
+            const req = async (path) => {
+                const url = (typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : (typeof window.getSwmsApiBase === 'function' ? window.getSwmsApiBase() : (window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api'))) + path;
+                let r;
+                try {
+                    r = typeof window.fetchWithAuth === 'function'
+                        ? await window.fetchWithAuth(url, { method: 'GET' })
+                        : await fetch(url, { headers: getHeaders() });
+                } catch (e) {
+                    throw e;
+                }
+                if (r.status === 401) {
+                    sessionStorage.removeItem('authToken');
+                    try { localStorage.removeItem('authToken'); } catch (e) {}
+                    sessionStorage.removeItem('refreshToken');
+                    window.location.href = 'login.html';
+                    return { success: false };
+                }
+                if (r.status === 429) {
+                    const retryAfterRaw = r.headers.get('Retry-After');
+                    const retryAfterSec = parseInt(retryAfterRaw || '0', 10);
+                    const err = new Error('Temporarily paused to avoid too many requests');
+                    err.code = 429;
+                    err.retryAfterMs = Number.isFinite(retryAfterSec) && retryAfterSec > 0 ? retryAfterSec * 1000 : 30000;
+                    dashboardRateLimitedUntil = Date.now() + err.retryAfterMs;
+                    throw err;
+                }
+                const data = await r.json().catch(function() { return { success: false }; });
+                return data;
+            };
+
+            let dashboardErrorShown = false;
+            function showDashboardErrorOnce(err) {
+                // For rate-limit responses (429), we quietly back off without spamming the user.
+                if (err && err.code === 429) return;
+                if (!dashboardErrorShown && typeof window.showNotification === 'function') {
+                    let msg = 'Failed to sync with the database. Check that the backend server is running (e.g. \'npm start\' or \'node server.js\' in the backend folder) and that the database is connected.';
+                    if (err && (err.message || err.reason)) {
+                        var reason = err.message || err.reason || String(err);
+                        if (reason.length > 80) reason = reason.slice(0, 77) + '...';
+                        msg += ' (' + reason + ')';
+                    }
+                    window.showNotification('Dashboard Error', msg, 'error');
+                    dashboardErrorShown = true;
+                }
+            }
+
+            function clearDashboardLoading() {
+                var hint = 'Check: 1) Backend running (npm start in backend folder) 2) MySQL running 3) Logged in';
+                var tbody = document.getElementById('recentActivityTableBody');
+                if (tbody && (tbody.textContent || '').indexOf('Loading') !== -1) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">Data currently unavailable. ' + hint + '. <button type="button" class="btn btn-outline" style="margin-top: 0.5rem; font-size: 0.8rem;" onclick="refreshDashboard()">Retry</button></td></tr>';
+                }
+                var plist = document.getElementById('priorityListBody');
+                if (plist && (plist.textContent || '').indexOf('Loading') !== -1) {
+                    plist.innerHTML = '<div class="priority-list-empty">Data currently unavailable. ' + hint + '. <button type="button" class="btn btn-outline" style="margin-top: 0.5rem; font-size: 0.8rem;" onclick="refreshDashboard()">Retry</button></div>';
+                }
+            }
+
+            // 1. Stats — /api/dashboard/stats
+            try {
+                const res = await req('/dashboard/stats');
+                if (res && res.success && res.data) {
+                    const d = res.data;
+                    const totalStockEl = document.getElementById('totalStock');
+                    if (totalStockEl) totalStockEl.textContent = String((d.totalStock || 0).toLocaleString());
+                    const lowStockEl = document.getElementById('lowStockCount');
+                    if (lowStockEl) lowStockEl.textContent = String(d.lowStockCount || 0);
+                    const outOfStockEl = document.getElementById('outOfStockCount');
+                    if (outOfStockEl) outOfStockEl.textContent = String(d.outOfStockCount || 0);
+                    const activeAlertsEl = document.getElementById('activeAlerts');
+                    if (activeAlertsEl) activeAlertsEl.textContent = String(d.activeAlerts || 0);
+                    const maintenanceEl = document.getElementById('maintenanceDueCount');
+                    if (maintenanceEl) maintenanceEl.textContent = String(d.maintenanceDueCount || 0);
+                } else {
+                    ['totalStock', 'lowStockCount', 'outOfStockCount', 'activeAlerts', 'maintenanceDueCount'].forEach(function(id) {
+                        const el = document.getElementById(id);
+                        if (el) el.textContent = '—';
+                    });
+                    showDashboardErrorOnce(res && res.error ? { message: res.error } : null);
+                }
+            } catch (e) {
+                console.error('Dashboard stats fetch failed:', e);
+                ['totalStock', 'lowStockCount', 'outOfStockCount', 'activeAlerts', 'maintenanceDueCount'].forEach(function(id) {
+                    const el = document.getElementById(id);
+                    if (el) el.textContent = '—';
+                });
+                showDashboardErrorOnce(e);
+            }
+
+            // 2. Live Operations table — /api/dashboard/operations (ID sort descending, date DD MMM YYYY HH:mm)
+            try {
+                const res = await req('/dashboard/operations?limit=6');
+                const tbody = document.getElementById('recentActivityTableBody');
+                if (!tbody) {
+                    showDashboardErrorOnce({ message: 'Recent activity table not found on page.' });
+                } else if (res && res.success && Array.isArray(res.data) && res.data.length > 0) {
+                    tbody.innerHTML = res.data.map(function(row) {
+                        const typeBadge = row.type === 'Received' ? 'badge-success' : 'badge-info';
+                        const dateStr = formatDateDDMMMYYYYHHmm(row.date);
+                        const typeLabel = row.type === 'Received'
+                            ? 'Received Records'
+                            : (row.type === 'Issued' ? 'Issued Records' : (row.type || 'N/A'));
+                        return '<tr><td>' + dateStr + '</td><td><span class="badge ' + typeBadge + '">' + typeLabel + '</span></td><td>' + (row.productName || 'N/A') + '</td><td>' + (row.quantity || 0) + ' units</td><td>' + (row.userName || 'N/A') + '</td></tr>';
+                    }).join('');
+                } else if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No recent activity</td></tr>';
+                }
+            } catch (e) {
+                console.error('Dashboard operations fetch failed:', e);
+                const tbody = document.getElementById('recentActivityTableBody');
+                if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">Data currently unavailable. Check backend, database, and login. <button type="button" class="btn btn-outline" style="margin-top: 0.5rem; font-size: 0.8rem;" onclick="refreshDashboard()">Retry</button></td></tr>';
+                showDashboardErrorOnce(e);
+            }
+
+            // 3. Product Distribution chart — /api/dashboard/distribution
+            try {
+                const res = await req('/dashboard/distribution');
+                initProductDistributionChart(res && res.success ? res : null);
+            } catch (e) {
+                console.error('Dashboard distribution fetch failed:', e);
+                initProductDistributionChart(null);
+                showDashboardErrorOnce(e);
+            }
+
+            // 4. Monthly Stock Movement chart — /api/dashboard/movement
+            try {
+                const res = await req('/dashboard/movement');
+                initMonthlyMovementChart(res && res.success ? res : null);
+            } catch (e) {
+                console.error('Dashboard movement fetch failed:', e);
+                initMonthlyMovementChart(null);
+                showDashboardErrorOnce(e);
+            }
+
+            // 5. Priority list + pending bookings (alerts, bookings, inventory, batches, purchase-requests)
+            let products = [], alerts = [], bookings = [], batches = [], purchaseRequests = [];
+            try {
+                const invRes = await req('/inventory').catch(function() { return {}; });
+                const alertsRes = await req('/alerts?resolved=false').catch(function() { return {}; });
+                const bookRes = await req('/inventory/bookings').catch(function() { return {}; });
+                const batchRes = await req('/batches').catch(function() { return {}; });
+                const prRes = await req('/purchase-requests').catch(function() { return {}; });
+                products = (invRes.success && invRes.data) ? invRes.data : [];
+                alerts = (alertsRes.success && alertsRes.data) ? alertsRes.data : [];
+                bookings = (bookRes.success && bookRes.data) ? bookRes.data : [];
+                batches = (batchRes.success && batchRes.data) ? batchRes.data : [];
+                purchaseRequests = (prRes.success && prRes.data) ? prRes.data : [];
+                const userId = parseInt(sessionStorage.getItem('userId') || '0', 10);
+                const isAdmin = userRole === 'Admin' || userRole === 'ADMIN';
+                const isMyBooking = function(b) { return (b.requestedBy || b.requestedById || b.createdBy || b.userId || 0) == userId; };
+                const isMyPR = function(pr) { return (pr.requestedBy || pr.requestedById || pr.createdBy || pr.userId || 0) == userId; };
+                let pendingBookings = (bookings || []).filter(function(b) { return (b.status || '').toUpperCase() === 'PENDING'; });
+                let pendingPurchaseRequests = (purchaseRequests || []).filter(function(pr) { return (pr.status || '').toUpperCase() === 'PENDING'; });
+                if (!isAdmin) {
+                    pendingBookings = pendingBookings.filter(isMyBooking);
+                    pendingPurchaseRequests = pendingPurchaseRequests.filter(isMyPR);
+                }
+                const today = new Date();
+                const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+                const expiringBatches = (batches || []).filter(function(b) {
+                    if (!b.expiryDate) return false;
+                    const expiryDate = new Date(b.expiryDate);
+                    const qty = b.quantity || b.qty || 0;
+                    return expiryDate >= today && expiryDate <= thirtyDaysFromNow && qty > 0;
+                });
+                const activeAlertsList = (alerts || []).filter(function(a) { return !a.resolved; });
+                renderPriorityList({
+                    alerts: activeAlertsList,
+                    pendingBookings: isAdmin ? pendingBookings : [],
+                    lowStockProducts: (products || []).filter(function(p) {
+                        var qty = p.totalQty || 0, minStock = p.minStock || 0;
+                        return qty <= minStock && qty > 0;
+                    }),
+                    expiringBatches: expiringBatches,
+                    pendingPurchaseRequests: pendingPurchaseRequests
+                }, false);
+            } catch (e) {
+                console.error('Dashboard priority section failed:', e);
+                const plist = document.getElementById('priorityListBody');
+                if (plist) plist.innerHTML = '<div class="priority-list-empty">Data currently unavailable. Check backend, database, and login. <button type="button" class="btn btn-outline" style="margin-top: 0.5rem; font-size: 0.8rem;" onclick="refreshDashboard()">Retry</button></div>';
+                showDashboardErrorOnce(e);
+            }
+
+            clearDashboardLoading();
+            const lastEl = document.getElementById('lastUpdatedText');
+            if (lastEl) lastEl.textContent = 'Last updated: ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            dashboardLoadInFlight = false;
+            return;
+        }
+
+        function handleDashboardFatal(err) {
+            if (err && err.code === 429) {
+                const cooldownMs = err.retryAfterMs || 30000;
+                dashboardRateLimitedUntil = Date.now() + cooldownMs;
+            }
+        }
+
+        async function safeLoadDashboard(forceLoad) {
+            try {
+                await loadDashboard(forceLoad);
+            } catch (e) {
+                handleDashboardFatal(e);
+                console.error('Dashboard load failed:', e);
+                // Do not spam user for 429; treat it as a silent cooldown.
+                if (typeof window.showNotification === 'function' && (!e || e.code !== 429)) {
+                    window.showNotification('Dashboard Error', 'Failed to sync with the database.', 'error');
+                }
+            } finally {
+                dashboardLoadInFlight = false;
+            }
+        }
+
+        // Render priority/action items list: Bookings first, then Expiry alerts; max 4 items, no placeholders
+        function renderPriorityList(data, apiFailed) {
+            const container = document.getElementById('priorityListBody');
+            if (!container) return;
+            const items = [];
+            // 1. Bookings first (prioritized)
+            (data.pendingBookings || []).slice(0, 4).forEach(b => {
+                const bid = b.bookingId ?? b.id;
+                items.push({ html: `
+                    <div class="priority-list-item warn" style="cursor: default;">
+                        <div class="priority-list-item-icon warn"><i data-lucide="calendar-clock"></i></div>
+                        <div class="priority-list-item-content">
+                            <div class="priority-list-item-title">Booking: ${b.reference || b.bookingNumber || bid}</div>
+                            <div class="priority-list-item-meta">${b.product || b.productName || 'N/A'} · ${b.qty ?? b.quantity ?? 0} units</div>
+                            <div style="margin-top: 0.375rem; display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center;">
+                                <button type="button" class="btn btn-dashboard-approve" onclick="event.stopPropagation(); approveBooking('${bid}')"><i data-lucide="check" style="width:12px;height:12px;"></i> Approve</button>
+                                <button type="button" class="btn btn-dashboard-reject" onclick="event.stopPropagation(); rejectBooking('${bid}')"><i data-lucide="x" style="width:12px;height:12px;"></i> Reject</button>
+                            </div>
+                        </div>
+                    </div>` });
+            });
+            // 2. Then expiry/near_expiry alerts (until we have 4 total)
+            const remaining = 4 - items.length;
+            if (remaining > 0 && (data.alerts || []).length > 0) {
+                (data.alerts || []).slice(0, remaining).forEach(a => {
+                    const t = (a.alertType || a.type || '').toLowerCase();
+                    const icon = t.includes('expired') ? 'danger' : 'warn';
+                    const typeText = t === 'low_stock' ? 'Low Stock' : t === 'near_expiry' ? 'Near Expiry' : t === 'expired' ? 'Expired' : t === 'maintenance_due' ? 'Maintenance' : 'Alert';
+                    items.push({ html: `
+                        <a href="alerts.html" class="priority-list-item ${icon}">
+                            <div class="priority-list-item-icon ${icon}"><i data-lucide="alert-triangle"></i></div>
+                            <div class="priority-list-item-content">
+                                <div class="priority-list-item-title">${a.product || a.productName || 'N/A'} — ${typeText}</div>
+                                <div class="priority-list-item-meta">${(a.message || a.description || '').slice(0, 50)}${(a.message || a.description || '').length > 50 ? '…' : ''}</div>
+                            </div>
+                        </a>` });
+                });
+            }
+            const visibleItems = items.slice(0, 4);
+            if (visibleItems.length === 0) {
+                container.innerHTML = '<div class="priority-list-empty">' + (apiFailed ? 'Data currently unavailable. Check backend, database, and login. <button type="button" class="btn btn-outline" style="margin-top: 0.5rem; font-size: 0.8rem;" onclick="refreshDashboard()">Retry</button>' : 'No action items') + '</div>';
+                return;
+            }
+            container.innerHTML = visibleItems.map(i => i.html).join('');
+            if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+        }
+
+        // Load recent activity
+        function loadRecentActivity(inRecords, outRecords, apiFailed) {
+            inRecords = inRecords || window.storage.get('inRecords') || [];
+            outRecords = outRecords || window.storage.get('outRecords') || [];
+            
+            // Normalize records to { date, qty, product, user } if in raw API format
+            if (inRecords.length && inRecords[0] && (inRecords[0].receivedDate || inRecords[0].receivedByName) && !inRecords[0].date) {
+                inRecords = inRecords.map(r => ({ date: r.receivedDate || r.date, qty: r.quantity ?? r.qty ?? 0, product: r.productName ?? r.product, user: r.receivedByName ?? r.receivedBy ?? r.user }));
+            }
+            if (outRecords.length && outRecords[0] && (outRecords[0].issuedDate || outRecords[0].issuedBy) && !outRecords[0].date) {
+                outRecords = outRecords.map(r => ({ date: r.issuedDate || r.date, qty: r.quantity ?? r.qty ?? 0, product: r.productName ?? r.product, user: r.issuedByName ?? r.issuedBy ?? r.user }));
+            }
+            
+            // Combine and sort by date
+            const activities = [
+                ...inRecords.slice(0, 5).map(rec => ({
+                    date: rec.date || rec.receivedDate,
+                    type: 'Received',
+                    product: rec.product || rec.productName,
+                    quantity: rec.qty ?? rec.quantity ?? 0,
+                    user: rec.user || rec.receivedByName,
+                    sortDate: new Date(rec.date || rec.receivedDate || '1900-01-01')
+                })),
+                ...outRecords.slice(0, 5).map(rec => ({
+                    date: rec.date || rec.issuedDate,
+                    type: 'Issued',
+                    product: rec.product || rec.productName,
+                    quantity: rec.qty ?? rec.quantity ?? 0,
+                    user: rec.user || rec.issuedBy,
+                    sortDate: new Date(rec.date || rec.issuedDate || '1900-01-01')
+                }))
+            ].sort((a, b) => b.sortDate - a.sortDate).slice(0, 6);
+            
+            const tbody = document.getElementById('recentActivityTableBody');
+            if (!tbody) return;
+            
+            if (activities.length === 0) {
+                const msg = apiFailed ? 'Data currently unavailable. Check backend, database, and login. <button type="button" class="btn btn-outline" style="margin-top: 0.5rem; font-size: 0.8rem;" onclick="refreshDashboard()">Retry</button>' : 'No recent activity';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">' + msg + '</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = activities.map(activity => {
+                let formattedDate = activity.date || 'N/A';
+                if (formattedDate !== 'N/A' && typeof window.formatDate === 'function') {
+                    formattedDate = window.formatDate(formattedDate);
+                } else if (formattedDate !== 'N/A') {
+                    const date = new Date(formattedDate);
+                    formattedDate = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+                }
+                
+                const typeBadge = activity.type === 'Received' ? 'badge-success' : 'badge-info';
+                const typeLabel = activity.type === 'Received'
+                    ? 'Received Records'
+                    : (activity.type === 'Issued' ? 'Issued Records' : (activity.type || 'N/A'));
+                
+                return `
+                    <tr>
+                        <td>${formattedDate}</td>
+                        <td><span class="badge ${typeBadge}">${typeLabel}</span></td>
+                        <td>${activity.product || 'N/A'}</td>
+                        <td>${activity.quantity || 0} units</td>
+                        <td>${activity.user || 'N/A'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function handle401(res) {
+            if (res.status === 401) {
+                sessionStorage.removeItem('authToken');
+                sessionStorage.removeItem('refreshToken');
+                window.location.href = 'login.html';
+                return true;
+            }
+            return false;
+        }
+
+        // Resolve alert (Admin only)
+        async function resolveAlert(alertId) {
+            const headers = { 'Content-Type': 'application/json' };
+            const token = sessionStorage.getItem('authToken');
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+            const userId = parseInt(sessionStorage.getItem('userId') || '1');
+            const body = JSON.stringify({ resolvedBy: userId });
+            try {
+                const res = await fetch(API_BASE_URL + '/alerts/' + alertId + '/resolve', { method: 'PUT', headers, body });
+                if (handle401(res)) return;
+                const data = await res.json();
+                if (data.success) {
+                    showNotification('Alert resolved successfully', 'success');
+                    safeLoadDashboard(true);
+                } else {
+                    showNotification(data.error || data.message || 'Failed to resolve alert', 'error');
+                }
+            } catch (e) {
+                showNotification('Failed to resolve alert', 'error');
+            }
+        }
+
+        // Resolve all alerts (Admin only)
+        async function resolveAllAlerts() {
+            const ok = await (window.showConfirmWindow || function(t,m){return Promise.resolve(confirm(m));})('Resolve Alerts', 'Resolve all active alerts?');
+            if (!ok) return;
+            const headers = { 'Content-Type': 'application/json' };
+            const token = sessionStorage.getItem('authToken');
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+            try {
+                const ar = await fetch(API_BASE_URL + '/alerts?resolved=false', { headers });
+                const j = await ar.json();
+                const alerts = (j.success && j.data) ? j.data : [];
+                const userId = parseInt(sessionStorage.getItem('userId') || '1');
+                const body = JSON.stringify({ resolvedBy: userId });
+                for (const a of alerts) {
+                    const id = a.alertId ?? a.id;
+                    await fetch(API_BASE_URL + '/alerts/' + id + '/resolve', { method: 'PUT', headers, body });
+                }
+                showNotification('All alerts resolved', 'success');
+                safeLoadDashboard(true);
+            } catch (e) {
+                showNotification('Failed to resolve alerts', 'error');
+            }
+        }
+
+        // Approve booking — tries /api/inventory/bookings first, falls back to /api/bookings
+        async function approveBooking(bookingId) {
+            const reason = await (window.showApprovalReasonModal
+                ? window.showApprovalReasonModal({
+                    action: 'approve',
+                    title: 'Approve Booking',
+                    required: true,
+                    placeholder: 'e.g. Verified, Urgent...',
+                    description: 'Please provide a reason for this approval. This will be stored and shown to the requester.',
+                    confirmText: 'Submit Approval',
+                    cancelText: 'Cancel'
+                })
+                : (window.showPromptWindow || function(){ return Promise.resolve(prompt('Reason for approval:')); })(
+                    'Approve Booking',
+                    'Please provide a reason for approval:',
+                    { label: 'Reason *', placeholder: 'e.g. Verified, Urgent...', multiline: true, allowEmpty: false, submitLabel: 'Approve', cancelLabel: 'Cancel' }
+                ));
+            if (reason === null || reason === undefined) return;
+            const reasonVal = String(reason || '').trim();
+            const headers = { 'Content-Type': 'application/json' };
+            const token = sessionStorage.getItem('authToken');
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+            const userId = parseInt(sessionStorage.getItem('userId') || '1');
+            const body = JSON.stringify({ approvedBy: userId, reason: reasonVal, approvalReason: reasonVal });
+            const endpoints = [
+                API_BASE_URL + '/inventory/bookings/' + encodeURIComponent(bookingId) + '/approve',
+                API_BASE_URL + '/bookings/' + encodeURIComponent(bookingId) + '/approve'
+            ];
+            try {
+                let res = await fetch(endpoints[0], { method: 'PUT', headers, body });
+                if (res.status === 404 && endpoints[1]) {
+                    res = await fetch(endpoints[1], { method: 'PUT', headers, body });
+                }
+                if (handle401(res)) return;
+                const data = await res.json().catch(function() { return {}; });
+                if (data.success) {
+                    showNotification('Booking approved successfully', 'success');
+                    safeLoadDashboard(true);
+                } else {
+                    showNotification(data.error || data.message || 'Failed to approve booking', 'error');
+                }
+            } catch (e) {
+                showNotification('Failed to approve booking', 'error');
+            }
+        }
+
+        // Reject booking (cancel) — tries /api/inventory/bookings first, falls back to /api/bookings
+        async function rejectBooking(bookingId) {
+            const reason = await (window.showApprovalReasonModal
+                ? window.showApprovalReasonModal({
+                    action: 'reject',
+                    title: 'Reject Booking',
+                    required: true,
+                    placeholder: 'e.g. Out of stock, Budget cut...',
+                    description: 'Please provide a reason for this rejection. This will be stored and shown to the requester.',
+                    confirmText: 'Submit Rejection',
+                    cancelText: 'Cancel'
+                })
+                : (window.showPromptWindow || function(){ return Promise.resolve(prompt('Reason for rejection:')); })(
+                    'Reject Booking',
+                    'Please provide a reason for rejection:',
+                    { label: 'Reason *', placeholder: 'e.g. Out of stock, Budget cut...', multiline: true, allowEmpty: false, submitLabel: 'Reject', cancelLabel: 'Cancel' }
+                ));
+            if (reason === null || reason === undefined) return;
+            const reasonVal = String(reason || '').trim();
+            const headers = { 'Content-Type': 'application/json' };
+            const token = sessionStorage.getItem('authToken');
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+            const userId = parseInt(sessionStorage.getItem('userId') || '1');
+            const body = JSON.stringify({ cancelledBy: userId, rejectReason: reasonVal, reason: reasonVal });
+            const endpoints = [
+                API_BASE_URL + '/inventory/bookings/' + encodeURIComponent(bookingId) + '/cancel',
+                API_BASE_URL + '/bookings/' + encodeURIComponent(bookingId) + '/cancel'
+            ];
+            try {
+                let res = await fetch(endpoints[0], { method: 'PUT', headers, body });
+                if (res.status === 404 && endpoints[1]) {
+                    res = await fetch(endpoints[1], { method: 'PUT', headers, body });
+                }
+                if (handle401(res)) return;
+                const data = await res.json().catch(function() { return {}; });
+                if (data.success) {
+                    showNotification('Booking rejected successfully', 'success');
+                    safeLoadDashboard(true);
+                } else {
+                    showNotification(data.error || data.message || 'Failed to reject booking', 'error');
+                }
+            } catch (e) {
+                showNotification('Failed to reject booking', 'error');
+            }
+        }
+
+        // Show notifications panel
+        function showNotificationsPanel() {
+            const notifications = window.storage.get('notifications') || [];
+            const unreadCount = notifications.filter(n => !n.read).length;
+            
+            if (unreadCount > 0) {
+                showNotification(`You have ${unreadCount} unread notification(s)`, 'info');
+            } else {
+                showNotification('No new notifications', 'info');
+            }
+        }
+
+        // Initialize dashboard
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('open');
+            }
+        }
+        
+        async function checkBackendHealth() {
+            const apiBase = typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : (typeof window.getSwmsApiBase === 'function' ? window.getSwmsApiBase() : (window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api'));
+            const baseUrl = apiBase.replace(/\/api\/?$/, '');
+            try {
+                const r = await fetch(baseUrl + '/health', { method: 'GET' });
+                const d = await r.json().catch(() => ({}));
+                if (r.ok && d.status === 'ok') return { ok: true, db: d.database };
+                return { ok: false, error: d.error || 'Backend error', db: d.database };
+            } catch (e) {
+                return { ok: false, error: e.message || 'Cannot reach backend' };
+            }
+        }
+
+        function initializeDashboard() {
+            if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+            checkBackendHealth().then(function(h) {
+                if (!h.ok && typeof window.showNotification === 'function') {
+                    window.showNotification('Connection Check', 'Backend unreachable or database error: ' + (h.error || 'unknown') + '. Ensure: 1) Backend running (npm start in backend folder) 2) MySQL running 3) Database swms_db exists (run setup.sql)', 'error');
+                }
+            });
+            safeLoadDashboard(true);
+            
+            // Update notification badge from backend
+            if (window.loadNotifications) window.loadNotifications();
+        }
+
+        // Initialize when DOM is ready
+        // Note: Zoom and scroll restoration is handled by app.js (shared across all pages)
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeDashboard);
+        } else {
+            initializeDashboard();
+        }
+        
+        // Refresh dashboard when page becomes visible
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                safeLoadDashboard(false);
+            }
+        });
+    </script>
+</body>
+</html>

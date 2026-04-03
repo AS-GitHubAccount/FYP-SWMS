@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SWMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <a href="dashboard.html" class="logo">SWMS</a>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html"><i data-lucide="layout-dashboard" class="nav-icon"></i> Dashboard</a>
+                <a href="inventory.html"><i data-lucide="package" class="nav-icon"></i> Inventory</a>
+                <a href="alerts.html"><i data-lucide="bell" class="nav-icon"></i> Alerts</a>
+                <a href="reports.html"><i data-lucide="bar-chart-2" class="nav-icon"></i> Reports</a>
+                <a href="users.html" id="usersLink" style="display: none;"><i data-lucide="users" class="nav-icon"></i> Users</a>
+                <a href="suppliers.html"><i data-lucide="truck" class="nav-icon"></i> Suppliers</a>
+                <a href="warehouses.html"><i data-lucide="warehouse" class="nav-icon"></i> Warehouses</a>
+                <a href="approval.html" id="approvalCenterLink" style="display: none;"><i data-lucide="shield-check" class="nav-icon"></i> Approval</a>
+                <!-- Audit Log entry removed -->
+            </nav>
+        </aside>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()" aria-hidden="true"></div>
+        <div class="main-wrapper">
+            <header class="header">
+                <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="header-compact">
+                    <a href="notifications.html" class="notification-icon" style="position: relative; text-decoration: none; padding: 0.5rem; color: var(--text);">
+                        <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
+                        <span id="notificationBadge" class="badge badge-danger" style="position: absolute; top: -4px; right: -4px; font-size: 0.65rem; display: none; min-width: 16px; padding: 2px 5px;">0</span>
+                    </a>
+                    <div class="user-profile-wrap">
+                        <button id="profileAvatarBtn" class="profile-avatar-btn" type="button" onclick="toggleProfileDropdown(event)" aria-haspopup="true" aria-expanded="false" title="Account">
+                            <span class="profile-avatar-initial" id="profileAvatarInitial">U</span>
+                        </button>
+                        <div id="profileDropdown" class="profile-dropdown" style="display: none;" role="menu">
+                            <div class="profile-dropdown-header">
+                                <div class="profile-dropdown-name" id="profileUserName">User</div>
+                                <div class="profile-dropdown-email" id="profileUserEmail">user@example.com</div>
+                            </div>
+                            <a href="settings.html" class="profile-dropdown-item" role="menuitem">Settings</a>
+                            <button type="button" class="profile-dropdown-item profile-dropdown-logout" onclick="handleLogout(event)" role="menuitem">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+    <main class="container-fluid" role="main">
+        <div class="page-header">
+            <h1 class="page-title">Not Found</h1>
+            <p style="color: var(--text-secondary); margin-top: 0.25rem;">Track system changes and user activity</p>
+        </div>
+
+        <!-- Filters -->
+        <div class="search-filter-bar">
+            <select id="tableFilter" class="form-select" title="Filter by table">
+                <option value="">All Tables</option>
+                <option value="in_records">In Records</option>
+                <option value="out_records">Out Records</option>
+                <option value="products">Products</option>
+                <option value="inventory_items">Inventory</option>
+                <option value="batches">Batches</option>
+                <option value="bookings">Bookings</option>
+                <option value="users">Users</option>
+                <option value="suppliers">Suppliers</option>
+            </select>
+            <select id="actionFilter" class="form-select" title="Filter by action">
+                <option value="">All Actions</option>
+                <option value="INSERT">Insert</option>
+                <option value="UPDATE">Update</option>
+                <option value="DELETE">Delete</option>
+            </select>
+            <select id="limitFilter" class="form-select" title="Limit results">
+                <option value="50">50</option>
+                <option value="100" selected>100</option>
+                <option value="200">200</option>
+                <option value="500">500</option>
+            </select>
+            <button class="btn btn-primary" onclick="loadAuditLogs()"><i data-lucide="search" style="width:14px;height:14px;"></i> Apply</button>
+            <button class="btn btn-secondary" onclick="resetFilters()">Reset</button>
+        </div>
+
+        <!-- Audit Log Table -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Activity Log (<span id="logCount">0</span> entries)</h2>
+                <button class="btn btn-outline" onclick="loadAuditLogs()"><i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Refresh</button>
+            </div>
+            <div class="table-container">
+                <div id="auditLoading" style="padding: 2rem; text-align: center; color: var(--text-secondary);">Loading...</div>
+                <table id="auditTable" style="display: none;" aria-describedby="audit-desc">
+                    <caption id="audit-desc" class="sr-only">System audit log of changes</caption>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Action</th>
+                            <th>Table</th>
+                            <th>Record ID</th>
+                            <th>User</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditTableBody">
+                    </tbody>
+                </table>
+                <div id="auditEmpty" style="display: none; padding: 2rem; text-align: center; color: var(--text-secondary);">
+                    No audit logs found. Run migrations to enable audit logging.
+                </div>
+                <div id="auditError" style="display: none; padding: 2rem; text-align: center; color: var(--danger);"></div>
+            </div>
+        </div>
+
+        <!-- Detail Modal -->
+        <div id="detailModal" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="detailModalTitle">
+            <div class="modal-content" style="max-width: 560px;">
+                <div class="modal-header">
+                    <h2 id="detailModalTitle">Audit Details</h2>
+                    <button class="modal-close" onclick="closeDetailModal()" aria-label="Close">&times;</button>
+                </div>
+                <div id="detailModalBody" style="padding: 1.5rem; max-height: 60vh; overflow-y: auto;"></div>
+            </div>
+        </div>
+    </main>
+
+        </div><!-- .main-wrapper -->
+    </div><!-- .app-layout -->
+
+    <style>
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+        .badge-insert { background: #F0FDF4; color: #166534; }
+        .badge-update { background: #FFFBEB; color: #92400E; }
+        .badge-delete { background: #FEF2F2; color: #991B1B; }
+        .audit-detail-json { font-size: 0.8rem; background: #f8f9fa; padding: 0.5rem; border-radius: 0.25rem; overflow-x: auto; white-space: pre-wrap; }
+    </style>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="js/api-config.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        const API_BASE = typeof window.getSwmsApiBase === 'function' ? window.getSwmsApiBase() : (window.API_BASE || window.API_BASE_URL || 'http://localhost:3000/api');
+        const userRole = sessionStorage.getItem('userRole') || 'Admin';
+        let allLogs = [];
+
+        // Audit Log is Admin-only
+        if (userRole !== 'Admin' && userRole !== 'ADMIN') {
+            window.location.href = 'dashboard.html';
+            throw 0;
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('open');
+            }
+        }
+
+        if (userRole === 'Admin' || userRole === 'ADMIN') {
+            const ul = document.getElementById('usersLink');
+            const al = document.getElementById('auditLink');
+            const sl = document.getElementById('settingsLink');
+            if (ul) ul.style.display = '';
+            if (al) al.style.display = '';
+            if (sl) sl.style.display = '';
+        }
+        if (typeof updateNavFromSettings === 'function') updateNavFromSettings();
+
+        function getAuthHeaders() {
+            const token = sessionStorage.getItem('authToken');
+            const h = { 'Content-Type': 'application/json' };
+            if (token) h['Authorization'] = 'Bearer ' + token;
+            return h;
+        }
+
+        async function loadAuditLogs() {
+            const tableFilter = document.getElementById('tableFilter').value;
+            const actionFilter = document.getElementById('actionFilter').value;
+            const limit = document.getElementById('limitFilter').value;
+
+            document.getElementById('auditLoading').style.display = 'block';
+            document.getElementById('auditTable').style.display = 'none';
+            document.getElementById('auditEmpty').style.display = 'none';
+            document.getElementById('auditError').style.display = 'none';
+
+            try {
+                const params = new URLSearchParams({ limit });
+                if (tableFilter) params.append('tableName', tableFilter);
+                if (actionFilter) params.append('action', actionFilter);
+
+                const res = await (window.fetchWithAuth || fetch)(`${API_BASE}/audit?${params}`, { headers: getAuthHeaders() });
+                const data = await res.json();
+
+                document.getElementById('auditLoading').style.display = 'none';
+
+                if (!res.ok) {
+                    document.getElementById('auditError').textContent = data.error || data.message || 'Failed to load audit logs';
+                    document.getElementById('auditError').style.display = 'block';
+                    return;
+                }
+
+                const logs = data.data || [];
+                allLogs = logs;
+                document.getElementById('logCount').textContent = logs.length;
+
+                if (logs.length === 0) {
+                    document.getElementById('auditEmpty').style.display = 'block';
+                    return;
+                }
+
+                const actionBadges = { INSERT: 'badge-insert', UPDATE: 'badge-update', DELETE: 'badge-delete' };
+                const tbody = document.getElementById('auditTableBody');
+                tbody.innerHTML = logs.map(log => `
+                    <tr>
+                        <td>${log.createdAt ? new Date(log.createdAt).toLocaleString() : '-'}</td>
+                        <td><span class="badge ${actionBadges[log.action] || 'badge-secondary'}">${log.action || '-'}</span></td>
+                        <td>${log.tableName || '-'}</td>
+                        <td>${log.recordId ?? '-'}</td>
+                        <td>${log.userName || log.userId || '-'}</td>
+                        <td><button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="showDetail(${log.auditId})">View Detail</button></td>
+                    </tr>
+                `).join('');
+
+                document.getElementById('auditTable').style.display = 'table';
+            } catch (err) {
+                document.getElementById('auditLoading').style.display = 'none';
+                document.getElementById('auditError').textContent = err.message || 'Failed to load audit logs';
+                document.getElementById('auditError').style.display = 'block';
+            }
+        }
+
+        function showDetail(auditId) {
+            const log = allLogs.find(l => l.auditId === auditId);
+            if (!log) {
+                if (typeof showNotification === 'function') showNotification('Log details not available', 'warning');
+                return;
+            }
+            let html = `<p><strong>Date:</strong> ${log.createdAt ? new Date(log.createdAt).toLocaleString() : '-'}</p>`;
+            html += `<p><strong>Action:</strong> ${log.action || '-'}</p>`;
+            html += `<p><strong>Table:</strong> ${log.tableName || '-'}</p>`;
+            html += `<p><strong>Record ID:</strong> ${log.recordId ?? '-'}</p>`;
+            html += `<p><strong>User:</strong> ${log.userName || log.userId || '-'}</p>`;
+            if (log.oldValues && Object.keys(log.oldValues).length) {
+                html += `<p><strong>Old values:</strong></p><div class="audit-detail-json">${JSON.stringify(log.oldValues, null, 2)}</div>`;
+            }
+            if (log.newValues && Object.keys(log.newValues).length) {
+                html += `<p style="margin-top: 0.5rem;"><strong>New values:</strong></p><div class="audit-detail-json">${JSON.stringify(log.newValues, null, 2)}</div>`;
+            }
+            document.getElementById('detailModalBody').innerHTML = html;
+            document.getElementById('detailModal').style.display = 'flex';
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').style.display = 'none';
+        }
+
+        function resetFilters() {
+            document.getElementById('tableFilter').value = '';
+            document.getElementById('actionFilter').value = '';
+            document.getElementById('limitFilter').value = '100';
+            loadAuditLogs();
+        }
+
+        function initIcons() {
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+            }
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            initIcons();
+            setTimeout(initIcons, 100);
+            loadAuditLogs();
+        });
+    </script>
+</body>
+</html>

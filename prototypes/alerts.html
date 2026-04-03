@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alert Management - SWMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <a href="dashboard.html" class="logo">SWMS</a>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html"><i data-lucide="layout-dashboard" class="nav-icon"></i> Dashboard</a>
+                <a href="inventory.html"><i data-lucide="package" class="nav-icon"></i> Inventory</a>
+                <a href="alerts.html" class="active"><i data-lucide="bell" class="nav-icon"></i> Alerts</a>
+                <a href="reports.html"><i data-lucide="bar-chart-2" class="nav-icon"></i> Reports</a>
+                <a href="users.html" id="usersLink" style="display: none;"><i data-lucide="users" class="nav-icon"></i> Users</a>
+                <a href="suppliers.html"><i data-lucide="truck" class="nav-icon"></i> Suppliers</a>
+                <a href="warehouses.html"><i data-lucide="warehouse" class="nav-icon"></i> Warehouses</a>
+                <a href="approval.html" id="approvalCenterLink" style="display: none;"><i data-lucide="shield-check" class="nav-icon"></i> Approval</a>
+            </nav>
+        </aside>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()" aria-hidden="true"></div>
+        <div class="main-wrapper">
+            <header class="header">
+                <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="header-compact">
+                    <a href="notifications.html" class="notification-icon" style="position: relative; text-decoration: none; padding: 0.5rem; color: var(--text);">
+                        <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
+                        <span id="notificationBadge" class="badge badge-danger" style="position: absolute; top: -4px; right: -4px; font-size: 0.65rem; display: none; min-width: 16px; padding: 2px 5px;">0</span>
+                    </a>
+                    <div class="user-profile-wrap">
+                        <button id="profileAvatarBtn" class="profile-avatar-btn" type="button" onclick="toggleProfileDropdown(event)" aria-haspopup="true" aria-expanded="false" title="Account">
+                            <span class="profile-avatar-initial" id="profileAvatarInitial">U</span>
+                        </button>
+                        <div id="profileDropdown" class="profile-dropdown" style="display: none;" role="menu">
+                            <div class="profile-dropdown-header">
+                                <div class="profile-dropdown-name" id="profileUserName">User</div>
+                                <div class="profile-dropdown-email" id="profileUserEmail">user@example.com</div>
+                            </div>
+                            <a href="settings.html" class="profile-dropdown-item" role="menuitem">Settings</a>
+                            <button type="button" class="profile-dropdown-item profile-dropdown-logout" onclick="handleLogout(event)" role="menuitem">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+    <main class="container-fluid">
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h1 class="page-title">Alert Management</h1>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button class="btn btn-secondary" onclick="loadAlerts()" title="Refresh alerts"><i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Refresh</button>
+                <button class="btn btn-secondary" id="runCheckBtn" onclick="runAlertCheck()" title="Scan inventory and create new alerts"><i data-lucide="scan-search" style="width:14px;height:14px;"></i> Run Alert Check</button>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="stats-grid" style="margin-bottom: 1rem;">
+            <div class="stat-card" style="cursor: default;">
+                <div class="stat-icon-wrap stat-warn"><i data-lucide="bell"></i></div>
+                <h3 class="stat-label">Active Alerts</h3>
+                <p class="stat-value" id="statActive">0</p>
+            </div>
+            <div class="stat-card" style="cursor: default;">
+                <div class="stat-icon-wrap stat-danger"><i data-lucide="alert-triangle"></i></div>
+                <h3 class="stat-label">Critical</h3>
+                <p class="stat-value" id="statCritical">0</p>
+            </div>
+            <div class="stat-card" style="cursor: default;">
+                <div class="stat-icon-wrap" style="background:#F0FDF4;color:#166534;"><i data-lucide="check-circle"></i></div>
+                <h3 class="stat-label">Resolved</h3>
+                <p class="stat-value" id="statResolved">0</p>
+            </div>
+            <div class="stat-card" style="cursor: default;">
+                <div class="stat-icon-wrap"><i data-lucide="list"></i></div>
+                <h3 class="stat-label">Total Alerts</h3>
+                <p class="stat-value" id="statTotal">0</p>
+            </div>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="search-filter-bar">
+            <input type="text" id="searchInput" class="form-input" placeholder="Product, type, message..." onkeypress="if(event.key === 'Enter') performSearch()" oninput="performSearch()">
+            <select id="typeFilter" class="form-select" onchange="loadAlerts()">
+                <option value="">All Types</option>
+                <option value="low_stock">Low Stock</option>
+                <option value="near_expiry">Near Expiry</option>
+                <option value="expired">Expired</option>
+                <option value="maintenance_due">Maintenance Due</option>
+                <option value="warranty_expiring">Warranty Expiring</option>
+            </select>
+            <select id="statusFilter" class="form-select" onchange="loadAlerts()">
+                <option value="pending" selected>Pending</option>
+                <option value="">All</option>
+                <option value="resolved">Resolved</option>
+            </select>
+            <button class="btn btn-secondary" onclick="resetFilters()">Reset</button>
+        </div>
+
+        <!-- Alerts Table -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Alerts (<span id="alertCount">0</span>)</h2>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-sort="alertId" onclick="sortAlertsBy('alertId')" style="cursor:pointer;user-select:none;">Alert ID <span id="sortAlertId"></span></th>
+                            <th class="sortable" data-sort="alertType" onclick="sortAlertsBy('alertType')" style="cursor:pointer;user-select:none;">Type <span id="sortAlertType"></span></th>
+                            <th class="sortable" data-sort="productName" onclick="sortAlertsBy('productName')" style="cursor:pointer;user-select:none;">Product <span id="sortProductName"></span></th>
+                            <th>Message</th>
+                            <th class="sortable" data-sort="severity" onclick="sortAlertsBy('severity')" style="cursor:pointer;user-select:none;">Priority <span id="sortSeverity"></span></th>
+                            <th class="sortable" data-sort="createdAt" onclick="sortAlertsBy('createdAt')" style="cursor:pointer;user-select:none;">Date <span id="sortCreatedAt"></span></th>
+                            <th class="sortable" data-sort="resolved" onclick="sortAlertsBy('resolved')" style="cursor:pointer;user-select:none;">Status <span id="sortResolved"></span></th>
+                            <th id="actionsHeader">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alertsTableBody">
+                        <!-- Alerts will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Request Disposal Modal (action-based: creates disposal request then alert is auto-removed) -->
+        <div id="disposalModalBackdrop" onclick="closeDisposalModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999;"></div>
+        <div id="disposalModal" class="card" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; max-width: 420px; width: 90%; background: var(--bg); box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 class="card-title">Request Disposal</h2>
+                <button type="button" onclick="closeDisposalModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <p id="disposalModalProduct" style="margin-bottom: 0.5rem;"></p>
+                <div class="form-group">
+                    <label class="form-label">Reason <span style="color: #dc2626;">*</span></label>
+                    <textarea id="disposalReasonInput" class="form-input" rows="3" placeholder="e.g. Expired" minlength="1" maxlength="500"></textarea>
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-outline" onclick="closeDisposalModal()">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmDisposalBtn" onclick="confirmRequestDisposal()">Submit Request</button>
+                </div>
+            </div>
+        </div>
+        <!-- Quick Issue Modal -->
+        <div id="issueModalBackdrop" onclick="closeIssueModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999;"></div>
+        <div id="issueModal" class="card" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; max-width: 420px; width: 90%; background: var(--bg); box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 class="card-title">Quick Issue</h2>
+                <button type="button" onclick="closeIssueModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <p id="issueModalProduct" style="margin-bottom: 0.5rem;"></p>
+                <div class="form-group">
+                    <label class="form-label">Quantity</label>
+                    <input type="number" id="issueQuantityInput" class="form-input" min="1" value="1">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Recipient</label>
+                    <input type="text" id="issueRecipientInput" class="form-input" placeholder="Department or person">
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-outline" onclick="closeIssueModal()">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmIssueBtn" onclick="confirmQuickIssue()">Issue</button>
+                </div>
+            </div>
+        </div>
+        <!-- Purchase Request Modal (Low Stock) -->
+        <div id="purchaseModalBackdrop" onclick="closePurchaseModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999;"></div>
+        <div id="purchaseModal" class="card" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; max-width: 420px; width: 90%; background: var(--bg); box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <h2 class="card-title">Create Purchase Request</h2>
+                <button type="button" onclick="closePurchaseModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <p id="purchaseModalProduct" style="margin-bottom: 0.5rem;"></p>
+                <div class="form-group">
+                    <label class="form-label">Quantity</label>
+                    <input type="number" id="purchaseQuantityInput" class="form-input" min="1" value="1">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sending location (required)</label>
+                    <select id="purchaseLocationInput" class="form-select" required>
+                        <option value="">Select a warehouse...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes (optional)</label>
+                    <textarea id="purchaseNotesInput" class="form-input" rows="2"></textarea>
+                </div>
+                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-outline" onclick="closePurchaseModal()">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirmPurchaseBtn" onclick="confirmPurchaseRequest()">Create Request</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+        </div><!-- .main-wrapper -->
+    </div><!-- .app-layout -->
+
+    <script src="js/api-config.js"></script>
+    <script src="js/app.js?v=3"></script>
+    <script src="js/database.js"></script>
+    <script src="js/notifications.js"></script>
+    <script>
+        const userRole = sessionStorage.getItem('userRole') || 'Admin';
+        if (userRole === 'Admin') {
+            document.getElementById('usersLink').style.display = 'block';
+        } else {
+            document.getElementById('actionsHeader').style.display = 'none';
+        }
+
+        let allAlerts = [];
+        let allAlertsForStats = [];
+        let filteredAlerts = [];
+        let sortColumn = 'alertId';
+        let sortAsc = false; // ID descending (newest first)
+
+        // Always talk to the real backend API.
+        // Some older prototypes tried to route through a legacy `api-proxy.php` endpoint
+        // (which doesn't exist in this repo). That can silently lead to empty results.
+        const ALERTS_API = window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api';
+
+        async function runAlertCheck() {
+            const btn = document.getElementById('runCheckBtn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Checking...'; }
+            try {
+                const token = sessionStorage.getItem('authToken');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+                const res = await fetch(ALERTS_API + '/alerts/check', { method: 'GET', headers });
+                const data = await res.json().catch(() => ({}));
+                if (data.success) {
+                    if (typeof showNotification === 'function') showNotification('Alert check done. ' + (data.activeAlerts || 0) + ' active alert(s).', 'success');
+                    loadAlerts();
+                } else if (typeof showNotification === 'function') showNotification(data.error || 'Alert check failed', 'error');
+            } catch (e) {
+                if (typeof showNotification === 'function') showNotification('Error: ' + (e.message || 'Request failed'), 'error');
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = '🔄 Run Alert Check'; }
+            }
+        }
+
+        async function fetchAlerts(filters) {
+            const params = new URLSearchParams();
+            if (filters.resolved !== undefined) params.append('resolved', String(filters.resolved));
+            if (filters.alertType) params.append('alertType', filters.alertType);
+            const qs = params.toString();
+            const url = qs ? `${ALERTS_API}/alerts?${qs}` : `${ALERTS_API}/alerts`;
+            const dbg = document.getElementById('alertsDebug');
+            if (dbg) {
+                dbg.textContent = 'Debug: requesting ' + url;
+            }
+            const headers = { 'Content-Type': 'application/json' };
+            const token = sessionStorage.getItem('authToken');
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+            let res;
+            try {
+                res = await fetch(url, { headers, mode: 'cors' });
+            } catch (e) {
+                console.error('Alerts Fetch Error: Network failure –', e.message || e);
+                if (dbg) dbg.textContent = 'Debug: fetch failed: ' + (e && e.message ? e.message : String(e));
+                if (typeof window.showConnectionErrorBanner === 'function') {
+                    window.showConnectionErrorBanner('Unable to reach the server. Please check if the backend is running.');
+                }
+                return [];
+            }
+            let data;
+            try {
+                data = await res.json();
+            } catch (e) {
+                console.error('Alerts Fetch Error: Invalid JSON –', e.message || e);
+                if (dbg) dbg.textContent = 'Debug: JSON parse failed (HTTP ' + res.status + ').';
+                if (typeof window.showConnectionErrorBanner === 'function') {
+                    window.showConnectionErrorBanner('Invalid API response. Is the backend running?');
+                }
+                return [];
+            }
+            if (res.status === 503 || res.status === 500) {
+                console.error('Alerts Fetch Error: Server error', res.status, data);
+                if (dbg) dbg.textContent = 'Debug: server error HTTP ' + res.status + '.';
+                if (typeof window.showConnectionErrorBanner === 'function') {
+                    window.showConnectionErrorBanner((data && (data.message || data.error)) || 'Unable to connect to the database. Please contact the administrator.');
+                }
+                return [];
+            }
+            if (!res.ok) {
+                console.error('Alerts Fetch Error:', res.status, data.error || data.message || data);
+                if (dbg) {
+                    const msg = (data && (data.error || data.message)) ? (data.error || data.message) : 'HTTP ' + res.status;
+                    dbg.textContent = 'Debug: HTTP error: ' + msg;
+                }
+                return [];
+            }
+            const arr = Array.isArray(data.data) ? data.data : (data.data ? [data.data] : []);
+            if (dbg) {
+                dbg.textContent = 'Debug: resolved=' + String(filters && filters.resolved) + ', type=' + String(filters && filters.alertType) + ' -> ' + arr.length + ' row(s)';
+            }
+            if (arr.length === 0 && (filters.resolved === false || filters.resolved === undefined)) {
+                console.warn('Alerts Fetch: 0 items from GET /api/alerts. Run "Run Alert Check" to sync inventory alerts.');
+            }
+            return arr;
+        }
+
+        async function loadAlerts() {
+            try {
+                const tbody = document.getElementById('alertsTableBody');
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">Loading alerts...</td></tr>';
+                
+                const filters = {};
+                const statusFilter = document.getElementById('statusFilter').value;
+                if (statusFilter === 'pending') filters.resolved = false;
+                else if (statusFilter === 'resolved') filters.resolved = true;
+                // statusFilter === '' means "All" (no resolved filter)
+                
+                const typeFilter = document.getElementById('typeFilter').value;
+                if (typeFilter) {
+                    const typeMap = {
+                        'low_stock': 'LOW_STOCK', 'near_expiry': 'NEAR_EXPIRY', 'expired': 'EXPIRED',
+                        'maintenance_due': 'MAINTENANCE_DUE', 'warranty_expiring': 'WARRANTY_EXPIRING'
+                    };
+                    filters.alertType = typeMap[typeFilter] || typeFilter.toUpperCase();
+                }
+                
+                // Decouple summary stats from table filters:
+                // - `allAlerts` is used for the table + search filters
+                // - `allAlertsForStats` is fetched unfiltered and always represents the overall system state
+                const [tableAlerts, statsAlerts] = await Promise.all([
+                    fetchAlerts(filters),
+                    fetchAlerts({})
+                ]);
+                allAlerts = tableAlerts;
+                allAlertsForStats = statsAlerts;
+                performSearch();
+                updateStats();
+            } catch (error) {
+                console.error('Error loading alerts:', error);
+                const tbody = document.getElementById('alertsTableBody');
+                const colCount = userRole === 'Admin' ? 8 : 7;
+                tbody.innerHTML = `<tr><td colspan="${colCount}" style="text-align: center; padding: 20px; color: #dc3545;">
+                    <div style="font-weight: 600; margin-bottom: 0.5rem;">Error loading alerts</div>
+                    <div style="font-size: 0.9rem; margin-bottom: 0.75rem;">Open at <strong>http://localhost:3000/alerts.html</strong>. Run: <code>cd backend && node server.js</code></div>
+                    <button class="btn btn-outline" onclick="loadAlerts()" style="margin-top: 0.75rem;">Retry</button>
+                </td></tr>`;
+            }
+        }
+
+        function updateStats() {
+            const base = Array.isArray(allAlertsForStats) ? allAlertsForStats : [];
+            const active = base.filter(a => !a.resolved).length;
+            const critical = base.filter(a => a.severity === 'CRITICAL' && !a.resolved).length;
+            const resolved = base.filter(a => a.resolved).length;
+            const total = base.length;
+            const el = id => document.getElementById(id);
+            if (el('statActive')) el('statActive').textContent = active;
+            if (el('statCritical')) el('statCritical').textContent = critical;
+            if (el('statResolved')) el('statResolved').textContent = resolved;
+            if (el('statTotal')) el('statTotal').textContent = total;
+        }
+
+        function performSearch() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+            filteredAlerts = allAlerts.filter(alert => {
+                const matchesSearch = !searchTerm || 
+                    (String(alert.alertId || '').includes(searchTerm)) ||
+                    (alert.productName && alert.productName.toLowerCase().includes(searchTerm)) ||
+                    (alert.alertType && alert.alertType.toLowerCase().includes(searchTerm)) ||
+                    (alert.message && alert.message.toLowerCase().includes(searchTerm));
+
+                return matchesSearch;
+            });
+
+            applySort();
+            updateSortIndicators();
+            renderAlerts();
+        }
+
+        function sortAlertsBy(col) {
+            if (sortColumn === col) sortAsc = !sortAsc;
+            else { sortColumn = col; sortAsc = true; }
+            applySort();
+            updateSortIndicators();
+            renderAlerts();
+        }
+
+        function applySort() {
+            const key = sortColumn;
+            const asc = sortAsc;
+            filteredAlerts.sort((a, b) => {
+                let va = a[key], vb = b[key];
+                if (key === 'alertId' || key === 'severity') {
+                    const order = { 'CRITICAL': 3, 'WARN': 2, 'INFO': 1 };
+                    if (key === 'severity') { va = order[va] || 0; vb = order[vb] || 0; }
+                    else { va = Number(va) || 0; vb = Number(vb) || 0; }
+                    return asc ? va - vb : vb - va;
+                }
+                if (key === 'createdAt') {
+                    va = new Date(va || 0).getTime();
+                    vb = new Date(vb || 0).getTime();
+                    return asc ? va - vb : vb - va;
+                }
+                if (key === 'resolved') {
+                    va = va ? 1 : 0;
+                    vb = vb ? 1 : 0;
+                    return asc ? va - vb : vb - va;
+                }
+                va = String(va || '').toLowerCase();
+                vb = String(vb || '').toLowerCase();
+                const c = va.localeCompare(vb);
+                return asc ? c : -c;
+            });
+        }
+
+        function updateSortIndicators() {
+            const ids = { alertId: 'sortAlertId', alertType: 'sortAlertType', productName: 'sortProductName', severity: 'sortSeverity', createdAt: 'sortCreatedAt', resolved: 'sortResolved' };
+            Object.keys(ids).forEach(c => {
+                const el = document.getElementById(ids[c]);
+                if (el) el.textContent = sortColumn === c ? (sortAsc ? ' ▲' : ' ▼') : '';
+            });
+        }
+
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('typeFilter').value = '';
+            document.getElementById('statusFilter').value = 'pending';
+            loadAlerts();
+        }
+
+        function renderAlerts() {
+            const tbody = document.getElementById('alertsTableBody');
+            document.getElementById('alertCount').textContent = filteredAlerts.length;
+
+            const colCount = userRole === 'Admin' ? '8' : '7';
+            if (filteredAlerts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="' + colCount + '" style="text-align: center; padding: 2rem;">No alerts found</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filteredAlerts.map(alert => {
+                const t = alert.alertType || '';
+                const typeBadge = t === 'LOW_STOCK' || t === 'NEAR_EXPIRY' || t === 'MAINTENANCE_DUE' ? 'badge-warning' :
+                                 t === 'EXPIRED' ? 'badge-danger' : 'badge-info';
+                const typeText = t === 'LOW_STOCK' ? 'Low Stock' : t === 'NEAR_EXPIRY' ? 'Near Expiry' :
+                               t === 'EXPIRED' ? 'Expired' : t === 'MAINTENANCE_DUE' ? 'Maintenance Due' :
+                               t === 'WARRANTY_EXPIRING' ? 'Warranty Expiring' : t || 'Alert';
+                const priorityBadge = alert.severity === 'CRITICAL' ? 'badge-danger' :
+                                    alert.severity === 'WARN' ? 'badge-warning' : 'badge-info';
+                const statusBadge = alert.resolved ? 'badge-success' : 'badge-warning';
+                const statusText = alert.resolved ? 'Resolved' : 'Active';
+                const dateVal = alert.resolved ? (alert.resolvedAt || alert.resolved_at || alert.resolvedDate) : alert.createdAt;
+                const alertDate = dateVal ? new Date(dateVal).toLocaleDateString() : 'N/A';
+                const resolvedRowStyle = alert.resolved ? 'color: var(--text-muted); background: #f9fafb;' : '';
+
+                let actionCell = '';
+                if (userRole === 'Admin') {
+                    if (!alert.resolved) {
+                        const aid = alert.alertId;
+                        const bid = alert.batchId != null ? alert.batchId : '';
+                        if (t === 'LOW_STOCK') {
+                            actionCell = `<td><button class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="openPurchaseModal(${aid})"><i data-lucide="shopping-cart" style="width:12px;height:12px;vertical-align:middle;"></i> Purchase</button></td>`;
+                        } else if ((t === 'EXPIRED' || t === 'NEAR_EXPIRY') && bid) {
+                            let btns = `<button class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; margin-right: 0.25rem;" onclick="openDisposalModal(${aid})"><i data-lucide="trash-2" style="width:12px;height:12px;vertical-align:middle;"></i> Request Disposal</button>`;
+                            if (t === 'NEAR_EXPIRY') {
+                                btns += `<button class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="openIssueModal(${aid})"><i data-lucide="send" style="width:12px;height:12px;vertical-align:middle;"></i> Quick Issue</button>`;
+                            }
+                            actionCell = '<td>' + btns + '</td>';
+                        } else {
+                            actionCell = '<td>—</td>';
+                        }
+                    } else {
+                        const reason = (alert.resolution_notes || '').toString().trim();
+                        const safeReasonTitle = reason ? reason.replace(/</g, '&lt;').replace(/"/g, '&quot;') : '';
+                        const resolvedBy = (alert.resolvedByName || '').toString().trim() || '-';
+                        const reasonText = reason ? reason.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '-';
+                        actionCell = `
+                            <td style="font-size: 0.8125rem; color: var(--text-muted);">
+                                <div><strong style="color: var(--text-secondary);">Resolved by:</strong> ${resolvedBy}</div>
+                                <div style="margin-top: 0.25rem;">
+                                    <strong style="color: var(--text-secondary);">Reason:</strong>
+                                    <span title="${safeReasonTitle}">${reasonText}</span>
+                                </div>
+                            </td>`;
+                    }
+                }
+
+                return `
+                    <tr data-alert-id="${alert.alertId}" ${resolvedRowStyle ? 'style="' + resolvedRowStyle + '"' : ''}>
+                        <td>${alert.alertId || '-'}</td>
+                        <td><span class="badge ${typeBadge}">${typeText}</span></td>
+                        <td>${alert.productName || 'N/A'}</td>
+                        <td>${alert.message || 'N/A'}</td>
+                        <td><span class="badge ${priorityBadge}">${alert.severity || 'INFO'}</span></td>
+                        <td>${alertDate}</td>
+                        <td><span class="badge ${statusBadge}">${statusText}</span></td>
+                        ${actionCell}
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        const alertsApiBase = (ALERTS_API || '').replace(/\/alerts\/?.*$/, '') || ALERTS_API;
+
+        function removeAlertWithFade(alertId, actionName) {
+            const row = document.querySelector(`tr[data-alert-id="${alertId}"]`);
+            if (row) {
+                row.style.transition = 'opacity 0.4s ease';
+                row.style.opacity = '0';
+                setTimeout(function() {
+                    allAlerts = allAlerts.filter(a => a.alertId != alertId);
+                    filteredAlerts = filteredAlerts.filter(a => a.alertId != alertId);
+                    if (Array.isArray(allAlertsForStats)) {
+                        allAlertsForStats = allAlertsForStats.filter(a => a.alertId != alertId);
+                    }
+                    performSearch();
+                    updateStats();
+                    if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+                }, 400);
+            } else {
+                allAlerts = allAlerts.filter(a => a.alertId != alertId);
+                filteredAlerts = filteredAlerts.filter(a => a.alertId != alertId);
+                if (Array.isArray(allAlertsForStats)) {
+                    allAlertsForStats = allAlertsForStats.filter(a => a.alertId != alertId);
+                }
+                performSearch();
+                updateStats();
+            }
+        }
+
+        let disposalModalAlert = null;
+        function openDisposalModal(alertId) {
+            const alert = allAlerts.find(a => a.alertId == alertId);
+            if (!alert) return;
+            disposalModalAlert = { alertId: alert.alertId, productId: alert.productId, batchId: alert.batchId, productName: alert.productName || 'N/A' };
+            document.getElementById('disposalModalProduct').textContent = 'Product: ' + disposalModalAlert.productName;
+            document.getElementById('disposalReasonInput').value = '';
+            document.getElementById('disposalModalBackdrop').style.display = 'block';
+            document.getElementById('disposalModal').style.display = 'block';
+        }
+        function closeDisposalModal() {
+            disposalModalAlert = null;
+            document.getElementById('disposalModalBackdrop').style.display = 'none';
+            document.getElementById('disposalModal').style.display = 'none';
+        }
+        async function confirmRequestDisposal() {
+            if (!disposalModalAlert) return;
+            const reason = document.getElementById('disposalReasonInput').value.trim();
+            if (!reason) {
+                if (typeof showNotification === 'function') showNotification('Reason required', 'Reason cannot be empty. Please fill in a reason before taking this action.', 'error');
+                return;
+            }
+            const userId = parseInt(localStorage.getItem('userId') || sessionStorage.getItem('userId') || '0', 10);
+            const btn = document.getElementById('confirmDisposalBtn');
+            if (btn) btn.disabled = true;
+            try {
+                const token = sessionStorage.getItem('authToken');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+                const res = await fetch(alertsApiBase + '/disposal-requests', {
+                    method: 'POST', headers,
+                    body: JSON.stringify({ batchId: disposalModalAlert.batchId, productId: disposalModalAlert.productId, notes: reason, requestedBy: userId })
+                });
+                const result = await res.json().catch(() => ({}));
+                if (result && result.success) {
+                    if (typeof showNotification === 'function') showNotification('Disposal request submitted. Alert removed.', 'success');
+                    closeDisposalModal();
+                    removeAlertWithFade(disposalModalAlert.alertId, 'Request Disposal');
+                } else {
+                    if (typeof showNotification === 'function') showNotification(result.error || 'Failed to submit disposal request', 'error');
+                }
+            } catch (e) {
+                if (typeof showNotification === 'function') showNotification('Error: ' + (e.message || 'Request failed'), 'error');
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        let issueModalAlert = null;
+        function openIssueModal(alertId) {
+            const alert = allAlerts.find(a => a.alertId == alertId);
+            if (!alert) return;
+            issueModalAlert = { alertId: alert.alertId, productId: alert.productId, batchId: alert.batchId, productName: alert.productName || 'N/A' };
+            document.getElementById('issueModalProduct').textContent = 'Product: ' + issueModalAlert.productName;
+            document.getElementById('issueQuantityInput').value = '1';
+            document.getElementById('issueRecipientInput').value = '';
+            document.getElementById('issueModalBackdrop').style.display = 'block';
+            document.getElementById('issueModal').style.display = 'block';
+        }
+        function closeIssueModal() {
+            issueModalAlert = null;
+            document.getElementById('issueModalBackdrop').style.display = 'none';
+            document.getElementById('issueModal').style.display = 'none';
+        }
+        async function confirmQuickIssue() {
+            if (!issueModalAlert) return;
+            const qty = parseInt(document.getElementById('issueQuantityInput').value, 10);
+            const recipient = document.getElementById('issueRecipientInput').value.trim();
+            if (!qty || qty < 1 || !recipient) {
+                if (typeof showNotification === 'function') showNotification('Quantity and recipient are required', 'error');
+                return;
+            }
+            const userId = parseInt(localStorage.getItem('userId') || sessionStorage.getItem('userId') || '0', 10);
+            const btn = document.getElementById('confirmIssueBtn');
+            if (btn) btn.disabled = true;
+            try {
+                const token = sessionStorage.getItem('authToken');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+                const res = await fetch(alertsApiBase + '/issuing', {
+                    method: 'POST', headers,
+                    body: JSON.stringify({ productId: issueModalAlert.productId, batchId: issueModalAlert.batchId, quantity: qty, recipient, issuedBy: userId })
+                });
+                const result = await res.json().catch(() => ({}));
+                if (result && result.success) {
+                    if (typeof showNotification === 'function') showNotification('Stock issued. Alert removed.', 'success');
+                    closeIssueModal();
+                    removeAlertWithFade(issueModalAlert.alertId, 'Quick Issue');
+                } else {
+                    if (typeof showNotification === 'function') showNotification(result.error || 'Failed to issue stock', 'error');
+                }
+            } catch (e) {
+                if (typeof showNotification === 'function') showNotification('Error: ' + (e.message || 'Request failed'), 'error');
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        let purchaseModalAlert = null;
+
+        async function populatePurchaseLocationsFromWarehouses() {
+            const select = document.getElementById('purchaseLocationInput');
+            if (!select) return;
+            select.innerHTML = '<option value="">Select a warehouse...</option>';
+            try {
+                const token = sessionStorage.getItem('authToken');
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+                const res = await fetch(alertsApiBase + '/warehouses', { headers });
+                const data = await res.json();
+                const list = (data && data.success && Array.isArray(data.data)) ? data.data : [];
+                const active = list.filter(w => String(w.status || '').toLowerCase() === 'active');
+                const sorted = (active.length ? active : list).sort((a, b) =>
+                    String(a.name || '').localeCompare(String(b.name || ''), undefined, { sensitivity: 'base' })
+                );
+                sorted.forEach(w => {
+                    const opt = document.createElement('option');
+                    opt.value = String(w.name || '');
+                    opt.textContent = String(w.name || 'Warehouse') + (w.code ? ' (' + w.code + ')' : '');
+                    if (opt.value) select.appendChild(opt);
+                });
+            } catch (e) {
+                console.error('Failed to load warehouses for purchase modal:', e);
+                select.innerHTML = '<option value="">Error loading warehouses</option>';
+            }
+        }
+
+        function openPurchaseModal(alertId) {
+            const alert = allAlerts.find(a => a.alertId == alertId);
+            if (!alert) return;
+            purchaseModalAlert = { alertId: alert.alertId, productId: alert.productId, productName: alert.productName || 'N/A' };
+            document.getElementById('purchaseModalProduct').textContent = 'Product: ' + purchaseModalAlert.productName;
+            document.getElementById('purchaseQuantityInput').value = '1';
+            document.getElementById('purchaseLocationInput').value = '';
+            document.getElementById('purchaseNotesInput').value = '';
+            document.getElementById('purchaseModalBackdrop').style.display = 'block';
+            document.getElementById('purchaseModal').style.display = 'block';
+        }
+        function closePurchaseModal() {
+            purchaseModalAlert = null;
+            document.getElementById('purchaseModalBackdrop').style.display = 'none';
+            document.getElementById('purchaseModal').style.display = 'none';
+        }
+        async function confirmPurchaseRequest() {
+            if (!purchaseModalAlert) return;
+            const quantity = parseInt(document.getElementById('purchaseQuantityInput').value, 10);
+            const sendingLocation = document.getElementById('purchaseLocationInput').value.trim();
+            if (!quantity || quantity < 1 || !sendingLocation) {
+                if (typeof showNotification === 'function') showNotification('Quantity and sending location are required', 'error');
+                return;
+            }
+            const userId = parseInt(localStorage.getItem('userId') || sessionStorage.getItem('userId') || '0', 10);
+            const notes = document.getElementById('purchaseNotesInput').value.trim();
+            const btn = document.getElementById('confirmPurchaseBtn');
+            if (btn) btn.disabled = true;
+            try {
+                const token = (typeof window.getAuthToken === 'function' ? window.getAuthToken() : sessionStorage.getItem('authToken')) || '';
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) headers['Authorization'] = 'Bearer ' + token;
+                const res = await fetch(alertsApiBase + '/purchase-requests', {
+                    method: 'POST', headers,
+                    body: JSON.stringify({ productId: purchaseModalAlert.productId, quantity, sendingLocation, notes, requestedBy: userId })
+                });
+                const result = await res.json().catch(() => ({}));
+                if (result && result.success) {
+                    if (typeof showNotification === 'function') showNotification('Purchase request created. Alert removed.', 'success');
+                    closePurchaseModal();
+                    removeAlertWithFade(purchaseModalAlert.alertId, 'Purchase');
+                } else {
+                    if (typeof showNotification === 'function') showNotification(result.error || 'Failed to create purchase request', 'error');
+                }
+            } catch (e) {
+                if (typeof showNotification === 'function') showNotification('Error: ' + (e.message || 'Request failed'), 'error');
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('open');
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+            populatePurchaseLocationsFromWarehouses();
+            loadAlerts();
+            document.getElementById('typeFilter').addEventListener('change', loadAlerts);
+            document.getElementById('statusFilter').addEventListener('change', loadAlerts);
+        });
+    </script>
+</body>
+</html>
+

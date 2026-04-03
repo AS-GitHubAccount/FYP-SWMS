@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supplier Management - SWMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body class="suppliers-page">
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <a href="dashboard.html" class="logo">SWMS</a>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html"><i data-lucide="layout-dashboard" class="nav-icon"></i> Dashboard</a>
+                <a href="inventory.html"><i data-lucide="package" class="nav-icon"></i> Inventory</a>
+                <a href="alerts.html"><i data-lucide="bell" class="nav-icon"></i> Alerts</a>
+                <a href="reports.html"><i data-lucide="bar-chart-2" class="nav-icon"></i> Reports</a>
+                <a href="users.html" id="usersLink" style="display: none;"><i data-lucide="users" class="nav-icon"></i> Users</a>
+                <a href="suppliers.html" class="active"><i data-lucide="truck" class="nav-icon"></i> Suppliers</a>
+                <a href="warehouses.html"><i data-lucide="warehouse" class="nav-icon"></i> Warehouses</a>
+                <a href="approval.html" id="approvalCenterLink" style="display: none;"><i data-lucide="shield-check" class="nav-icon"></i> Approval</a>
+            </nav>
+        </aside>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()" aria-hidden="true"></div>
+        <div class="main-wrapper">
+            <header class="header">
+                <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="header-compact">
+                    <a href="notifications.html" class="notification-icon" style="position: relative; text-decoration: none; padding: 0.5rem; color: var(--text);">
+                        <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
+                        <span id="notificationBadge" class="badge badge-danger" style="position: absolute; top: -4px; right: -4px; font-size: 0.65rem; display: none; min-width: 16px; padding: 2px 5px;">0</span>
+                    </a>
+                    <div class="user-profile-wrap">
+                        <button id="profileAvatarBtn" class="profile-avatar-btn" type="button" onclick="toggleProfileDropdown(event)" aria-haspopup="true" aria-expanded="false" title="Account">
+                            <span class="profile-avatar-initial" id="profileAvatarInitial">U</span>
+                        </button>
+                        <div id="profileDropdown" class="profile-dropdown" style="display: none;" role="menu">
+                            <div class="profile-dropdown-header">
+                                <div class="profile-dropdown-name" id="profileUserName">User</div>
+                                <div class="profile-dropdown-email" id="profileUserEmail">user@example.com</div>
+                            </div>
+                            <a href="settings.html" class="profile-dropdown-item" role="menuitem">Settings</a>
+                            <button type="button" class="profile-dropdown-item profile-dropdown-logout" onclick="handleLogout(event)" role="menuitem">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+    <main class="container-fluid">
+        <div class="page-header">
+            <h1 class="page-title">Supplier Management</h1>
+        </div>
+
+        <!-- Search Section -->
+        <div class="search-filter-bar">
+            <input 
+                type="text" 
+                id="searchInput" 
+                class="form-input" 
+                placeholder="Search suppliers by name, contact person, email, phone, address, or notes..." 
+                oninput="filterSuppliers()"
+            >
+        </div>
+
+        <div class="card suppliers-table-card">
+            <div class="card-header">
+                <h2 class="card-title">Suppliers (<span id="supplierCount">0</span>)</h2>
+                <button id="addSupplierBtn" class="btn btn-primary" onclick="showAddSupplierModal()">Add Supplier</button>
+            </div>
+            <div class="table-container table-responsive">
+                <table id="suppliersTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Contact</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Address</th>
+                            <th>Notes</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="suppliersTableBody">
+                        <tr>
+                            <td colspan="9" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                                <span class="loading-spinner" style="margin-right: 0.5rem;"></span>Loading suppliers...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Supplier Modal -->
+    <div id="addSupplierModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="card-header">
+                <h2 class="card-title">Add New Supplier</h2>
+                <button onclick="closeModal('addSupplierModal')" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <form id="addSupplierForm" novalidate onsubmit="handleAddSupplier(event)">
+                    <div class="form-group">
+                        <label for="supplierName" class="form-label">Supplier Name *</label>
+                        <input type="text" id="supplierName" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contactPerson" class="form-label">Contact Person *</label>
+                        <input type="text" id="contactPerson" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="supplierEmail" class="form-label">Email *</label>
+                        <input type="email" id="supplierEmail" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="supplierPhone" class="form-label">Phone *</label>
+                        <input type="tel" id="supplierPhone" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="supplierAddress" class="form-label">Address</label>
+                        <textarea id="supplierAddress" class="form-textarea" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="addSupplierNotes" class="form-label">Notes (optional)</label>
+                        <textarea id="addSupplierNotes" class="form-textarea" rows="3" placeholder="Add notes for this supplier..."></textarea>
+                    </div>
+                    <div class="actions">
+                        <button type="submit" class="btn btn-primary">Add Supplier</button>
+                        <button type="button" class="btn btn-outline" onclick="closeModal('addSupplierModal')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Supplier Modal -->
+    <div id="editSupplierModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="card-header">
+                <h2 class="card-title">Edit Supplier</h2>
+                <button onclick="closeEditModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <form id="editSupplierForm" novalidate onsubmit="handleUpdateSupplier(event)">
+                    <input type="hidden" id="editSupplierId">
+                    <div class="form-group">
+                        <label for="editSupplierName" class="form-label">Supplier Name *</label>
+                        <input type="text" id="editSupplierName" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editContactPerson" class="form-label">Contact Person *</label>
+                        <input type="text" id="editContactPerson" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editSupplierEmail" class="form-label">Email *</label>
+                        <input type="email" id="editSupplierEmail" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editSupplierPhone" class="form-label">Phone *</label>
+                        <input type="tel" id="editSupplierPhone" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editSupplierAddress" class="form-label">Address</label>
+                        <textarea id="editSupplierAddress" class="form-textarea" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="editSupplierNotes" class="form-label">Notes (optional)</label>
+                        <textarea id="editSupplierNotes" class="form-textarea" rows="3" placeholder="Add notes for this supplier..."></textarea>
+                    </div>
+                    <div class="actions">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <button type="button" class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+        </div><!-- .main-wrapper -->
+    </div><!-- .app-layout -->
+
+    <script src="js/api-config.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/notifications.js"></script>
+    <script>
+        const API_BASE_URL = typeof window.getSwmsApiBase === 'function' ? window.getSwmsApiBase() : (window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api');
+        const userRole = sessionStorage.getItem('userRole') || 'Admin';
+        const isAdmin = userRole === 'Admin' || userRole === 'ADMIN';
+
+        // Clear old localStorage suppliers - page now uses database only
+        try { localStorage.removeItem('suppliers'); } catch (e) {}
+        // Staff: view-only (no Add/Edit/Delete). Admin-only nav handled by app.js.
+        const addBtn = document.getElementById('addSupplierBtn');
+        if (addBtn) addBtn.style.display = isAdmin ? '' : 'none';
+
+        async function loadSuppliers() {
+            const tbody = document.getElementById('suppliersTableBody');
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 2rem;">Loading suppliers...</td></tr>';
+
+            try {
+                // Ensure we load from API, not cache
+                const response = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/suppliers`, { cache: 'no-store' });
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.error || 'Failed to load suppliers');
+                }
+
+                const suppliers = result.data || [];
+
+                if (suppliers.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No suppliers found. Add your first supplier.</td></tr>';
+                    document.getElementById('supplierCount').textContent = '0';
+                    return;
+                }
+
+                const sorted = [...suppliers].sort((a, b) => (Number(b.supplierId) || 0) - (Number(a.supplierId) || 0));
+                document.getElementById('supplierCount').textContent = String(sorted.length);
+
+                function esc(s) {
+                    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                }
+                function clampText(str, max) {
+                    const t = String(str || '');
+                    return t.length <= max ? t : t.substring(0, max) + '…';
+                }
+
+                tbody.innerHTML = sorted.map(supplier => {
+                    const addr = supplier.address || '';
+                    const notes = supplier.notes || '';
+                    const addrShow = clampText(addr, 42) || '—';
+                    const notesShow = clampText(notes.replace(/\s+/g, ' ').trim(), 40) || '—';
+                    return `
+                    <tr>
+                        <td>${supplier.supplierId || '-'}</td>
+                        <td class="supplier-cell-text">${esc(supplier.name)}</td>
+                        <td class="supplier-cell-text">${esc(supplier.contactPerson || '—')}</td>
+                        <td class="supplier-cell-email">${esc(supplier.email)}</td>
+                        <td class="supplier-cell-text">${esc(supplier.phone || '—')}</td>
+                        <td class="supplier-cell-clamp" title="${esc(addr)}">${esc(addrShow)}</td>
+                        <td class="supplier-cell-clamp" title="${esc(notes)}">${esc(notesShow)}</td>
+                        <td><span class="badge badge-${supplier.status === 'active' ? 'success' : 'secondary'}">${supplier.status || 'Active'}</span></td>
+                        <td class="supplier-actions-cell">${isAdmin ? `<div class="supplier-actions-wrap">
+                            <button type="button" class="btn btn-sm btn-outline" onclick="editSupplier(${supplier.supplierId})">Edit</button>
+                            <button type="button" class="btn btn-sm btn-outline btn-danger" onclick="deleteSupplier(${supplier.supplierId})">Delete</button>
+                        </div>` : '—'}</td>
+                    </tr>
+                `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading suppliers:', error);
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 2rem; color: var(--text-secondary);">Unable to connect to the database. Please contact the administrator.</td></tr>';
+                var sc = document.getElementById('supplierCount');
+                if (sc) sc.textContent = '0';
+                if (typeof showNotification === 'function') {
+                    showNotification('Failed to load suppliers', 'error');
+                }
+            }
+        }
+
+        function showAddSupplierModal() {
+            document.getElementById('addSupplierModal').style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            document.getElementById('addSupplierForm').reset();
+        }
+
+        async function handleAddSupplier(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('supplierName').value.trim();
+            const contactPerson = document.getElementById('contactPerson').value.trim();
+            const email = document.getElementById('supplierEmail').value.trim();
+            const phone = document.getElementById('supplierPhone').value.trim();
+            const address = document.getElementById('supplierAddress').value.trim();
+            const notes = document.getElementById('addSupplierNotes').value.trim();
+
+            const submitBtn = document.querySelector('#addSupplierForm button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Adding...';
+
+            try {
+                const response = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/suppliers`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, contactPerson, email, phone, address, notes: notes || undefined, status: 'active' })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('Supplier added successfully', 'success');
+                    closeModal('addSupplierModal');
+                    loadSuppliers();
+                } else {
+                    throw new Error(result.error || 'Failed to add supplier');
+                }
+            } catch (error) {
+                showNotification(error.message || 'Failed to add supplier', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        }
+
+        async function editSupplier(supplierId) {
+            try {
+                const response = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/suppliers/${supplierId}`);
+                const result = await response.json();
+
+                if (!result.success) throw new Error(result.error || 'Supplier not found');
+
+                const s = result.data;
+                document.getElementById('editSupplierId').value = s.supplierId;
+                document.getElementById('editSupplierName').value = s.name;
+                document.getElementById('editContactPerson').value = s.contactPerson || '';
+                document.getElementById('editSupplierEmail').value = s.email;
+                document.getElementById('editSupplierPhone').value = s.phone || '';
+                document.getElementById('editSupplierAddress').value = s.address || '';
+                document.getElementById('editSupplierNotes').value = s.notes || '';
+                document.getElementById('editSupplierModal').style.display = 'flex';
+            } catch (error) {
+                showNotification(error.message || 'Failed to load supplier', 'error');
+            }
+        }
+
+        function closeEditModal() {
+            document.getElementById('editSupplierModal').style.display = 'none';
+        }
+
+        async function handleUpdateSupplier(e) {
+            e.preventDefault();
+
+            const supplierId = document.getElementById('editSupplierId').value;
+            const name = document.getElementById('editSupplierName').value.trim();
+            const contactPerson = document.getElementById('editContactPerson').value.trim();
+            const email = document.getElementById('editSupplierEmail').value.trim();
+            const phone = document.getElementById('editSupplierPhone').value.trim();
+            const address = document.getElementById('editSupplierAddress').value.trim();
+            const notes = document.getElementById('editSupplierNotes').value.trim();
+
+            const submitBtn = document.querySelector('#editSupplierForm button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Saving...';
+
+            try {
+                const response = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/suppliers/${supplierId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, contactPerson, email, phone, address, notes: notes || undefined })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('Supplier updated successfully', 'success');
+                    closeEditModal();
+                    loadSuppliers();
+                } else {
+                    throw new Error(result.error || 'Failed to update supplier');
+                }
+            } catch (error) {
+                showNotification(error.message || 'Failed to update supplier', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        }
+
+        async function deleteSupplier(supplierId) {
+            const ok = await (window.showConfirmWindow || function(t,m){return Promise.resolve(confirm(m));})('Delete Supplier', 'Are you sure you want to delete this supplier?');
+            if (!ok) return;
+
+            try {
+                const response = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/suppliers/${supplierId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showNotification('Supplier deleted successfully', 'success');
+                    loadSuppliers();
+                } else {
+                    throw new Error(result.error || 'Failed to delete supplier');
+                }
+            } catch (error) {
+                showNotification(error.message || 'Failed to delete supplier', 'error');
+            }
+        }
+
+        function filterSuppliers() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#suppliersTableBody tr');
+            rows.forEach(row => {
+                if (row.cells.length < 2) return;
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('open');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+            const role = sessionStorage.getItem('userRole') || 'Admin';
+            const isAdmin = role === 'Admin' || role === 'ADMIN';
+            const ul = document.getElementById('usersLink');
+            const al = document.getElementById('auditLink');
+            const dal = document.getElementById('approvalCenterLink');
+            if (ul) ul.style.display = isAdmin ? '' : 'none';
+            if (al) al.style.display = isAdmin ? '' : 'none';
+            if (dal) dal.style.display = isAdmin ? '' : 'none';
+            loadSuppliers();
+        });
+    </script>
+</body>
+</html>
+

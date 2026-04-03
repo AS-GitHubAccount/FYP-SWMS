@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approval - SWMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <a href="dashboard.html" class="logo">SWMS</a>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html"><i data-lucide="layout-dashboard" class="nav-icon"></i> Dashboard</a>
+                <a href="inventory.html"><i data-lucide="package" class="nav-icon"></i> Inventory</a>
+                <a href="alerts.html"><i data-lucide="bell" class="nav-icon"></i> Alerts</a>
+                <a href="reports.html"><i data-lucide="bar-chart-2" class="nav-icon"></i> Reports</a>
+                <a href="users.html" id="usersLink" style="display: none;"><i data-lucide="users" class="nav-icon"></i> Users</a>
+                <a href="suppliers.html"><i data-lucide="truck" class="nav-icon"></i> Suppliers</a>
+                <a href="warehouses.html"><i data-lucide="warehouse" class="nav-icon"></i> Warehouses</a>
+                <a href="approval.html" id="approvalCenterLink" class="active" style="display: none;"><i data-lucide="shield-check" class="nav-icon"></i> Approval</a>
+            </nav>
+        </aside>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()" aria-hidden="true"></div>
+        <div class="main-wrapper">
+            <header class="header">
+                <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="header-compact">
+                    <a href="notifications.html" class="notification-icon" style="position: relative; text-decoration: none; padding: 0.5rem; color: var(--text);">
+                        <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
+                        <span id="notificationBadge" class="badge badge-danger" style="position: absolute; top: -4px; right: -4px; font-size: 0.65rem; display: none; min-width: 16px; padding: 2px 5px;">0</span>
+                    </a>
+                    <div class="user-profile-wrap">
+                        <button id="profileAvatarBtn" class="profile-avatar-btn" type="button" onclick="toggleProfileDropdown(event)" aria-haspopup="true" aria-expanded="false" title="Account">
+                            <span class="profile-avatar-initial" id="profileAvatarInitial">U</span>
+                        </button>
+                        <div id="profileDropdown" class="profile-dropdown" style="display: none;" role="menu">
+                            <div class="profile-dropdown-header">
+                                <div class="profile-dropdown-name" id="profileUserName">User</div>
+                                <div class="profile-dropdown-email" id="profileUserEmail">user@example.com</div>
+                            </div>
+                            <a href="settings.html" class="profile-dropdown-item" role="menuitem">Settings</a>
+                            <button type="button" class="profile-dropdown-item profile-dropdown-logout" onclick="handleLogout(event)" role="menuitem">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="container-fluid" role="main">
+                <div class="page-header" style="margin-bottom: 0.75rem;">
+                    <h1 class="page-title">Approval Center</h1>
+                </div>
+
+                <div class="approval-filter-bar" role="region" aria-label="Approval filters" id="approvalFilterBar">
+                    <div class="approval-filter-grid">
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" for="approvalStatusFilter" style="display:block; margin-bottom:0.25rem;">Status</label>
+                            <select id="approvalStatusFilter" class="form-select" style="min-width: 140px;" onchange="window.loadAllApprovals && window.loadAllApprovals()">
+                                <option value="all" selected>All</option>
+                                <option value="PENDING">Pending</option>
+                                <option value="APPROVED">Approved</option>
+                                <option value="REJECTED">Rejected</option>
+                                <option value="COMPLETED">Completed</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin: 0;" id="approvalTypeFilterWrap">
+                            <label class="form-label" for="approvalTypeFilter" style="display:block; margin-bottom:0.25rem;">Type</label>
+                            <select id="approvalTypeFilter" class="form-select" style="min-width: 180px;" onchange="window.loadAllApprovals && window.loadAllApprovals()">
+                                <option value="all">All</option>
+                                <option value="disposal">Disposal</option>
+                                <option value="booking">Booking</option>
+                                <option value="purchase">Purchase</option>
+                                <option value="rfq_withdrawal">RFQ Withdrawal</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label" for="approvalNameFilter" style="display:block; margin-bottom:0.25rem;">Search</label>
+                            <input
+                                type="text"
+                                id="approvalNameFilter"
+                                class="form-input"
+                                placeholder="Search requested by or reference..."
+                                autocomplete="off"
+                                style="min-width: 220px;"
+                                oninput="window.loadAllApprovals && window.loadAllApprovals()"
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title" id="approvalCardTitle">Approval Requests (<span id="pendingCount">0</span>)</h2>
+                        <button type="button" class="btn btn-outline" onclick="window.loadAllApprovals && window.loadAllApprovals()"><i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Refresh</button>
+                    </div>
+                    <div class="table-container">
+                        <div id="approvalsLoading" style="padding: 2rem; text-align: center; color: var(--text-secondary);">Loading...</div>
+                        <table id="approvalsTable" style="display: none;" aria-describedby="approvals-desc">
+                            <caption id="approvals-desc" class="sr-only">Approval items</caption>
+                            <thead>
+                                <tr id="approvalsTableHead">
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Reference</th>
+                                    <th>Description</th>
+                                    <th>Requested By</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="approvalsTableBody">
+                            </tbody>
+                        </table>
+                        <div id="approvalsEmpty" style="display: none; padding: 2rem; text-align: center; color: var(--text-secondary);">No approval requests found.</div>
+                        <div id="approvalsError" style="display: none; padding: 2rem; text-align: center; color: var(--danger-text);"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Rejection Reason Modal (mandatory for audit trail) -->
+    <div id="rejectReasonModalBackdrop" onclick="window.closeRejectReasonModal && window.closeRejectReasonModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001;"></div>
+    <div id="rejectReasonModal" class="card" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1002; max-width: 420px; width: 90%; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.10); border: 1px solid var(--border, #e5e7eb); border-radius: 4px;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; background: #fff; border-bottom: 1px solid var(--border, #e5e7eb);">
+            <h2 class="card-title" style="margin: 0; font-size: 1.1rem;">Rejection Reason (Required)</h2>
+            <button type="button" onclick="window.closeRejectReasonModal && window.closeRejectReasonModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+        <div style="padding: 1.25rem;">
+            <p style="color: var(--text-secondary, #6b7280); margin-bottom: 0.75rem;">Please provide a reason for rejection. This will be stored and shown to the requester.</p>
+            <textarea id="rejectReasonInput" class="form-input" rows="4" placeholder="e.g. No" minlength="1" style="width: 100%; resize: vertical; min-height: 80px;"></textarea>
+            <span id="rejectReasonError" style="display: none; color: #B91C1C; font-size: 0.875rem;"></span>
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+                <button type="button" class="btn btn-outline" onclick="window.closeRejectReasonModal && window.closeRejectReasonModal()">Cancel</button>
+                <button type="button" class="btn" id="rejectReasonConfirmBtn" disabled style="background: #B91C1C; color: #fff; border: none; border-radius: 4px; opacity: 0.6; cursor: not-allowed;">Submit Rejection</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Approval Modal (mandatory reason) -->
+    <div id="approvalReasonModalBackdrop" onclick="window.closeApprovalReasonModal && window.closeApprovalReasonModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1003;"></div>
+    <div id="approvalReasonModal" class="card" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1004; max-width: 420px; width: 90%; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.10); border: 1px solid var(--border, #e5e7eb); border-radius: 4px;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; background: #fff; border-bottom: 1px solid var(--border, #e5e7eb);">
+            <h2 class="card-title" style="margin: 0; font-size: 1.1rem;">Confirm Approval</h2>
+            <button type="button" onclick="window.closeApprovalReasonModal && window.closeApprovalReasonModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+        <div style="padding: 1.25rem;">
+            <label class="form-label" for="approvalReasonInput" style="display: block; margin-bottom: 0.5rem;">Approval Remarks / Reason</label>
+            <textarea id="approvalReasonInput" class="form-input" rows="4" placeholder="e.g. OK" minlength="1" style="width: 100%; resize: vertical; min-height: 80px; border: 1px solid var(--border, #e5e7eb); border-radius: 4px; padding: 0.5rem 0.75rem;"></textarea>
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+                <button type="button" class="btn btn-outline" onclick="window.closeApprovalReasonModal && window.closeApprovalReasonModal()">Cancel</button>
+                <button type="button" class="btn" id="approvalReasonConfirmBtn" disabled style="background: #15803D; color: #fff; border: none; border-radius: 4px; opacity: 0.6; cursor: not-allowed;">Submit Approval</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+        td.approval-type-cell {
+            padding: 12px 16px !important;
+            border-radius: 4px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        td.approval-type-cell.approval-type-disposal { background: #FEE2E2; color: #991B1B; }
+        td.approval-type-cell.approval-type-booking { background: #DBEAFE; color: #1E40AF; }
+        td.approval-type-cell.approval-type-purchase_request { background: #FEF3C7; color: #92400E; }
+        td.approval-type-cell.approval-type-rfq_withdrawal { background: #F3E8FF; color: #8B5CF6; }
+
+        /* 12px padding so content doesn't feel cramped */
+        #approvalsTable th,
+        #approvalsTable td {
+            padding: 12px 16px !important;
+        }
+
+        /* 3-column filter bar */
+        .approval-filter-bar {
+            padding: 0 1rem;
+            margin-bottom: 1rem;
+        }
+        .approval-filter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1.4fr;
+            gap: 0.75rem;
+            align-items: end;
+        }
+        @media (max-width: 768px) {
+            .approval-filter-grid { grid-template-columns: 1fr; }
+        }
+
+        .btn-disposal-approve {
+            background: #15803D;
+            color: #fff;
+            border: none;
+            border-radius: 4px !important;
+            font-weight: 500;
+            box-shadow: none !important;
+            transition: background-color 0.15s ease, transform 0.05s ease;
+        }
+        .btn-disposal-approve:hover { background: #166534; cursor: pointer; }
+        .btn-disposal-approve:active { transform: translateY(1px); }
+
+        .btn-disposal-reject {
+            background: #B91C1C;
+            color: #fff;
+            border: none;
+            border-radius: 4px !important;
+            font-weight: 500;
+            box-shadow: none !important;
+            transition: background-color 0.15s ease, transform 0.05s ease;
+        }
+        .btn-disposal-reject:hover { background: #991B1B; cursor: pointer; }
+        .btn-disposal-reject:active { transform: translateY(1px); }
+
+        #approvalReasonInput.approval-reason-error { border-color: #B91C1C; box-shadow: 0 0 0 1px #B91C1C; }
+    </style>
+
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="js/api-config.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/approval.js"></script>
+    <script>
+        const userRole = (sessionStorage.getItem('userRole') || '').toUpperCase();
+        if (userRole !== 'ADMIN') {
+            window.location.href = 'dashboard.html';
+            throw 0;
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('open');
+            }
+        }
+
+        ['usersLink', 'approvalCenterLink', 'auditLink'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = '';
+        });
+        if (typeof updateNavFromSettings === 'function') updateNavFromSettings();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+            if (typeof window.loadAllApprovals === 'function') window.loadAllApprovals();
+        });
+    </script>
+</body>
+</html>

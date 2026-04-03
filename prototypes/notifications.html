@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications - SWMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <a href="dashboard.html" class="logo">SWMS</a>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html"><i data-lucide="layout-dashboard" class="nav-icon"></i> Dashboard</a>
+                <a href="inventory.html"><i data-lucide="package" class="nav-icon"></i> Inventory</a>
+                <a href="alerts.html"><i data-lucide="bell" class="nav-icon"></i> Alerts</a>
+                <a href="reports.html"><i data-lucide="bar-chart-2" class="nav-icon"></i> Reports</a>
+                <a href="users.html" id="usersLink" style="display: none;"><i data-lucide="users" class="nav-icon"></i> Users</a>
+                <a href="suppliers.html"><i data-lucide="truck" class="nav-icon"></i> Suppliers</a>
+                <a href="warehouses.html"><i data-lucide="warehouse" class="nav-icon"></i> Warehouses</a>
+                <a href="approval.html" id="approvalCenterLink" style="display: none;"><i data-lucide="shield-check" class="nav-icon"></i> Approval</a>
+            </nav>
+        </aside>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()" aria-hidden="true"></div>
+        <div class="main-wrapper">
+            <header class="header">
+                <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="header-compact">
+                    <a href="notifications.html" class="notification-icon" style="position: relative; text-decoration: none; padding: 0.5rem; color: var(--text);">
+                        <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
+                        <span id="notificationBadge" class="badge badge-danger" style="position: absolute; top: -4px; right: -4px; font-size: 0.65rem; display: none; min-width: 16px; padding: 2px 5px;">0</span>
+                    </a>
+                    <div class="user-profile-wrap">
+                        <button id="profileAvatarBtn" class="profile-avatar-btn" type="button" onclick="toggleProfileDropdown(event)" aria-haspopup="true" aria-expanded="false" title="Account">
+                            <span class="profile-avatar-initial" id="profileAvatarInitial">U</span>
+                        </button>
+                        <div id="profileDropdown" class="profile-dropdown" style="display: none;" role="menu">
+                            <div class="profile-dropdown-header">
+                                <div class="profile-dropdown-name" id="profileUserName">User</div>
+                                <div class="profile-dropdown-email" id="profileUserEmail">user@example.com</div>
+                            </div>
+                            <a href="settings.html" class="profile-dropdown-item" role="menuitem">Settings</a>
+                            <button type="button" class="profile-dropdown-item profile-dropdown-logout" onclick="handleLogout(event)" role="menuitem">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+    <main class="container-fluid">
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 class="page-title">Notifications</h1>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-outline" onclick="markAllAsRead()">Mark All as Read</button>
+                <button class="btn btn-outline" onclick="clearAllNotifications()">Clear All</button>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div class="card-body" style="padding: 1.25rem 1.5rem 1.25rem 1.5rem;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; margin-bottom: 0;">
+                    <div>
+                        <label class="form-label">Filter</label>
+                        <select id="filterSelect" class="form-select" onchange="filterNotifications()">
+                            <option value="all">All Notifications</option>
+                            <option value="unread">Unread Only</option>
+                            <option value="read">Read Only</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Type</label>
+                        <select id="typeFilterSelect" class="form-select" onchange="filterNotifications()">
+                            <option value="">All Types</option>
+                            <option value="purchasing">Purchasing</option>
+                            <option value="booking">Booking</option>
+                            <option value="issuing">Issuing</option>
+                            <option value="receiving">Receiving</option>
+                            <option value="alert">Alert</option>
+                            <option value="other">Other (settings & changes)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Search</label>
+                        <input type="text" id="searchInput" class="form-input" placeholder="Search notifications..." oninput="filterNotifications()">
+                    </div>
+                    <div style="display: flex; align-items: flex-end;">
+                        <button class="btn btn-primary" onclick="filterNotifications()" style="width: 100%;">Filter</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notifications List -->
+        <div class="card">
+            <div class="card-body" style="padding: 0;">
+                <div id="notificationsList" style="min-height: 220px; padding: 0.5rem 0;">
+                    <div style="text-align: center; padding: 20px;">
+                        <span class="loading-spinner" style="margin-right: 0.5rem;"></span>Loading notifications...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+        </div><!-- .main-wrapper -->
+    </div><!-- .app-layout -->
+
+    <script src="js/api-config.js"></script>
+    <script src="js/app.js?v=2"></script>
+    <script src="js/notifications.js"></script>
+    <script>
+        const userRole = sessionStorage.getItem('userRole') || 'Admin';
+        const userId = parseInt(sessionStorage.getItem('userId') || '0', 10);
+        const userName = sessionStorage.getItem('userName') || ((userRole === 'Admin' || userRole === 'ADMIN') ? 'Admin' : 'Staff Member');
+        if (userRole === 'Admin' || userRole === 'ADMIN') {
+            const usersLink = document.getElementById('usersLink');
+            if (usersLink) usersLink.style.display = 'inline-block';
+        }
+
+        let allNotifications = [];
+        let filteredNotifications = [];
+
+        function escapeHtml(v) {
+            const d = document.createElement('div');
+            d.textContent = String(v == null ? '' : v);
+            return d.innerHTML;
+        }
+
+        function normalizeId(n) {
+            return n && (n.notificationId || n.notification_id || n.id);
+        }
+
+        function isRead(n) {
+            return !!(n && (n.isRead || n.is_read || n.read));
+        }
+
+        function getSubject(n) {
+            return String(n.subject || n.title || n.type || 'Notification');
+        }
+
+        function getMessage(n) {
+            return String(n.message || n.body || '').trim();
+        }
+
+        // Derive a single, mutually exclusive category for a notification.
+        function getNotificationCategory(n) {
+            const hay = `${n.type || ''} ${getSubject(n)} ${getMessage(n)}`.toLowerCase();
+            if (/purchase order|po\b|purchasing|supplier|rfq|quote/.test(hay)) return 'purchasing';
+            if (/booking|reservation/.test(hay)) return 'booking';
+            if (/issued record|issue record|issued stock|withdrawal|issue request/.test(hay)) return 'issuing';
+            if (/received record|receive record|received stock|inbound/.test(hay)) return 'receiving';
+            if (/alert|expiry|expiring|low stock alert|near expiry/.test(hay)) return 'alert';
+            return 'other';
+        }
+
+        function isActionRequired(n) {
+            const hay = `${n.type || ''} ${getSubject(n)} ${getMessage(n)}`.toLowerCase();
+            return /approval|approve|pending|request|booking|disposal|task/.test(hay);
+        }
+
+        // Map legacy notification targets (deleted standalone pages) to current inventory sub-tabs.
+        function normalizeLegacyNotificationTargetUrl(target, n) {
+            const raw = String(target || '');
+            if (!raw) return raw;
+            const lower = raw.toLowerCase();
+
+            // Already on the inventory page (or newer format) - keep as-is.
+            if (lower.includes('inventory.html')) return raw;
+
+            // Parse query params from a relative/absolute URL string.
+            // Example: issuedRecords.html?recordId=12
+            let qsPart = '';
+            const qIdx = raw.indexOf('?');
+            if (qIdx >= 0) qsPart = raw.slice(qIdx + 1);
+            const qs = new URLSearchParams(qsPart || '');
+
+            const recordId = qs.get('recordId') || qs.get('record_id') || qs.get('recordNumber') || qs.get('id') || '';
+            const compare = qs.get('compare') || qs.get('rfqId') || qs.get('rfq_id') || '';
+
+            // Purchasing: go to inventory purchasing tab (optionally preserve compare/rfq id)
+            if (lower.includes('purchasing.html') || lower.endsWith('/purchasing') || lower.includes('purchasing?')) {
+                return compare
+                    ? `inventory.html?tab=purchasing&compare=${encodeURIComponent(compare)}`
+                    : 'inventory.html?tab=purchasing';
+            }
+
+            // Booking: go to inventory booking tab
+            if (lower.includes('bookings.html') || lower.includes('booking.html')) {
+                return 'inventory.html?tab=booking';
+            }
+
+            // Issuing: go to inventory issuing tab (preserve recordId if present)
+            if (lower.includes('issuedrecords.html') || lower.includes('issuing.html')) {
+                let url = 'inventory.html?tab=issuing';
+                if (recordId) url += `&recordId=${encodeURIComponent(recordId)}`;
+                const section = (qs.get('section') || '').toLowerCase();
+                if (section === 'records') url += '&section=records';
+                return url;
+            }
+
+            // Receiving: go to inventory receiving tab (preserve recordId if present)
+            if (lower.includes('receivedrecords.html') || lower.includes('receiving.html')) {
+                let url = 'inventory.html?tab=receiving';
+                if (recordId) url += `&recordId=${encodeURIComponent(recordId)}`;
+                const section = (qs.get('section') || '').toLowerCase();
+                if (section === 'records') url += '&section=records';
+                return url;
+            }
+
+            return raw;
+        }
+
+        function getTargetUrl(n) {
+            const direct = n.target_url || n.targetUrl || n.url || '';
+            if (direct) return normalizeLegacyNotificationTargetUrl(String(direct), n);
+            const ret = String(n.relatedEntityType || n.related_entity_type || '').toLowerCase();
+            const rid = n.relatedEntityId != null ? n.relatedEntityId : n.related_entity_id;
+            if (ret === 'rfq' && rid != null && String(rid).trim() !== '') {
+                return 'inventory.html?tab=purchasing&compare=' + encodeURIComponent(String(rid));
+            }
+            const hay = `${n.type || ''} ${getSubject(n)} ${getMessage(n)}`.toLowerCase();
+            const refId = n.referenceId || n.reference_id || n.entityId || n.entity_id || '';
+            const category = getNotificationCategory(n);
+
+            // Disposal approval notifications still go to Approval page
+            if (/disposal/.test(hay)) {
+                return refId ? `approval.html?id=${encodeURIComponent(refId)}` : 'approval.html';
+            }
+
+            // Primary routing by category
+            if (category === 'purchasing') return 'inventory.html?tab=purchasing';
+            if (category === 'booking') return 'inventory.html?tab=booking';
+            if (category === 'issuing') return 'inventory.html?tab=issuing';
+            if (category === 'receiving') return 'inventory.html?tab=receiving';
+            if (category === 'alert') return 'alerts.html';
+
+            // Fallback for low-stock / expiry style alerts without clear category
+            if (/low stock|near expiry|expired/.test(hay)) {
+                if (n.productId || n.product_id) {
+                    return `inventory.html?tab=inventory&productId=${encodeURIComponent(n.productId || n.product_id)}`;
+                }
+                if (/low stock/.test(hay)) return 'inventory.html?tab=inventory&status=low_stock';
+                if (/expired|near expiry/.test(hay)) return 'inventory.html?tab=inventory&status=expired';
+            }
+            return '';
+        }
+
+        // Simple timeout helper so the UI never stays stuck on "Loading..."
+        function withTimeout(promise, ms) {
+            return new Promise((resolve, reject) => {
+                const t = setTimeout(() => reject(new Error('Notification load timed out')), ms);
+                promise.then((v) => { clearTimeout(t); resolve(v); }, (e) => { clearTimeout(t); reject(e); });
+            });
+        }
+
+        async function fetchNotificationsFromAPI() {
+            // 1) HTTP API fetch with a strict timeout – this page should never feel stuck
+            const API_BASE = window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api';
+            const token = sessionStorage.getItem('authToken');
+            const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+            if (token) headers.Authorization = 'Bearer ' + token;
+            const params = new URLSearchParams({ userId: String(userId), userRole: String(userRole), userName: String(userName) });
+
+            try {
+                const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+                const signal = controller ? controller.signal : undefined;
+                const fetchPromise = fetch(`${API_BASE}/notifications?${params.toString()}`, { headers, signal });
+                // Shorter timeout here to keep the inbox snappy.
+                const res = await withTimeout(fetchPromise, 5000);
+                const data = await res.json().catch(() => ({}));
+                if (res.ok && data && Array.isArray(data.data)) return data.data;
+            } catch (e) {
+                console.warn('HTTP notifications fetch failed or timed out, falling back to local cache.', e);
+            }
+
+            // 2) Final fallback: local storage cache so the page still renders something
+            try {
+                if (window.storage && typeof window.storage.get === 'function') {
+                    const cached = window.storage.get('notifications') || [];
+                    if (Array.isArray(cached) && cached.length) return cached;
+                }
+            } catch (e) {
+                console.warn('Local notifications cache unavailable.', e);
+            }
+            return [];
+        }
+
+        async function loadNotifications() {
+            const container = document.getElementById('notificationsList');
+            if (!container) return;
+            container.innerHTML = '<div style="text-align:center;padding:20px;"><span class="loading-spinner" style="margin-right:0.5rem;"></span>Loading notifications...</div>';
+            try {
+                const result = await fetchNotificationsFromAPI();
+                allNotifications = Array.isArray(result) ? result.slice() : [];
+                allNotifications.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                filteredNotifications = allNotifications.slice();
+                displayNotifications();
+                if (typeof window.updateNotificationBadge === 'function') await window.updateNotificationBadge();
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+                allNotifications = [];
+                filteredNotifications = [];
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--danger-color);">Error loading notifications. Make sure backend is running and you are logged in.</div>';
+            } finally {
+                // Fail-safe: if we somehow never replaced the loading spinner, show a clean empty state.
+                try {
+                    if (container.textContent && container.textContent.indexOf('Loading notifications') !== -1) {
+                        container.innerHTML = `
+                            <div style="text-align:center;padding:40px;color:var(--text-secondary);">
+                                <div style="margin-bottom:0.5rem;">Your inbox is empty.</div>
+                                <button class="btn btn-outline" onclick="loadNotifications()" style="font-size:0.85rem;">Refresh</button>
+                            </div>
+                        `;
+                    }
+                } catch (e) {
+                    // Ignore; container might have been removed.
+                }
+            }
+        }
+
+        // Ensure the inbox always starts loading promptly on this page.
+        document.addEventListener('DOMContentLoaded', function () {
+            try {
+                if (typeof window.consumePendingNotificationRead === 'function') {
+                    window.consumePendingNotificationRead();
+                }
+            } catch (e) {}
+            try {
+                if (typeof window.updateNotificationBadge === 'function') {
+                    window.updateNotificationBadge();
+                }
+            } catch (e) {}
+            // Use the page-specific loader for the email-style inbox.
+            try {
+                loadNotifications();
+            } catch (e) {
+                console.error('notifications.html init load failed:', e);
+            }
+        });
+
+        function notificationRow(n) {
+            try {
+                const safe = n || {};
+                const id = normalizeId(safe) || '';
+                const unread = !isRead(safe);
+                const subject = escapeHtml(getSubject(safe) || 'System Alert');
+                const message = escapeHtml(getMessage(safe) || '');
+                const preview = message.length > 140 ? (message.slice(0, 140) + '...') : (message || 'No preview available.');
+                const target = getTargetUrl(safe) || '#';
+                const createdRaw = safe.createdAt || safe.created_at;
+                const created = createdRaw ? new Date(createdRaw).toLocaleString() : 'Just now';
+                const typeText = `${safe.type || ''} ${getSubject(safe)} ${getMessage(safe)}`.toLowerCase();
+                let bg = '#FFFFFF';
+                if (unread) {
+                    if (/alert/.test(typeText)) {
+                        bg = '#FEF9C3'; // very light amber for alerts
+                    } else if (/disposal/.test(typeText)) {
+                        bg = '#FEE2E2'; // very light red for disposals
+                    } else if (/booking/.test(typeText)) {
+                        bg = '#DCFCE7'; // light mint green for bookings
+                    } else if (/new quote|quotation|rfq|price|12-mo avg|below 12-mo/.test(typeText)) {
+                        bg = '#E0F7FA'; // light cyan for purchasing / price intelligence
+                    } else if (/approval|approve/.test(typeText)) {
+                        bg = '#E0F2FE'; // pale sky blue for approvals
+                    } else {
+                        bg = '#F3F4F6'; // neutral light gray for other unread
+                    }
+                }
+                const weight = unread ? 700 : 500;
+                const dot = unread ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#2563EB;margin-right:0.5rem;"></span>' : '';
+                return `
+                    <div class="notification-email-item" onclick="onNotificationClick('${escapeHtml(id)}')" style="cursor:pointer;padding:0.9rem 1rem;border-bottom:1px solid #E5E7EB;background:${bg};transition:background-color 0.2s;">
+                        <div style="display:flex;justify-content:space-between;gap:0.75rem;align-items:flex-start;">
+                            <div style="flex:1;min-width:0;display:flex;gap:0.75rem;">
+                                <div style="flex-shrink:0;display:flex;align-items:center;">
+                                    ${dot}
+                                </div>
+                                <div style="flex:1;min-width:0;">
+                                    <div style="display:flex;align-items:center;gap:0.35rem;margin-bottom:0.3rem;">
+                                        <div style="font-weight:${weight};color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${subject}</div>
+                                    </div>
+                                    <div style="color:#4B5563;font-size:0.9rem;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${preview}</div>
+                                    <div style="margin-top:0.25rem;color:#6B7280;font-size:0.78rem;">${escapeHtml(created)}</div>
+                                </div>
+                            </div>
+                            <div style="flex-shrink:0;display:flex;gap:0.5rem;align-items:center;">
+                                <button class="btn btn-outline" onclick="event.stopPropagation(); onNotificationClick('${escapeHtml(id)}')" style="font-size:0.75rem;">View</button>
+                                <button class="btn btn-outline" onclick="event.stopPropagation(); deleteNotificationById('${escapeHtml(id)}')" style="font-size:0.75rem;color:var(--danger-color);">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (e) {
+                console.error('notificationRow render error:', e, n);
+                return '';
+            }
+        }
+
+        function displayNotifications() {
+            const container = document.getElementById('notificationsList');
+            if (!container) return;
+            try {
+                if (!filteredNotifications || !filteredNotifications.length) {
+                    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary);">No notifications found</div>';
+                    return;
+                }
+                container.innerHTML = `
+                    <div style="display:flex;flex-direction:column;gap:0;padding:0;">
+                        ${filteredNotifications.map(notificationRow).join('')}
+                    </div>
+                `;
+            } catch (e) {
+                console.error('displayNotifications error:', e);
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--danger-color);">Error displaying notifications. Some items may be malformed.</div>';
+            }
+        }
+
+        function filterNotifications() {
+            const filterValue = (document.getElementById('filterSelect') || {}).value || 'all';
+            const typeFilter = ((document.getElementById('typeFilterSelect') || {}).value || '').toLowerCase();
+            const searchTerm = ((document.getElementById('searchInput') || {}).value || '').toLowerCase();
+            filteredNotifications = allNotifications.filter(n => {
+                const unread = !isRead(n);
+                const filterOk = filterValue === 'all' || (filterValue === 'unread' && unread) || (filterValue === 'read' && !unread);
+                const hay = `${(n.type || '')} ${getSubject(n)} ${getMessage(n)} ${(n.recipient || '')}`.toLowerCase();
+                const category = getNotificationCategory(n);
+                const typeOk = !typeFilter || category === typeFilter;
+                const searchOk = !searchTerm || hay.includes(searchTerm);
+                return filterOk && typeOk && searchOk;
+            });
+            displayNotifications();
+        }
+
+        async function onNotificationClick(notificationId) {
+            const n = allNotifications.find(x => String(normalizeId(x)) === String(notificationId));
+            if (!n) return;
+            const target = getTargetUrl(n);
+            try {
+                sessionStorage.setItem(PENDING_READ_KEY, String(notificationId));
+            } catch (_) {}
+            if (target) {
+                window.location.href = target;
+                return;
+            }
+            // No target URL: mark as read immediately on inbox.
+            try {
+                if (window.dbAPI && typeof window.dbAPI.markNotificationAsRead === 'function') {
+                    await window.dbAPI.markNotificationAsRead(notificationId);
+                }
+            } catch (e) {}
+            await loadNotifications();
+        }
+
+        async function deleteNotificationById(notificationId) {
+            const ok = await (window.showConfirmWindow || function(t,m){return Promise.resolve(confirm(m));})('Delete Notification', 'Are you sure you want to delete this notification?');
+            if (!ok) return;
+            try {
+                const nid = Number.parseInt(notificationId, 10);
+                if (Number.isNaN(nid)) {
+                    if (typeof showNotification === 'function') showNotification('Invalid notification id', 'Delete failed because the id is not numeric.', 'error');
+                    return;
+                }
+
+                // Prefer direct API call so we can reliably detect success/failure.
+                const API_BASE = window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api';
+                const token = sessionStorage.getItem('authToken');
+                if (!token) {
+                    if (typeof showNotification === 'function') showNotification('Please log in', 'Delete failed because your session token is missing/expired. Please log in again.', 'error');
+                    return;
+                }
+                const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+                if (token) headers.Authorization = 'Bearer ' + token;
+
+                const res = await fetch(`${API_BASE}/notifications/${nid}`, {
+                    method: 'DELETE',
+                    headers
+                });
+                const data = await res.json().catch(() => ({}));
+
+                // The backend returns { success: true } on success.
+                if (!res.ok || (data && data.success === false)) {
+                    const msg = data.error || data.message || 'Failed to delete notification';
+                    if (typeof showNotification === 'function') showNotification('Failed to delete notification', msg, 'error');
+                    return;
+                }
+
+                await loadNotifications();
+            } catch (error) {
+                console.error('Error deleting notification:', error);
+                if (typeof showNotification === 'function') showNotification('Failed to delete notification', 'error');
+            }
+        }
+
+        async function markAllAsRead() {
+            try {
+                let ok = false;
+                if (window.dbAPI && typeof window.dbAPI.markAllNotificationsAsRead === 'function') {
+                    const res = await window.dbAPI.markAllNotificationsAsRead(userId, userRole, userName);
+                    ok = !!(res && res.success !== false);
+                }
+                if (!ok) {
+                    const API_BASE = window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api';
+                    const token = sessionStorage.getItem('authToken');
+                    const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+                    if (token) headers.Authorization = 'Bearer ' + token;
+                    const httpRes = await fetch(`${API_BASE}/notifications/read-all`, {
+                        method: 'PUT',
+                        headers,
+                        body: JSON.stringify({ userId, userRole, userName })
+                    });
+                    const data = await httpRes.json().catch(() => ({}));
+                    ok = !!(httpRes.ok && data && data.success !== false);
+                }
+                if (!ok) throw new Error('Failed to mark all as read');
+                // Immediate local UI update for responsiveness.
+                allNotifications = (allNotifications || []).map(n => ({ ...n, isRead: true, is_read: true, read: true }));
+                filterNotifications();
+                await loadNotifications();
+                if (typeof showNotification === 'function') showNotification('All notifications marked as read', 'success');
+            } catch (error) {
+                console.error('Error marking all as read:', error);
+                if (typeof showNotification === 'function') showNotification('Failed to mark all as read', 'error');
+            }
+        }
+
+        async function clearAllNotifications() {
+            const ok = await (window.showConfirmWindow || function(t,m){return Promise.resolve(confirm(m));})('Clear All', 'Are you sure you want to delete all notifications? This action cannot be undone.');
+            if (!ok) return;
+            try {
+                let cleared = false;
+                if (window.dbAPI && typeof window.dbAPI.clearAllNotifications === 'function') {
+                    const res = await window.dbAPI.clearAllNotifications(userId, userRole, userName);
+                    cleared = !!(res && res.success !== false);
+                }
+                if (!cleared) {
+                    const API_BASE = window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api';
+                    const token = sessionStorage.getItem('authToken');
+                    const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+                    if (token) headers.Authorization = 'Bearer ' + token;
+                    const httpRes = await fetch(`${API_BASE}/notifications/clear-all`, {
+                        method: 'DELETE',
+                        headers,
+                        body: JSON.stringify({ userId, userRole, userName })
+                    });
+                    const data = await httpRes.json().catch(() => ({}));
+                    cleared = !!(httpRes.ok && data && data.success !== false);
+                }
+                if (!cleared) throw new Error('Failed to clear all notifications');
+                // Immediate local clear for better UX.
+                allNotifications = [];
+                filteredNotifications = [];
+                displayNotifications();
+                await loadNotifications();
+                if (typeof showNotification === 'function') showNotification('All notifications cleared', 'success');
+            } catch (error) {
+                console.error('Error clearing all notifications:', error);
+                if (typeof showNotification === 'function') showNotification('Failed to clear all notifications', 'error');
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('open');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+            if (typeof window.consumePendingNotificationRead === 'function') {
+                await window.consumePendingNotificationRead();
+            }
+            await loadNotifications();
+            if (typeof window.loadNotifications === 'function') {
+                window.loadNotifications();
+            }
+        });
+    </script>
+</body>
+</html>
+

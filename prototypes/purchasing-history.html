@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Request History - SWMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <style>
+        .ph-filter-bar { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 0.75rem; align-items: end; margin-bottom: 1rem; }
+        @media (max-width: 900px) { .ph-filter-bar { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 500px) { .ph-filter-bar { grid-template-columns: 1fr; } }
+        .ph-sortable { cursor: pointer; user-select: none; }
+        .ph-sortable:hover { text-decoration: underline; }
+        .ph-pagination { display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <a href="dashboard.html" class="logo">SWMS</a>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html"><i data-lucide="layout-dashboard" class="nav-icon"></i> Dashboard</a>
+                <a href="inventory.html"><i data-lucide="package" class="nav-icon"></i> Inventory</a>
+                <a href="alerts.html"><i data-lucide="bell" class="nav-icon"></i> Alerts</a>
+                <a href="reports.html"><i data-lucide="bar-chart-2" class="nav-icon"></i> Reports</a>
+                <a href="users.html" id="usersLink" style="display: none;"><i data-lucide="users" class="nav-icon"></i> Users</a>
+                <a href="suppliers.html"><i data-lucide="truck" class="nav-icon"></i> Suppliers</a>
+                <a href="warehouses.html"><i data-lucide="warehouse" class="nav-icon"></i> Warehouses</a>
+                <a href="approval.html" id="approvalCenterLink" style="display: none;"><i data-lucide="shield-check" class="nav-icon"></i> Approval</a>
+            </nav>
+        </aside>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()" aria-hidden="true"></div>
+        <div class="main-wrapper">
+            <header class="header">
+                <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle menu"><i data-lucide="menu"></i></button>
+                <div class="header-compact">
+                    <a href="inventory.html?tab=purchasing" class="btn btn-outline" style="padding: 0.35rem 0.6rem; font-size: 0.8rem; margin-right: 0.25rem;"><i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i> Back to Purchasing</a>
+                    <a href="notifications.html" class="notification-icon" style="position: relative; text-decoration: none; padding: 0.5rem; color: var(--text);">
+                        <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
+                        <span id="notificationBadge" class="badge badge-danger" style="position: absolute; top: -4px; right: -4px; font-size: 0.65rem; display: none; min-width: 16px; padding: 2px 5px;">0</span>
+                    </a>
+                    <div class="user-profile-wrap">
+                        <button id="profileAvatarBtn" class="profile-avatar-btn" type="button" onclick="toggleProfileDropdown(event)" aria-haspopup="true" aria-expanded="false" title="Account">
+                            <span class="profile-avatar-initial" id="profileAvatarInitial">U</span>
+                        </button>
+                        <div id="profileDropdown" class="profile-dropdown" style="display: none;" role="menu">
+                            <div class="profile-dropdown-header">
+                                <div class="profile-dropdown-name" id="profileUserName">User</div>
+                                <div class="profile-dropdown-email" id="profileUserEmail">user@example.com</div>
+                            </div>
+                            <a href="settings.html" class="profile-dropdown-item" role="menuitem">Settings</a>
+                            <button type="button" class="profile-dropdown-item profile-dropdown-logout" onclick="handleLogout(event)" role="menuitem">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="container-fluid">
+                <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                    <h1 class="page-title">All Purchase Requests</h1>
+                    <a href="inventory.html?tab=purchasing&section=create" class="btn btn-primary"><i data-lucide="plus" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 0.35rem;"></i>Create Request</a>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Filter & Search</h2>
+                        <button type="button" class="btn btn-outline" onclick="clearFilters()"><i data-lucide="x" style="width: 14px; height: 14px;"></i> Clear Filters</button>
+                    </div>
+                    <div style="padding: 1rem 1.5rem;">
+                        <div class="ph-filter-bar">
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" for="phStartDate">Start Date</label>
+                                <input type="date" id="phStartDate" class="form-input" onchange="applyFilters()">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" for="phEndDate">End Date</label>
+                                <input type="date" id="phEndDate" class="form-input" onchange="applyFilters()">
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" for="phStatus">Status</label>
+                                <select id="phStatus" class="form-select" onchange="applyFilters()">
+                                    <option value="">All</option>
+                                    <option value="PENDING">Pending</option>
+                                    <option value="APPROVED">Approved</option>
+                                    <option value="REJECTED">Rejected</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin: 0;">
+                                <label class="form-label" for="phCreator">PR Creator</label>
+                                <select id="phCreator" class="form-select" onchange="applyFilters()">
+                                    <option value="">All</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="applyFilters()"><i data-lucide="search" style="width: 14px; height: 14px;"></i> Apply</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 1rem;">
+                    <div class="card-header">
+                        <h2 class="card-title">Purchase Requests (<span id="phTotalCount">0</span>)</h2>
+                        <button type="button" class="btn btn-outline" onclick="loadData()"><i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i> Refresh</button>
+                    </div>
+                    <div class="table-container table-responsive">
+                        <div id="phLoading" style="padding: 2rem; text-align: center; color: var(--text-secondary);">Loading…</div>
+                        <table id="phTable" style="display: none; width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th class="ph-sortable" data-sort="requestNumber" onclick="sortBy('requestNumber')">Request # <span id="ph-sort-requestNumber" class="sort-icon-wrap">↕</span></th>
+                                    <th>Product</th>
+                                    <th>Qty</th>
+                                    <th>Priority</th>
+                                    <th class="ph-sortable" data-sort="requestedDate" onclick="sortBy('requestedDate')">Date <span id="ph-sort-requestedDate" class="sort-icon-wrap">↕</span></th>
+                                    <th class="ph-sortable" data-sort="status" onclick="sortBy('status')">Status <span id="ph-sort-status" class="sort-icon-wrap">↕</span></th>
+                                    <th class="ph-sortable" data-sort="requestedByName" onclick="sortBy('requestedByName')">Creator <span id="ph-sort-requestedByName" class="sort-icon-wrap">↕</span></th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="phTableBody"></tbody>
+                        </table>
+                        <div id="phEmpty" style="display: none; padding: 2rem; text-align: center; color: var(--text-secondary);">No purchase requests found.</div>
+                        <div id="phError" style="display: none; padding: 2rem; text-align: center; color: var(--danger-text);"></div>
+                    </div>
+                    <div id="phPagination" class="ph-pagination" style="padding: 1rem 1.5rem; border-top: 1px solid var(--border); display: none;"></div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Approval/Reject Modals (same as approval.html) -->
+    <div id="rejectReasonModalBackdrop" onclick="window.closeRejectReasonModal && window.closeRejectReasonModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001;"></div>
+    <div id="rejectReasonModal" class="card" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1002; max-width: 420px; width: 90%; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.10); border: 1px solid var(--border, #e5e7eb); border-radius: 4px;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; background: #fff; border-bottom: 1px solid var(--border, #e5e7eb);">
+            <h2 class="card-title" style="margin: 0; font-size: 1.1rem;">Rejection Reason (Required)</h2>
+            <button type="button" onclick="window.closeRejectReasonModal && window.closeRejectReasonModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+        <div style="padding: 1.25rem;">
+            <p style="color: var(--text-secondary, #6b7280); margin-bottom: 0.75rem;">Please provide a reason for rejection.</p>
+            <textarea id="rejectReasonInput" class="form-input" rows="4" placeholder="e.g. No" minlength="1" style="width: 100%; resize: vertical; min-height: 80px;"></textarea>
+            <span id="rejectReasonError" style="display: none; color: #B91C1C; font-size: 0.875rem;"></span>
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+                <button type="button" class="btn btn-outline" onclick="window.closeRejectReasonModal && window.closeRejectReasonModal()">Cancel</button>
+                <button type="button" class="btn" id="rejectReasonConfirmBtn" disabled style="background: #B91C1C; color: #fff; border: none; border-radius: 4px; opacity: 0.6; cursor: not-allowed;">Submit Rejection</button>
+            </div>
+        </div>
+    </div>
+    <div id="approvalReasonModalBackdrop" onclick="window.closeApprovalReasonModal && window.closeApprovalReasonModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1003;"></div>
+    <div id="approvalReasonModal" class="card" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1004; max-width: 420px; width: 90%; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.10); border: 1px solid var(--border, #e5e7eb); border-radius: 4px;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; background: #fff; border-bottom: 1px solid var(--border, #e5e7eb);">
+            <h2 class="card-title" style="margin: 0; font-size: 1.1rem;">Confirm Approval</h2>
+            <button type="button" onclick="window.closeApprovalReasonModal && window.closeApprovalReasonModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+        <div style="padding: 1.25rem;">
+            <label class="form-label" for="approvalReasonInput" style="display: block; margin-bottom: 0.5rem;">Approval Remarks / Reason</label>
+            <textarea id="approvalReasonInput" class="form-input" rows="4" placeholder="e.g. OK" minlength="1" style="width: 100%; resize: vertical; min-height: 80px;"></textarea>
+            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
+                <button type="button" class="btn btn-outline" onclick="window.closeApprovalReasonModal && window.closeApprovalReasonModal()">Cancel</button>
+                <button type="button" class="btn" id="approvalReasonConfirmBtn" disabled style="background: #15803D; color: #fff; border: none; border-radius: 4px; opacity: 0.6; cursor: not-allowed;">Submit Approval</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api-config.js"></script>
+    <script src="js/app.js?v=3"></script>
+    <script src="js/notifications.js"></script>
+    <script src="js/approval.js"></script>
+    <script>
+        // Compute API base for this page (avoid redeclaring app.js' global `API_BASE`).
+        const PH_API_BASE = (function () {
+            var b = window.API_BASE_URL || window.API_BASE;
+            if (b) return String(b).replace(/\/$/, '');
+
+            var loc = window.location || {};
+            var port = loc.port || (loc.protocol === 'https:' ? '443' : '80');
+            var p = parseInt(port, 10) || 0;
+
+            var staticPorts = [5500, 5501, 8080, 8888, 5000, 4173, 5173];
+            var apiPort = '3000';
+            if (typeof window.__SWMS_API_PORT__ !== 'undefined' && window.__SWMS_API_PORT__ !== '') {
+                apiPort = String(window.__SWMS_API_PORT__).replace(/[^0-9]/g, '') || '3000';
+            } else {
+                try {
+                    var saved = localStorage.getItem('swms_api_port');
+                    if (saved && /^\d{2,5}$/.test(String(saved).trim())) apiPort = String(saved).trim();
+                } catch (e) {}
+            }
+
+            if (staticPorts.indexOf(p) >= 0 && (loc.protocol === 'http:' || loc.protocol === 'https:')) {
+                var host = loc.hostname || 'localhost';
+                return loc.protocol + '//' + host + ':' + apiPort + '/api';
+            }
+
+            var o = loc.origin && loc.origin !== 'null' ? String(loc.origin).replace(/\/$/, '') : '';
+            return o ? o + '/api' : 'http://localhost:3000/api';
+        })();
+        window.__phApiBase = PH_API_BASE;
+        // Backend: GET /api/purchase-requests (backend/server.js + routes/purchaseRequests.js).
+        /** Page-local auth helpers (avoid overriding app.js global getAuthToken). */
+        function phGetAuthToken() {
+            // Prefer app.js token helper when available.
+            if (typeof window.getAuthToken === 'function') return window.getAuthToken() || '';
+            var s = sessionStorage.getItem('authToken');
+            try { return (s && String(s).trim()) || (localStorage.getItem('authToken') || '') || ''; } catch (e) { return (s && String(s).trim()) || ''; }
+        }
+        function getAuthHeaders() {
+            const token = phGetAuthToken();
+            const h = { 'Accept': 'application/json', 'Content-Type': 'application/json' };
+            if (token) h['Authorization'] = 'Bearer ' + token;
+            return h;
+        }
+        /** Same-origin fetch + JSON; avoids fetchWithAuth refresh edge cases that can leave the UI spinning. */
+        async function phFetchJson(url, init) {
+            let res;
+            try {
+                res = await fetch(url, Object.assign({ credentials: 'same-origin' }, init));
+            } catch (netErr) {
+                if (typeof window.showNotification === 'function') {
+                    window.showNotification('Error', (netErr && netErr.message) ? netErr.message : 'Unable to reach the server.', 'error');
+                }
+                if (typeof window.showConnectionErrorBanner === 'function') {
+                    window.showConnectionErrorBanner('Unable to reach the server. Check that the backend is running on this host/port.');
+                }
+                throw netErr;
+            }
+            if (res.status === 401) {
+                // Do not hard-redirect and clear tokens on every 401.
+                // It can create a confusing redirect loop and makes debugging port/JWT issues harder.
+                throw new Error('Unauthorized (401). Check Authorization header / JWT_SECRET / backend port.');
+            }
+            const data = await Promise.race([
+                res.json().catch(function () { return {}; }),
+                new Promise(function (_, rej) {
+                    setTimeout(function () { rej(new Error('Reading response timed out')); }, 20000);
+                })
+            ]);
+            return { res: res, data: data };
+        }
+        function escapeHtml(str) { if (str == null) return ''; const d = document.createElement('div'); d.textContent = String(str); return d.innerHTML; }
+        function formatDate(d) { if (!d) return '—'; try { return new Date(d).toLocaleDateString(); } catch (e) { return String(d); } }
+
+        let phData = [];
+        let phSortCol = 'requestId';
+        let phSortDir = 'desc';
+        let phPage = 1;
+        const phLimit = 25;
+
+        // Override so approval.js refresh reloads our table
+        const _origLoadAllApprovals = window.loadAllApprovals;
+        window.loadAllApprovals = function() { loadData(); }
+
+        async function loadUsers() {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(function () { controller.abort(); }, 8000);
+                var out = await phFetchJson(PH_API_BASE + '/users', { method: 'GET', headers: getAuthHeaders(), signal: controller.signal });
+                clearTimeout(timeoutId);
+                var data = out.data;
+                var list = (data.success && data.data) ? data.data : [];
+                const sel = document.getElementById('phCreator');
+                if (!sel) return;
+                sel.innerHTML = '<option value="">All</option>' + list.map(u => `<option value="${u.userId || u.id}">${escapeHtml(u.name || u.email || 'User ' + (u.userId || u.id))}</option>`).join('');
+            } catch (e) { console.warn('loadUsers failed', e); }
+        }
+
+        function getFilters() {
+            var sd = document.getElementById('phStartDate');
+            var ed = document.getElementById('phEndDate');
+            var st = document.getElementById('phStatus');
+            var cr = document.getElementById('phCreator');
+            return {
+                startDate: (sd && sd.value) ? sd.value : '',
+                endDate: (ed && ed.value) ? ed.value : '',
+                status: (st && st.value) ? st.value : '',
+                creatorId: (cr && cr.value) ? cr.value : '',
+                page: phPage,
+                limit: phLimit
+            };
+        }
+
+        function clearFilters() {
+            document.getElementById('phStartDate').value = '';
+            document.getElementById('phEndDate').value = '';
+            document.getElementById('phStatus').value = '';
+            document.getElementById('phCreator').value = '';
+            phPage = 1;
+            loadData();
+        }
+
+        function applyFilters() {
+            phPage = 1;
+            loadData();
+        }
+
+        function sortBy(col) {
+            if (phSortCol === col) phSortDir = phSortDir === 'asc' ? 'desc' : 'asc';
+            else { phSortCol = col; phSortDir = 'asc'; }
+            renderTable();
+            updateSortIcons();
+        }
+
+        function updateSortIcons() {
+            ['requestNumber','requestedDate','status','requestedByName'].forEach(c => {
+                const el = document.getElementById('ph-sort-' + c);
+                if (el) el.textContent = phSortCol === c ? (phSortDir === 'asc' ? '↑' : '↓') : '↕';
+            });
+        }
+
+        function renderTable() {
+            const sorted = [...phData].sort((a, b) => {
+                const col = phSortCol;
+                const dir = phSortDir === 'asc' ? 1 : -1;
+                const str = v => String(v || '').toLowerCase();
+                const num = v => (v == null || v === '') ? 0 : (typeof v === 'number' ? v : parseInt(v, 10) || 0);
+                let cmp = 0;
+                if (col === 'requestNumber' || col === 'requestId') cmp = str(a.requestNumber || a.requestId).localeCompare(str(b.requestNumber || b.requestId));
+                else if (col === 'requestedDate' || col === 'createdAt') {
+                    const da = (a.requestedDate || a.createdAt) ? new Date(a.requestedDate || a.createdAt).getTime() : 0;
+                    const db = (b.requestedDate || b.createdAt) ? new Date(b.requestedDate || b.createdAt).getTime() : 0;
+                    cmp = da - db;
+                } else if (col === 'status') cmp = str(a.status).localeCompare(str(b.status));
+                else if (col === 'requestedByName') cmp = str(a.requestedByName).localeCompare(str(b.requestedByName));
+                else cmp = 0;
+                return cmp * dir;
+            });
+
+            const userRole = (sessionStorage.getItem('userRole') || '').toUpperCase();
+            const isAdmin = userRole === 'ADMIN';
+
+            const tbody = document.getElementById('phTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = sorted.map(r => {
+                const priority = (r.priority || 'medium').toLowerCase();
+                const status = (r.status || '').toUpperCase();
+                const statusBadge = status === 'PENDING' ? 'warning' : status === 'APPROVED' ? 'success' : status === 'REJECTED' ? 'danger' : 'secondary';
+                const dateVal = r.requestedDate || r.createdAt;
+                let actions = '—';
+                if (status === 'PENDING' && isAdmin) {
+                    actions = `<button type="button" class="btn btn-success btn-sm" style="padding: 0.2rem 0.4rem; font-size: 0.75rem; margin-right: 0.25rem;" onclick="window.approvalOpenApprovalReasonModal('purchase_request', ${r.requestId})">Approve</button>
+                        <button type="button" class="btn btn-danger btn-sm" style="padding: 0.2rem 0.4rem; font-size: 0.75rem;" onclick="window.approvalOpenRejectReasonModal('purchase_request', ${r.requestId})">Reject</button>`;
+                } else {
+                    actions = `<a href="inventory.html?tab=purchasing" class="btn btn-outline btn-sm" style="padding: 0.2rem 0.4rem; font-size: 0.75rem;">View</a>`;
+                }
+                return `<tr>
+                    <td>${escapeHtml(r.requestNumber || r.requestId)}</td>
+                    <td>${escapeHtml(r.productName || r.productSku || '-')}</td>
+                    <td>${r.quantity}</td>
+                    <td><span class="badge badge-${priority === 'low' ? 'secondary' : priority === 'high' ? 'warning' : 'info'}">${priority}</span></td>
+                    <td>${formatDate(dateVal)}</td>
+                    <td><span class="badge badge-${statusBadge}">${status}</span></td>
+                    <td>${escapeHtml(r.requestedByName || '-')}</td>
+                    <td>${actions}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        async function loadData() {
+            window.__phListFetchFinished = false;
+            const loading = document.getElementById('phLoading');
+            const table = document.getElementById('phTable');
+            const empty = document.getElementById('phEmpty');
+            const errEl = document.getElementById('phError');
+            const pagination = document.getElementById('phPagination');
+            if (loading) loading.style.display = 'block';
+            if (table) table.style.display = 'none';
+            if (empty) empty.style.display = 'none';
+            if (errEl) errEl.style.display = 'none';
+            if (pagination) pagination.style.display = 'none';
+
+            const f = getFilters();
+            const params = new URLSearchParams();
+            if (f.startDate) params.set('startDate', f.startDate);
+            if (f.endDate) params.set('endDate', f.endDate);
+            if (f.status) params.set('status', f.status);
+            if (f.creatorId) params.set('creatorId', f.creatorId);
+            params.set('page', f.page);
+            params.set('limit', f.limit);
+
+            const token = phGetAuthToken();
+            if (!token) {
+                if (loading) loading.style.display = 'none';
+                if (typeof console !== 'undefined' && console.warn) {
+                    console.warn('SWMS: No JWT in storage. Use the same host for login and this page (localhost and 127.0.0.1 do not share storage). Open /login.html on this origin and sign in again.');
+                }
+                window.location.replace('/login.html');
+                return;
+            }
+
+            // One straight path: fetch → text → JSON.parse (use window.location.origin + /api — see API_BASE above).
+            const fetchMs = 20000;
+            const controller = new AbortController();
+            const abortTimer = setTimeout(function () {
+                try { controller.abort(); } catch (e) {}
+            }, fetchMs);
+            try {
+                const listUrl = PH_API_BASE + '/purchase-requests?' + params.toString();
+                const res = await fetch(listUrl, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    signal: controller.signal,
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                clearTimeout(abortTimer);
+
+                if (res.status === 401) {
+                    // Avoid redirect loops; show the error instead.
+                    // If you're seeing this after logging in, the Authorization header or JWT_SECRET/port may be mismatched.
+                    throw new Error('Unauthorized (401) when calling GET /purchase-requests. Check token/port.');
+                }
+
+                const text = await res.text();
+                var data = {};
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (parseErr) {
+                    throw new Error('Server did not return JSON (HTTP ' + res.status + '). Is the API URL correct? ' + listUrl);
+                }
+
+                if (!res.ok) {
+                    var httpMsg = (data && (data.error || data.message)) || '';
+                    if (res.status === 404) httpMsg = 'API not found. Expected GET ' + listUrl.split('?')[0] + ' on the same host as this page.';
+                    else if (!httpMsg) httpMsg = 'HTTP ' + res.status + ' — Error loading purchase history';
+                    throw new Error(httpMsg);
+                }
+                if (data.success === false) throw new Error((data.error || data.message) || 'Server returned success: false');
+
+                phData = Array.isArray(data.data) ? data.data : [];
+                var total = data.total != null ? data.total : phData.length;
+
+                var countEl = document.getElementById('phTotalCount');
+                if (countEl) countEl.textContent = String(total);
+
+                if (phData.length === 0) {
+                    if (empty) {
+                        empty.style.display = 'block';
+                        empty.textContent = 'No purchase requests found for the selected filters.';
+                    }
+                } else {
+                    if (table) table.style.display = 'table';
+                    try {
+                        renderTable();
+                        updateSortIcons();
+                    } catch (re) {
+                        throw new Error((re && re.message) ? re.message : 'Error rendering table');
+                    }
+                    if (total > phLimit && pagination) {
+                        pagination.style.display = 'flex';
+                        var totalPages = Math.ceil(total / phLimit);
+                        var html = '';
+                        if (phPage > 1) html += '<button type="button" class="btn btn-outline btn-sm" onclick="phPage=1;loadData();">First</button>';
+                        html += '<button type="button" class="btn btn-outline btn-sm" onclick="if(phPage>1){phPage--;loadData();}" ' + (phPage <= 1 ? 'disabled' : '') + '>Prev</button>';
+                        html += '<span style="padding: 0 0.5rem;">Page ' + phPage + ' of ' + totalPages + '</span>';
+                        html += '<button type="button" class="btn btn-outline btn-sm" onclick="if(phPage<' + totalPages + '){phPage++;loadData();}" ' + (phPage >= totalPages ? 'disabled' : '') + '>Next</button>';
+                        if (phPage < totalPages) html += '<button type="button" class="btn btn-outline btn-sm" onclick="phPage=' + totalPages + ';loadData();">Last</button>';
+                        pagination.innerHTML = html;
+                    }
+                }
+            } catch (err) {
+                if (errEl) {
+                    var msg = (err.name === 'AbortError')
+                        ? 'Request timed out after ' + (fetchMs / 1000) + 's. Check Network for ' + (PH_API_BASE + '/purchase-requests') + ' and that MySQL is running.'
+                        : (err.message || 'Error loading purchase history');
+                    errEl.textContent = msg;
+                    errEl.style.display = 'block';
+                    if (typeof window.showConnectionErrorBanner === 'function') {
+                        try { window.showConnectionErrorBanner(msg); } catch (e) {}
+                    }
+                }
+            } finally {
+                clearTimeout(abortTimer);
+                window.__phListFetchFinished = true;
+                if (loading) loading.style.display = 'none';
+            }
+        }
+
+        function initPurchasingHistoryPage() {
+            try {
+                const token = phGetAuthToken();
+                if (!token) {
+                    const loading = document.getElementById('phLoading');
+                    if (loading) loading.style.display = 'none';
+                    window.location.replace('/login.html');
+                    return;
+                }
+            } catch (e) {
+                const loading = document.getElementById('phLoading');
+                if (loading) loading.style.display = 'none';
+                window.location.replace('/login.html');
+                return;
+            }
+            loadUsers();
+            loadData();
+            try {
+                if (typeof lucide !== 'undefined' && lucide.createIcons) lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+            } catch (e) { console.warn('lucide icons', e); }
+        }
+
+        // Last resort: if the list request never settles (cached broken script, extension blocking fetch, etc.), never leave "Loading…" forever.
+        (function armPhStuckGuard() {
+            var guardMs = 28000;
+            setTimeout(function () {
+                var loading = document.getElementById('phLoading');
+                var errEl = document.getElementById('phError');
+                var empty = document.getElementById('phEmpty');
+                if (!loading) return;
+                // Use computed style so the guard also works when `display` was not set inline.
+                try {
+                    if (window.getComputedStyle && window.getComputedStyle(loading).display === 'none') return;
+                } catch (e) {
+                    if (loading.style.display === 'none') return;
+                }
+                if (errEl && errEl.style.display === 'block') return;
+                if (errEl) {
+                    errEl.textContent = 'This page is taking too long to load data. Hard-refresh (Ctrl+Shift+R), then check DevTools → Network for /api/purchase-requests.';
+                    errEl.style.display = 'block';
+                }
+                loading.style.display = 'none';
+                if (empty) {
+                    empty.style.display = 'block';
+                    empty.textContent = 'If the problem persists, confirm you are logged in and the backend is running on the same port as this page.';
+                }
+            }, guardMs);
+        })();
+
+        function toggleSidebar() {
+            const s = document.getElementById('sidebar');
+            const o = document.getElementById('sidebarOverlay');
+            if (s) s.classList.toggle('open');
+            if (o) o.classList.toggle('open');
+        }
+        function toggleProfileDropdown(e) {
+            e?.stopPropagation();
+            const d = document.getElementById('profileDropdown');
+            if (d) d.style.display = d.style.display === 'none' ? 'block' : 'none';
+        }
+        document.addEventListener('click', () => { const d = document.getElementById('profileDropdown'); if (d) d.style.display = 'none'; });
+        function handleLogout(e) { e?.preventDefault(); sessionStorage.clear(); localStorage.removeItem('authToken'); window.location.href = '/login.html'; }
+
+        try {
+            ['usersLink','approvalCenterLink'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = ''; });
+            if (typeof updateNavFromSettings === 'function') updateNavFromSettings();
+            const uname = sessionStorage.getItem('userName');
+            const uemail = sessionStorage.getItem('userEmail');
+            if (document.getElementById('profileUserName')) document.getElementById('profileUserName').textContent = uname || 'User';
+            if (document.getElementById('profileUserEmail')) document.getElementById('profileUserEmail').textContent = uemail || '';
+            if (document.getElementById('profileAvatarInitial')) document.getElementById('profileAvatarInitial').textContent = (uname || 'U').charAt(0).toUpperCase();
+        } catch (e) { console.warn('purchasing-history profile/nav', e); }
+
+        function bootPurchasingHistoryPage() {
+            try {
+                initPurchasingHistoryPage();
+            } catch (e) {
+                console.error('purchasing-history boot', e);
+                var errEl = document.getElementById('phError');
+                var loadEl = document.getElementById('phLoading');
+                if (loadEl) loadEl.style.display = 'none';
+                if (errEl) {
+                    errEl.textContent = (e && e.message) ? e.message : 'Failed to start this page. Please refresh.';
+                    errEl.style.display = 'block';
+                }
+            }
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bootPurchasingHistoryPage);
+        } else {
+            bootPurchasingHistoryPage();
+        }
+        // If the first load never reached `finally` (hang), retry once after load (2s lets the normal request finish first).
+        window.addEventListener('load', function phPurchasingHistoryOnLoad() {
+            if (!phGetAuthToken()) return;
+            setTimeout(function () {
+                if (window.__phListFetchFinished) return;
+                try {
+                    loadUsers();
+                    loadData();
+                } catch (e) {
+                    console.warn('purchasing-history load fallback', e);
+                }
+            }, 2000);
+        });
+        window.addEventListener('pageshow', function (ev) {
+            if (ev.persisted && phGetAuthToken()) {
+                loadData();
+            }
+        });
+    </script>
+</body>
+</html>

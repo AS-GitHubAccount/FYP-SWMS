@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compare Quotations — SWMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+    <div class="container" style="max-width: 1000px; margin: 2rem auto; padding: 24px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem;">
+            <h1 class="page-title" style="margin:0;">Quotation comparison</h1>
+            <a href="inventory.html?tab=purchasing" class="btn btn-outline btn-sm">← Back to Purchasing</a>
+        </div>
+        <p id="comparePageInfo" style="color:var(--text-secondary);margin-bottom:1rem;"></p>
+        <div class="card" style="padding:24px;box-sizing:border-box;">
+            <div id="comparePageSpinner" style="text-align:center;padding:2rem;color:var(--text-secondary);">Loading…</div>
+            <div id="comparePageUnavailable" style="display:none;text-align:center;padding:2rem;color:var(--text-secondary);">Data currently unavailable. Open from Inventory → Purchasing or check you are logged in.</div>
+            <div class="table-container" id="comparePageTableWrap" style="display:none;margin:0;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Supplier</th>
+                            <th>Unit Price</th>
+                            <th>Total</th>
+                            <th>Delivery</th>
+                            <th>Attachment</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comparePageBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div id="quotePdfModalBackdrop" onclick="closeQuotePdfPage()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;"></div>
+    <div id="quotePdfModalPage" class="card" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1000;max-width:900px;width:95%;max-height:92vh;background:var(--surface,#fff);">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.5rem;">
+            <h2 class="card-title" style="margin:0;">Attachment</h2>
+            <button type="button" onclick="closeQuotePdfPage()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;">&times;</button>
+        </div>
+        <div style="padding:24px;"><iframe id="quotePdfFramePage" title="File" style="width:100%;height:70vh;border:1px solid var(--border,#e5e7eb);border-radius:6px;"></iframe></div>
+    </div>
+    <script src="js/api-config.js"></script>
+    <script src="js/app.js?v=2"></script>
+    <script>
+        function apiBase() {
+            return typeof window.getSwmsApiBase === 'function' ? window.getSwmsApiBase() : (window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api');
+        }
+        function headers() {
+            const h = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+            const t = sessionStorage.getItem('authToken');
+            if (t) h['Authorization'] = 'Bearer ' + t;
+            return h;
+        }
+        function fetch2s(url) {
+            return Promise.race([
+                fetch(url, { headers: headers() }),
+                new Promise(function(_, rej) { setTimeout(function() { rej(new Error('timeout')); }, 2000); })
+            ]);
+        }
+        function fmtDate(d) {
+            if (!d) return '-';
+            try { return new Date(d).toLocaleDateString(); } catch (e) { return String(d); }
+        }
+        function openQuotePdfPage(url) {
+            document.getElementById('quotePdfFramePage').src = url;
+            document.getElementById('quotePdfModalBackdrop').style.display = 'block';
+            document.getElementById('quotePdfModalPage').style.display = 'block';
+        }
+        function closeQuotePdfPage() {
+            document.getElementById('quotePdfFramePage').src = 'about:blank';
+            document.getElementById('quotePdfModalBackdrop').style.display = 'none';
+            document.getElementById('quotePdfModalPage').style.display = 'none';
+        }
+        function benchRow(bench) {
+            var lastTxt = '—', avgTxt = '—';
+            if (bench.lastPrice != null) {
+                lastTxt = '$' + Number(bench.lastPrice).toFixed(2) + (bench.lastAt ? ' on ' + bench.lastAt : '');
+            }
+            if (bench.avg12 != null && bench.avg12 > 0) {
+                avgTxt = '$' + Number(bench.avg12).toFixed(2) + ' (n=' + (bench.count12 || 0) + ')';
+            }
+            return '<tr style="background:var(--slate-50,#f8fafc);font-weight:600;"><td colspan="2">Historical benchmark</td><td colspan="4">Last paid (unit): ' + lastTxt + ' · 12-mo avg: ' + avgTxt + '</td></tr>';
+        }
+        (async function init() {
+            const params = new URLSearchParams(window.location.search);
+            const rfqId = params.get('rfq') || params.get('compare');
+            const spin = document.getElementById('comparePageSpinner');
+            const unavail = document.getElementById('comparePageUnavailable');
+            const wrap = document.getElementById('comparePageTableWrap');
+            const body = document.getElementById('comparePageBody');
+            const info = document.getElementById('comparePageInfo');
+            if (!rfqId) {
+                spin.style.display = 'none';
+                unavail.style.display = 'block';
+                return;
+            }
+            const base = apiBase().replace(/\/api\/?$/, '');
+            try {
+                const res = await fetch2s(apiBase() + '/rfqs/' + encodeURIComponent(rfqId));
+                const data = await res.json().catch(function() { return {}; });
+                if (!res.ok || !data.success || !data.data) throw new Error('load');
+                const rfq = data.data;
+                let bench = {};
+                if (rfq.productId) {
+                    try {
+                        const br = await fetch2s(apiBase() + '/price-history/product/' + encodeURIComponent(rfq.productId));
+                        const bd = await br.json().catch(function() { return {}; });
+                        if (br.ok && bd.success && bd.data) bench = bd.data;
+                    } catch (e) {}
+                }
+                const avg = bench.avg12 != null ? parseFloat(bench.avg12) : null;
+                info.textContent = (rfq.productName || '') + ' × ' + (rfq.quantity || '') + ' — RFQ ' + (rfq.rfqNumber || rfqId);
+                const quotes = rfq.quotations || [];
+                if (!quotes.length) {
+                    body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;">No quotations for this RFQ.</td></tr>' + benchRow(bench);
+                } else {
+                    body.innerHTML = quotes.map(function(q) {
+                        var unit = parseFloat(q.unitPrice || 0);
+                        var st = '';
+                        if (avg != null && avg > 0 && !isNaN(unit)) {
+                            if (unit > avg * 1.1) st = 'color:#b91c1c;font-weight:700;background:#fef2f2;';
+                            else if (unit < avg * 0.9) st = 'color:#15803d;font-weight:700;background:#f0fdf4;';
+                        }
+                        var pdfUrl = q.attachmentPath ? base + '/api/uploads/' + q.attachmentPath : '';
+                        var att = q.attachmentPath
+                            ? '<button type="button" class="btn btn-sm btn-outline" onclick="openQuotePdfPage(\'' + pdfUrl.replace(/'/g, "\\'") + '\')"><i data-lucide="paperclip"></i></button>'
+                            : '—';
+                        return '<tr><td>' + (q.quotationId || '-') + '</td><td>' + (q.supplierName || '-') + '</td><td style="' + st + '">' + unit.toFixed(2) + '</td><td>' + Number(q.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</td><td>' + fmtDate(q.deliveryDate) + '</td><td>' + att + '</td></tr>';
+                    }).join('') + benchRow(bench);
+                }
+                spin.style.display = 'none';
+                wrap.style.display = 'block';
+                if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+            } catch (e) {
+                spin.style.display = 'none';
+                unavail.style.display = 'block';
+            }
+        })();
+    </script>
+</body>
+</html>

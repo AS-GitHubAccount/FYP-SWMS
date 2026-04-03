@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SWMS API Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #4a90e2;
+            --primary-dark: #357abd;
+            --secondary: #6c757d;
+            --success: #28a745;
+            --danger: #dc3545;
+            --warning: #ffc107;
+            --info: #17a2b8;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --white: #ffffff;
+            --border: #dee2e6;
+            --shadow: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-lg: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            color: var(--dark);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: var(--primary);
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--secondary);
+            font-size: 1.1rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+
+        .status-badge.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--light);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-title .icon {
+            font-size: 1.5rem;
+        }
+
+        .method-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-family: 'Courier New', monospace;
+        }
+
+        .method-get { background: #d1ecf1; color: #0c5460; }
+        .method-post { background: #d4edda; color: #155724; }
+        .method-put { background: #fff3cd; color: #856404; }
+        .method-delete { background: #f8d7da; color: #721c24; }
+
+        .endpoint-blocks {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+            list-style: none;
+        }
+
+        .endpoint-block {
+            padding: 1.25rem;
+            background: var(--white);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: var(--shadow);
+        }
+
+        .endpoint-block:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+        }
+
+        .endpoint-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .endpoint-path {
+            flex: 1;
+            color: var(--dark);
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .endpoint-description {
+            font-size: 0.875rem;
+            color: var(--secondary);
+            line-height: 1.5;
+            margin-top: 0.5rem;
+        }
+
+        .api-explorer {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 2rem;
+        }
+
+        .explorer-header {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--dark);
+        }
+
+        .explorer-blocks {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .explorer-block {
+            background: var(--light);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            transition: all 0.2s;
+        }
+
+        .explorer-block:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+
+        .block-label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .block-input, .block-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            background: var(--white);
+            border-radius: 6px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .block-select {
+            cursor: pointer;
+        }
+
+        .block-input:focus, .block-select:focus {
+            outline: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .body-block {
+            grid-column: 1 / -1;
+            background: var(--light);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            transition: all 0.2s;
+        }
+
+        .body-block:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+
+        .block-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            background: var(--white);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-family: 'Courier New', monospace;
+            min-height: 150px;
+            resize: vertical;
+            transition: all 0.2s;
+        }
+
+        .block-textarea:focus {
+            outline: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: var(--white);
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .response-area {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 2px solid var(--border);
+            min-height: 200px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .response-area pre {
+            margin: 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .response-area.success pre {
+            color: #155724;
+        }
+
+        .response-area.error pre {
+            color: #721c24;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+            color: var(--primary);
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--secondary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .footer {
+            text-align: center;
+            color: var(--white);
+            margin-top: 2rem;
+            padding: 1rem;
+        }
+
+        .footer a {
+            color: var(--white);
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 SWMS API Documentation</h1>
+            <p>Smart Warehouse Management System - Backend API</p>
+            <div id="dbStatus" class="status-badge disconnected">Checking database status...</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalEndpoints">12</div>
+                <div class="stat-label">API Modules</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalRoutes">50+</div>
+                <div class="stat-label">Endpoints</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="serverStatus">🟢</div>
+                <div class="stat-label">Server Status</div>
+            </div>
+        </div>
+
+        <div class="api-explorer">
+            <h2 class="explorer-header">🔍 API Explorer</h2>
+            <div class="explorer-blocks">
+                <div class="explorer-block">
+                    <label class="block-label">HTTP Method</label>
+                    <select id="methodSelect" class="block-select">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                    </select>
+                </div>
+                <div class="explorer-block">
+                    <label class="block-label">Endpoint URL</label>
+                    <input type="text" id="endpointInput" class="block-input" 
+                           placeholder="/api/products" value="/api/products">
+                </div>
+                <div class="body-block" id="bodyGroup" style="display: none;">
+                    <label class="block-label">Request Body (JSON)</label>
+                    <textarea id="requestBody" class="block-textarea" 
+                              placeholder='{"key": "value"}'></textarea>
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                <button class="btn btn-primary" onclick="testEndpoint()">Send Request</button>
+                <button class="btn btn-secondary" onclick="clearResponse()">Clear</button>
+            </div>
+            <div class="loading" id="loading">Loading...</div>
+            <div class="response-area" id="responseArea">
+                <pre>Response will appear here...</pre>
+            </div>
+        </div>
+
+        <div class="grid" id="endpointsGrid">
+            <!-- Endpoints will be loaded dynamically -->
+        </div>
+
+        <div class="footer">
+            <p>SWMS Backend API v1.0.0 | <a href="/health">Health Check</a> | <a href="/api/inventory">Unified Inventory API</a></p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        
+        // Check database status
+        async function checkDatabaseStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                const statusBadge = document.getElementById('dbStatus');
+                if (data.database === 'connected') {
+                    statusBadge.textContent = '✅ Database Connected';
+                    statusBadge.className = 'status-badge connected';
+                } else {
+                    statusBadge.textContent = '⚠️ Database Disconnected';
+                    statusBadge.className = 'status-badge disconnected';
+                }
+            } catch (error) {
+                document.getElementById('dbStatus').textContent = '❌ Server Error';
+            }
+        }
+
+        // Test API endpoint
+        async function testEndpoint() {
+            const method = document.getElementById('methodSelect').value;
+            const endpoint = document.getElementById('endpointInput').value;
+            const body = document.getElementById('requestBody').value;
+            const responseArea = document.getElementById('responseArea');
+            const loading = document.getElementById('loading');
+
+            loading.classList.add('active');
+            responseArea.innerHTML = '<pre>Loading...</pre>';
+
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                };
+
+                if (method !== 'GET' && body) {
+                    options.body = body;
+                }
+
+                const response = await fetch(`${API_BASE}${endpoint}`, options);
+                const data = await response.json();
+                
+                responseArea.className = `response-area ${response.ok ? 'success' : 'error'}`;
+                responseArea.innerHTML = `<pre>Status: ${response.status} ${response.statusText}\n\n${JSON.stringify(data, null, 2)}</pre>`;
+            } catch (error) {
+                responseArea.className = 'response-area error';
+                responseArea.innerHTML = `<pre>Error: ${error.message}</pre>`;
+            } finally {
+                loading.classList.remove('active');
+            }
+        }
+
+        function clearResponse() {
+            document.getElementById('responseArea').innerHTML = '<pre>Response will appear here...</pre>';
+            document.getElementById('requestBody').value = '';
+        }
+
+        // Show/hide body input based on method
+        document.getElementById('methodSelect').addEventListener('change', function() {
+            const bodyGroup = document.getElementById('bodyGroup');
+            if (this.value === 'GET' || this.value === 'DELETE') {
+                bodyGroup.style.display = 'none';
+            } else {
+                bodyGroup.style.display = 'grid';
+            }
+        });
+
+        // Load endpoints
+        async function loadEndpoints() {
+            try {
+                const response = await fetch(`${API_BASE}/`);
+                const data = await response.json();
+                
+                const endpoints = [
+                    {
+                        title: '🔐 Authentication',
+                        icon: '🔐',
+                        color: '#dc3545',
+                        endpoints: [
+                            { method: 'POST', path: '/api/auth/login', desc: 'User login' },
+                            { method: 'POST', path: '/api/auth/register', desc: 'Register new user' },
+                            { method: 'POST', path: '/api/auth/forgot-password', desc: 'Request password reset' }
+                        ]
+                    },
+                    {
+                        title: '📦 Products',
+                        icon: '📦',
+                        color: '#28a745',
+                        endpoints: [
+                            { method: 'GET', path: '/api/products', desc: 'List all products' },
+                            { method: 'GET', path: '/api/products/:id', desc: 'Get product by ID' },
+                            { method: 'POST', path: '/api/products', desc: 'Create new product' },
+                            { method: 'PUT', path: '/api/products/:id', desc: 'Update product' },
+                            { method: 'DELETE', path: '/api/products/:id', desc: 'Delete product' }
+                        ]
+                    },
+                    {
+                        title: '📊 Inventory (Unified)',
+                        icon: '📊',
+                        color: '#4a90e2',
+                        endpoints: [
+                            { method: 'GET', path: '/api/inventory', desc: 'List inventory items' },
+                            { method: 'GET', path: '/api/inventory/bookings', desc: 'List all bookings' },
+                            { method: 'POST', path: '/api/inventory/bookings', desc: 'Create booking' },
+                            { method: 'GET', path: '/api/inventory/issuing', desc: 'List issuing records' },
+                            { method: 'POST', path: '/api/inventory/issuing', desc: 'Issue stock' },
+                            { method: 'GET', path: '/api/inventory/receiving', desc: 'List receiving records' },
+                            { method: 'POST', path: '/api/inventory/receiving', desc: 'Receive stock' }
+                        ]
+                    },
+                    {
+                        title: '📅 Bookings',
+                        icon: '📅',
+                        color: '#6f42c1',
+                        endpoints: [
+                            { method: 'GET', path: '/api/inventory/bookings', desc: 'List all bookings' },
+                            { method: 'GET', path: '/api/inventory/bookings/:id', desc: 'Get booking by ID' },
+                            { method: 'POST', path: '/api/inventory/bookings', desc: 'Create booking' },
+                            { method: 'PUT', path: '/api/inventory/bookings/:id/approve', desc: 'Approve booking' },
+                            { method: 'PUT', path: '/api/inventory/bookings/:id/cancel', desc: 'Cancel booking' }
+                        ]
+                    },
+                    {
+                        title: '📤 Issuing',
+                        icon: '📤',
+                        color: '#17a2b8',
+                        endpoints: [
+                            { method: 'GET', path: '/api/inventory/issuing', desc: 'List issuing records' },
+                            { method: 'GET', path: '/api/inventory/issuing/:id', desc: 'Get issuing record' },
+                            { method: 'POST', path: '/api/inventory/issuing', desc: 'Issue stock (FEFO)' },
+                            { method: 'GET', path: '/api/inventory/issuing/fefo/preview/:productId/:quantity', desc: 'Preview FEFO allocation' }
+                        ]
+                    },
+                    {
+                        title: '📥 Receiving',
+                        icon: '📥',
+                        color: '#20c997',
+                        endpoints: [
+                            { method: 'GET', path: '/api/inventory/receiving', desc: 'List receiving records' },
+                            { method: 'GET', path: '/api/inventory/receiving/:id', desc: 'Get receiving record' },
+                            { method: 'POST', path: '/api/inventory/receiving', desc: 'Receive stock' }
+                        ]
+                    },
+                    {
+                        title: '📦 Batches',
+                        icon: '📦',
+                        color: '#fd7e14',
+                        endpoints: [
+                            { method: 'GET', path: '/api/batches', desc: 'List all batches' },
+                            { method: 'GET', path: '/api/batches/:id', desc: 'Get batch by ID' },
+                            { method: 'GET', path: '/api/batches/product/:productId', desc: 'Get batches for product' }
+                        ]
+                    },
+                    {
+                        title: '⚠️ Alerts',
+                        icon: '⚠️',
+                        color: '#ffc107',
+                        endpoints: [
+                            { method: 'GET', path: '/api/alerts', desc: 'List all alerts' },
+                            { method: 'GET', path: '/api/alerts/:id', desc: 'Get alert by ID' },
+                            { method: 'POST', path: '/api/alerts/resolve/:id', desc: 'Resolve alert' }
+                        ]
+                    },
+                    {
+                        title: '👥 Users',
+                        icon: '👥',
+                        color: '#6c757d',
+                        endpoints: [
+                            { method: 'GET', path: '/api/users', desc: 'List all users' },
+                            { method: 'GET', path: '/api/users/:id', desc: 'Get user by ID' },
+                            { method: 'POST', path: '/api/users', desc: 'Create user' },
+                            { method: 'PUT', path: '/api/users/:id', desc: 'Update user' }
+                        ]
+                    },
+                    {
+                        title: '🔔 Notifications',
+                        icon: '🔔',
+                        color: '#e83e8c',
+                        endpoints: [
+                            { method: 'GET', path: '/api/notifications', desc: 'Get user notifications' },
+                            { method: 'POST', path: '/api/notifications/:id/read', desc: 'Mark as read' }
+                        ]
+                    },
+                    {
+                        title: '📋 Audit',
+                        icon: '📋',
+                        color: '#343a40',
+                        endpoints: [
+                            { method: 'GET', path: '/api/audit', desc: 'List audit logs' },
+                            { method: 'GET', path: '/api/audit/table/:tableName', desc: 'Get logs for table' }
+                        ]
+                    },
+                    {
+                        title: '🧙 Wizard',
+                        icon: '🧙',
+                        color: '#9c27b0',
+                        endpoints: [
+                            { method: 'GET', path: '/api/wizard', desc: 'Get available wizard types' },
+                            { method: 'POST', path: '/api/wizard/start', desc: 'Start wizard session' }
+                        ]
+                    }
+                ];
+
+                const grid = document.getElementById('endpointsGrid');
+                grid.innerHTML = endpoints.map(module => `
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <span class="icon">${module.icon}</span>
+                                ${module.title}
+                            </h3>
+                        </div>
+                        <ul class="endpoint-blocks">
+                            ${module.endpoints.map(ep => `
+                                <li class="endpoint-block" onclick="fillEndpoint('${ep.method}', '${ep.path}')">
+                                    <div class="endpoint-header">
+                                        <span class="method-badge method-${ep.method.toLowerCase()}">${ep.method}</span>
+                                        <span class="endpoint-path">${ep.path}</span>
+                                    </div>
+                                    <div class="endpoint-description">${ep.desc}</div>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading endpoints:', error);
+            }
+        }
+
+        function fillEndpoint(method, path) {
+            document.getElementById('methodSelect').value = method;
+            document.getElementById('endpointInput').value = path;
+            if (method === 'GET' || method === 'DELETE') {
+                document.getElementById('bodyGroup').style.display = 'none';
+            } else {
+                document.getElementById('bodyGroup').style.display = 'block';
+            }
+        }
+
+        // Initialize
+        checkDatabaseStatus();
+        loadEndpoints();
+        setInterval(checkDatabaseStatus, 30000); // Check every 30 seconds
+    </script>
+</body>
+</html>

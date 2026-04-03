@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse Locations - SWMS</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <style>
+        .warehouse-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .warehouse-actions .compact-btn {
+            padding: 4px 12px;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 6px;
+            line-height: 1.2;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        <aside class="sidebar" id="sidebar">
+            <a href="dashboard.html" class="logo">SWMS</a>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html"><i data-lucide="layout-dashboard" class="nav-icon"></i> Dashboard</a>
+                <a href="inventory.html"><i data-lucide="package" class="nav-icon"></i> Inventory</a>
+                <a href="alerts.html"><i data-lucide="bell" class="nav-icon"></i> Alerts</a>
+                <a href="reports.html"><i data-lucide="bar-chart-2" class="nav-icon"></i> Reports</a>
+                <a href="users.html" id="usersLink" style="display: none;"><i data-lucide="users" class="nav-icon"></i> Users</a>
+                <a href="suppliers.html"><i data-lucide="truck" class="nav-icon"></i> Suppliers</a>
+                <a href="warehouses.html" class="active"><i data-lucide="warehouse" class="nav-icon"></i> Warehouses</a>
+                <a href="approval.html" id="approvalCenterLink" style="display: none;"><i data-lucide="shield-check" class="nav-icon"></i> Approval</a>
+            </nav>
+        </aside>
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()" aria-hidden="true"></div>
+        <div class="main-wrapper">
+            <header class="header">
+                <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+                    <i data-lucide="menu"></i>
+                </button>
+                <div class="header-compact">
+                    <a href="notifications.html" class="notification-icon" style="position: relative; text-decoration: none; padding: 0.5rem; color: var(--text);">
+                        <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
+                        <span id="notificationBadge" class="badge badge-danger" style="position: absolute; top: -4px; right: -4px; font-size: 0.65rem; display: none; min-width: 16px; padding: 2px 5px;">0</span>
+                    </a>
+                    <div class="user-profile-wrap">
+                        <button id="profileAvatarBtn" class="profile-avatar-btn" type="button" onclick="toggleProfileDropdown(event)" aria-haspopup="true" aria-expanded="false" title="Account">
+                            <span class="profile-avatar-initial" id="profileAvatarInitial">U</span>
+                        </button>
+                        <div id="profileDropdown" class="profile-dropdown" style="display: none;" role="menu">
+                            <div class="profile-dropdown-header">
+                                <div class="profile-dropdown-name" id="profileUserName">User</div>
+                                <div class="profile-dropdown-email" id="profileUserEmail">user@example.com</div>
+                            </div>
+                            <a href="settings.html" class="profile-dropdown-item" role="menuitem">Settings</a>
+                            <button type="button" class="profile-dropdown-item profile-dropdown-logout" onclick="handleLogout(event)" role="menuitem">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+    <main class="container-fluid">
+        <div class="page-header">
+            <h1 class="page-title">Warehouse Locations</h1>
+            <a href="settings.html" class="btn btn-outline">Settings</a>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">Warehouses (<span id="warehouseCount">0</span>)</h2>
+                <button type="button" class="btn btn-primary" onclick="showAddModal()">Add Warehouse</button>
+            </div>
+            <div class="table-container">
+                <table id="warehousesTable">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Address</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="warehousesTableBody">
+                        <tr><td colspan="5" style="text-align: center; padding: 2rem;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+        </div><!-- .main-wrapper -->
+    </div><!-- .app-layout -->
+
+    <div id="addModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="addModalTitle" style="display: none; position: fixed; inset: 0; z-index: 9999; align-items: center; justify-content: center; background: rgba(0,0,0,0.5);" onclick="if (event.target === this) closeAddModal();">
+        <div class="modal-content" style="background: var(--bg, #fff); border-radius: 8px; max-width: 420px; width: 90%; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation();">
+            <div class="modal-header">
+                <h2 id="addModalTitle">Add Warehouse</h2>
+                <button type="button" class="modal-close" onclick="closeAddModal()" aria-label="Close">&times;</button>
+            </div>
+            <form id="addForm" novalidate onsubmit="event.preventDefault(); saveWarehouse(); return false;" style="padding: 1.5rem;">
+                <div class="form-group">
+                    <label class="form-label">Name *</label>
+                    <input type="text" id="whName" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Code *</label>
+                    <input type="text" id="whCode" class="form-input" placeholder="e.g. WH01" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Address</label>
+                    <textarea id="whAddress" class="form-input" rows="2"></textarea>
+                </div>
+                <div class="actions">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-outline" onclick="closeAddModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="editModalTitle" style="display: none; position: fixed; inset: 0; z-index: 9999; align-items: center; justify-content: center; background: rgba(0,0,0,0.5);" onclick="if (event.target === this) closeEditModal();">
+        <div class="modal-content" style="background: var(--bg, #fff); border-radius: 8px; max-width: 420px; width: 90%; max-height: 90vh; overflow-y: auto;" onclick="event.stopPropagation();">
+            <div class="modal-header">
+                <h2 id="editModalTitle">Edit Warehouse</h2>
+                <button type="button" class="modal-close" onclick="closeEditModal()" aria-label="Close">&times;</button>
+            </div>
+            <form id="editForm" novalidate onsubmit="event.preventDefault(); saveEditWarehouse(); return false;" style="padding: 1.5rem;">
+                <input type="hidden" id="editWhId">
+                <div class="form-group">
+                    <label class="form-label" for="editWhName">Name *</label>
+                    <input type="text" id="editWhName" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="editWhCode">Code *</label>
+                    <input type="text" id="editWhCode" class="form-input" placeholder="e.g. WH01" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="editWhAddress">Address</label>
+                    <textarea id="editWhAddress" class="form-textarea" rows="2"></textarea>
+                </div>
+                <div class="actions">
+                    <button type="submit" class="btn btn-primary">Save changes</button>
+                    <button type="button" class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/api-config.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/notifications.js"></script>
+    <script>
+        var apiBase = typeof window.getSwmsApiBase === 'function' ? window.getSwmsApiBase() : (window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api');
+
+        if (sessionStorage.getItem('userRole') === 'ADMIN' || sessionStorage.getItem('userRole') === 'Admin') {
+            var ul = document.getElementById('usersLink');
+            if (ul) ul.style.display = 'block';
+            var dal = document.getElementById('approvalCenterLink');
+            if (dal) dal.style.display = 'block';
+        }
+
+        function getAuthHeaders() {
+            var token = '';
+            try {
+                if (typeof window.getAuthToken === 'function') token = window.getAuthToken() || '';
+                else token = sessionStorage.getItem('authToken') || '';
+            } catch (e) { token = sessionStorage.getItem('authToken') || ''; }
+            var h = { 'Content-Type': 'application/json' };
+            if (token) h['Authorization'] = 'Bearer ' + token;
+            return h;
+        }
+
+        function setTableContent(html) {
+            var tbody = document.getElementById('warehousesTableBody');
+            if (tbody) tbody.innerHTML = html;
+        }
+
+        function setCount(n) {
+            var el = document.getElementById('warehouseCount');
+            if (el) el.textContent = String(n);
+        }
+
+        function notify(msg, type) {
+            if (typeof window.showNotification === 'function') {
+                window.showNotification(typeof msg === 'string' ? msg : (msg.message || 'Error'), type || 'error');
+            } else {
+                alert(msg.message || msg);
+            }
+        }
+
+        async function loadWarehouses() {
+            setTableContent('<tr><td colspan="5" style="text-align: center; padding: 2rem;">Loading...</td></tr>');
+            try {
+                var url = apiBase + '/warehouses';
+                var opts = { method: 'GET', headers: getAuthHeaders() };
+                var r;
+                if (typeof window.fetchWithAuth === 'function') {
+                    r = await window.fetchWithAuth(url, opts);
+                } else {
+                    r = await fetch(url, opts);
+                }
+                var j;
+                try {
+                    j = await r.json();
+                } catch (parseErr) {
+                    setCount(0);
+                    setTableContent('<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #b91c1c;">Server returned invalid JSON. Ensure you are logged in and the backend is running.</td></tr>');
+                    notify('Invalid response from server', 'error');
+                    return;
+                }
+                if (!r.ok) {
+                    setCount(0);
+                    var errMsg = (j && (j.error || j.message)) || ('Request failed: ' + r.status);
+                    if (r.status === 401) errMsg = 'Please log in to view warehouses.';
+                    if (r.status === 403) errMsg = 'Access denied. Admin only.';
+                    setTableContent('<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #b91c1c;">' + String(errMsg).replace(/</g, '&lt;') + '</td></tr>');
+                    notify(errMsg, 'error');
+                    return;
+                }
+                var list = [];
+                if (j && j.success && j.data != null) {
+                    list = Array.isArray(j.data) ? j.data : (Array.from ? Array.from(j.data) : [j.data]);
+                }
+                setCount(list.length);
+                var isAdmin = (sessionStorage.getItem('userRole') || '').toUpperCase() === 'ADMIN';
+                if (list.length > 0) {
+                    setTableContent(list.map(function(w) {
+                        var id = w.warehouseId != null ? w.warehouseId : (w.WarehouseId != null ? w.WarehouseId : '');
+                        var code = String(w.code != null ? w.code : (w.Code != null ? w.Code : '-')).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        var name = String(w.name != null ? w.name : (w.Name != null ? w.Name : '-')).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        var addr = String(w.address != null ? w.address : (w.Address != null ? w.Address : '-')).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                        var status = (w.status != null ? String(w.status) : (w.isActive === false || w.isActive === 0 ? 'Inactive' : 'Active')).trim();
+                        var isActive = status === 'Active';
+                        var badgeStyle = isActive ? 'background-color: #15803D; color: #fff;' : 'background-color: #991B1B; color: #fff;';
+                        var toggleLabel = isActive ? 'Deactivate' : 'Activate';
+                        var actions = isAdmin ? ('<div class="warehouse-actions">' +
+                            '<button type="button" class="btn btn-outline compact-btn" onclick="openEditWarehouse(' + id + ')">Edit</button>' +
+                            '<button type="button" class="btn btn-outline compact-btn" onclick="toggleWarehouseStatus(' + id + ')">' + toggleLabel + '</button>' +
+                            '<button type="button" class="btn btn-danger compact-btn" onclick="deleteWarehouse(' + id + ')">Delete</button>' +
+                            '</div>') : '—';
+                        return '<tr><td>' + code + '</td><td>' + name + '</td><td>' + addr + '</td><td><span class="badge" style="' + badgeStyle + '">' + (isActive ? 'Active' : 'Inactive') + '</span></td><td>' + actions + '</td></tr>';
+                    }).join(''));
+                } else {
+                    setTableContent('<tr><td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-secondary);">No warehouses yet. Click &quot;Add Warehouse&quot; to create one.</td></tr>');
+                }
+            } catch (e) {
+                setCount(0);
+                setTableContent('<tr><td colspan="5" style="text-align: center; padding: 2rem; color: #b91c1c;">Failed to load: ' + String(e.message || e).replace(/</g, '&lt;') + '. Open F12 Console for details.</td></tr>');
+                notify('Failed to load warehouses: ' + (e.message || 'Network error'), 'error');
+            }
+        }
+
+        async function toggleWarehouseStatus(id) {
+            var url = apiBase + '/warehouses/' + id + '/toggle-status';
+            var opts = { method: 'PUT', headers: getAuthHeaders() };
+            try {
+                var r = typeof window.fetchWithAuth === 'function' ? await window.fetchWithAuth(url, opts) : await fetch(url, opts);
+                var j = await r.json().catch(function() { return {}; });
+                if (r.ok && j.success) {
+                    notify('Warehouse status updated.', 'success');
+                    loadWarehouses();
+                } else {
+                    notify((j && j.error) || 'Failed to update status', 'error');
+                }
+            } catch (e) {
+                notify('Failed to update status: ' + (e.message || 'Network error'), 'error');
+            }
+        }
+
+        function closeEditModal() {
+            var modal = document.getElementById('editModal');
+            if (modal) {
+                modal.style.setProperty('display', 'none', 'important');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+            var form = document.getElementById('editForm');
+            if (form) form.reset();
+        }
+
+        async function openEditWarehouse(id) {
+            var modal = document.getElementById('editModal');
+            if (!modal) return;
+            modal.style.setProperty('display', 'flex', 'important');
+            modal.setAttribute('aria-hidden', 'false');
+            var url = apiBase + '/warehouses/' + encodeURIComponent(id);
+            var opts = { method: 'GET', headers: getAuthHeaders() };
+            try {
+                var r = typeof window.fetchWithAuth === 'function' ? await window.fetchWithAuth(url, opts) : await fetch(url, opts);
+                var j = await r.json().catch(function() { return {}; });
+                if (!r.ok || !j.success || !j.data) {
+                    notify((j && j.error) || 'Could not load warehouse', 'error');
+                    closeEditModal();
+                    return;
+                }
+                var w = j.data;
+                var wid = w.warehouseId != null ? w.warehouseId : w.WarehouseId;
+                document.getElementById('editWhId').value = wid;
+                document.getElementById('editWhName').value = w.name != null ? w.name : '';
+                document.getElementById('editWhCode').value = w.code != null ? w.code : '';
+                document.getElementById('editWhAddress').value = w.address != null ? w.address : '';
+                var nameInput = document.getElementById('editWhName');
+                if (nameInput) setTimeout(function() { nameInput.focus(); }, 100);
+            } catch (e) {
+                notify('Failed to load warehouse: ' + (e.message || 'Network error'), 'error');
+                closeEditModal();
+            }
+        }
+
+        async function saveEditWarehouse() {
+            var idEl = document.getElementById('editWhId');
+            var nameEl = document.getElementById('editWhName');
+            var codeEl = document.getElementById('editWhCode');
+            var addressEl = document.getElementById('editWhAddress');
+            var id = idEl ? idEl.value : '';
+            var name = nameEl ? nameEl.value.trim() : '';
+            var code = codeEl ? codeEl.value.trim().toUpperCase() : '';
+            var address = addressEl ? addressEl.value.trim() : '';
+            if (!id || !name || !code) {
+                notify('Name and Code are required', 'error');
+                return;
+            }
+            var btn = document.querySelector('#editForm button[type="submit"]');
+            if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+            try {
+                var url = apiBase + '/warehouses/' + encodeURIComponent(id);
+                var body = JSON.stringify({ name: name, code: code, address: address || null });
+                var opts = { method: 'PUT', headers: getAuthHeaders(), body: body };
+                var r = typeof window.fetchWithAuth === 'function' ? await window.fetchWithAuth(url, opts) : await fetch(url, opts);
+                var j = await r.json().catch(function() { return {}; });
+                if (r.ok && j && j.success) {
+                    notify('Warehouse updated.', 'success');
+                    closeEditModal();
+                    loadWarehouses();
+                } else {
+                    var err = (j && (j.error || j.message)) || ('Failed: ' + r.status);
+                    if (r.status === 403) err = 'Only Admins can edit warehouses.';
+                    if (r.status === 401) err = 'Please log in again.';
+                    notify(err, 'error');
+                }
+            } catch (e) {
+                notify('Failed to save: ' + (e.message || 'Network error'), 'error');
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = 'Save changes'; }
+            }
+        }
+
+        async function deleteWarehouse(id) {
+            var msg = 'Are you sure? This action cannot be undone and will be logged in the Audit Trail.';
+            var confirmFn = window.showConfirmWindow || function(title, m) { return Promise.resolve(confirm(m)); };
+            var ok = await confirmFn('Delete Warehouse', msg);
+            if (!ok) return;
+            var url = apiBase + '/warehouses/' + id;
+            var opts = { method: 'DELETE', headers: getAuthHeaders() };
+            try {
+                var r = typeof window.fetchWithAuth === 'function' ? await window.fetchWithAuth(url, opts) : await fetch(url, opts);
+                var j = await r.json().catch(function() { return {}; });
+                if (r.ok && j.success) {
+                    notify('Warehouse deleted.', 'success');
+                    loadWarehouses();
+                } else {
+                    notify((j && j.error) || 'Delete failed', 'error');
+                }
+            } catch (e) {
+                notify('Delete failed: ' + (e.message || 'Network error'), 'error');
+            }
+        }
+
+        function showAddModal() {
+            var modal = document.getElementById('addModal');
+            if (!modal) return;
+            modal.style.setProperty('display', 'flex', 'important');
+            modal.setAttribute('aria-hidden', 'false');
+            var firstInput = document.getElementById('whName');
+            if (firstInput) {
+                setTimeout(function() { firstInput.focus(); }, 100);
+            }
+        }
+
+        function closeAddModal() {
+            var modal = document.getElementById('addModal');
+            if (modal) {
+                modal.style.setProperty('display', 'none', 'important');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+            var form = document.getElementById('addForm');
+            if (form) form.reset();
+        }
+
+        async function saveWarehouse() {
+            var nameEl = document.getElementById('whName');
+            var codeEl = document.getElementById('whCode');
+            var addressEl = document.getElementById('whAddress');
+            var name = nameEl ? nameEl.value.trim() : '';
+            var code = codeEl ? codeEl.value.trim().toUpperCase() : '';
+            var address = addressEl ? addressEl.value.trim() : '';
+            if (!name || !code) {
+                notify('Name and Code are required', 'error');
+                return;
+            }
+            var btn = document.querySelector('#addForm button[type="submit"]');
+            if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+            try {
+                var url = apiBase + '/warehouses';
+                var body = JSON.stringify({ name: name, code: code, address: address || null });
+                var opts = { method: 'POST', headers: getAuthHeaders(), body: body };
+                var r;
+                if (typeof window.fetchWithAuth === 'function') {
+                    r = await window.fetchWithAuth(url, opts);
+                } else {
+                    r = await fetch(url, opts);
+                }
+                var j;
+                try {
+                    j = await r.json();
+                } catch (parseErr) {
+                    notify('Invalid response from server', 'error');
+                    return;
+                }
+                if (r.ok && j && j.success) {
+                    notify('Warehouse added successfully.', 'success');
+                    closeAddModal();
+                    loadWarehouses();
+                } else {
+                    var err = (j && (j.error || j.message)) || ('Failed: ' + r.status);
+                    if (r.status === 403) err = 'Only Admins can add warehouses.';
+                    if (r.status === 401) err = 'Please log in again.';
+                    notify(err, 'error');
+                }
+            } catch (e) {
+                notify('Failed to add warehouse: ' + (e.message || 'Network error'), 'error');
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
+            }
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            if (sidebar && overlay) {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('open');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+            const role = sessionStorage.getItem('userRole') || 'Admin';
+            const isAdmin = role === 'Admin' || role === 'ADMIN';
+            const ul = document.getElementById('usersLink');
+            const al = document.getElementById('auditLink');
+            const dal = document.getElementById('approvalCenterLink');
+            if (ul) ul.style.display = isAdmin ? '' : 'none';
+            if (al) al.style.display = isAdmin ? '' : 'none';
+            if (dal) dal.style.display = isAdmin ? '' : 'none';
+            loadWarehouses();
+        });
+    </script>
+</body>
+</html>
