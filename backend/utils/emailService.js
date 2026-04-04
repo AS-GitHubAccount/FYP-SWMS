@@ -1,15 +1,8 @@
-/**
- * Email Service - Enhancement #4
- * Sends emails for alerts, approvals, rejections
- */
+// nodemailer wrapper
 const nodemailer = require('nodemailer');
 
 let transporter = null;
 
-/**
- * Build nodemailer options for SMTP (Gmail / Google Workspace / Outlook, etc.).
- * Port 465 + secure=true uses implicit TLS (often works when 587 + STARTTLS is blocked on campus Wi‑Fi).
- */
 function buildSmtpTransportOptions() {
     const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
     const port = parseInt(process.env.SMTP_PORT || '587', 10);
@@ -37,7 +30,6 @@ function buildSmtpTransportOptions() {
     return opts;
 }
 
-/** New transport (no cache) — use for tests or after env change */
 function createSmtpTransport() {
     const opts = buildSmtpTransportOptions();
     if (!opts) return null;

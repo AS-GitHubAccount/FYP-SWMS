@@ -1,21 +1,5 @@
 #!/usr/bin/env node
-/**
- * SWMS — Full database seed / recovery after "Clear All" or empty DB.
- *
- * Populates:
- * - Products (SEED-* SKUs) with inventory_items + batches → Expired, Low Stock, Near expiry, OK
- * - Unresolved alerts (tagged [SEED])
- * - Sample pending booking + purchase request (dashboard Action Items)
- * - ~10 unread notifications per user (tagged [SEED] in message)
- * - One pending-invite test user + dev set-password link (for invitation flow)
- *
- * Usage (from backend folder):
- *   node seed.js
- *   npm run seed
- *
- * Idempotent: removes previous [SEED] rows / SEED-* products first, then re-inserts.
- */
-
+// Demo data: SEED-* products, alerts, notifications, optional booking/PR. Run: node seed.js
 require('dotenv').config({ path: require('path').join(__dirname, '.env') });
 const db = require('./config/database');
 
@@ -85,14 +69,13 @@ async function cleanupPreviousSeed() {
     console.log('Cleaned previous seed markers (SEED-* products, [SEED] notifications/alerts).');
 }
 
-/** Demo user: PENDING_INVITE + valid token (log set-password link when SMTP is off). */
 async function seedPendingInviteUser() {
     const email = 'pending.seed@swms.local';
     const { generateInviteToken, hashInviteToken, defaultInviteExpiry, getFrontendBaseUrl } = require('./utils/userInviteTokens');
     try {
         await db.execute('DELETE FROM users WHERE LOWER(email) = ?', [email]);
     } catch (e) {
-        console.warn('⚠️  Could not remove old seed pending user:', e.message);
+        console.warn('Could not remove old seed pending user:', e.message);
     }
     const rawToken = generateInviteToken();
     const tokenHash = hashInviteToken(rawToken);
@@ -117,14 +100,14 @@ async function seedPendingInviteUser() {
                         [tokenHash, exp, rows[0].userId]
                     );
                 } catch (e2) {
-                    console.warn('⚠️  Pending user created but invite columns missing:', e2.message);
+                    console.warn('Pending user created but invite columns missing:', e2.message);
                 }
             }
         } else {
             throw e;
         }
     }
-    console.log(`✅ SEED pending-invite user: ${email} (login blocked until password is set via link)`);
+    console.log(`SEED pending-invite user: ${email} (set password via link before login)`);
     console.log(`   Dev set-password link: ${getFrontendBaseUrl()}/set-password.html?token=${rawToken}`);
 }
 
@@ -219,7 +202,7 @@ async function main() {
     try {
         await db.execute('SELECT 1');
     } catch (e) {
-        console.error('❌ Database connection failed:', e.message);
+        console.error('Database connection failed:', e.message);
         console.error('   Fix .env (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME) and ensure MySQL is running.');
         process.exit(1);
     }
@@ -229,8 +212,6 @@ async function main() {
     const { ensureUserInvitationColumns } = require('./utils/ensureUserInvitationColumns');
     await ensureUserInvitationColumns();
 
-    // --- Products + inventory + batches (drives Inventory "Expired" / "Low Stock" tabs) ---
-    // Expired: totalQty > 0 but all batch qty is past expiry → validQty = 0
     const pidExpired = await upsertProduct({
         sku: `${SEED_SKU_PREFIX}EXPIRED-001`,
         name: 'SEED — All batches expired (demo)',
@@ -241,7 +222,6 @@ async function main() {
     await upsertBatch(pidExpired, `${SEED_SKU_PREFIX}LOT-EXP-A`, 35, daysFromToday(-45));
     await upsertBatch(pidExpired, `${SEED_SKU_PREFIX}LOT-EXP-B`, 25, daysFromToday(-10));
 
-    // Low stock (inventory API): validQty > 0 && validQty <= minStock
     const pidLow = await upsertProduct({
         sku: `${SEED_SKU_PREFIX}LOW-001`,
         name: 'SEED — Low stock vs minimum',
@@ -251,7 +231,6 @@ async function main() {
     await setInventory(pidLow, 42, 42, 0, 'Main SEED');
     await upsertBatch(pidLow, `${SEED_SKU_PREFIX}LOT-LOW-1`, 42, daysFromToday(180));
 
-    // Near expiry batch (dashboard expiring list + alerts)
     const pidNear = await upsertProduct({
         sku: `${SEED_SKU_PREFIX}NEAR-001`,
         name: 'SEED — Near expiry batch',
@@ -261,7 +240,6 @@ async function main() {
     await setInventory(pidNear, 120, 120, 0, 'Shelf SEED');
     await upsertBatch(pidNear, `${SEED_SKU_PREFIX}LOT-NEAR`, 120, daysFromToday(12));
 
-    // OK health
     const pidOk = await upsertProduct({
         sku: `${SEED_SKU_PREFIX}OK-001`,
         name: 'SEED — Healthy stock levels',
@@ -271,7 +249,6 @@ async function main() {
     await setInventory(pidOk, 500, 500, 0, 'Bulk SEED');
     await upsertBatch(pidOk, `${SEED_SKU_PREFIX}LOT-OK`, 500, daysFromToday(400));
 
-    // Out of stock (optional clarity)
     const pidOut = await upsertProduct({
         sku: `${SEED_SKU_PREFIX}OUT-001`,
         name: 'SEED — Out of stock',
@@ -280,9 +257,8 @@ async function main() {
     });
     await setInventory(pidOut, 0, 0, 0, 'Main SEED');
 
-    console.log('✅ Seeded products, inventory_items, and batches (expired / low / near / ok / out).');
+    console.log('Seeded products, inventory_items, batches.');
 
-    // --- Alerts ---
     const alertRows = [
         {
             alertType: 'EXPIRED',
@@ -327,21 +303,19 @@ async function main() {
             }
         }
     }
-    console.log('✅ Seeded alerts.');
+    console.log('Seeded alerts.');
 
     await seedPendingInviteUser();
 
-    // --- Users for notifications ---
     const [users] = await db.execute(`SELECT userId, name, role FROM users ORDER BY userId`);
     if (!users.length) {
-        console.error('❌ No users in database. Run setup.sql (or register via app) first, then re-run seed.js.');
+        console.error('No users in DB. Run setup.sql or register, then seed again.');
         process.exit(1);
     }
 
     const adminUser = users.find((u) => String(u.role || '').toUpperCase() === 'ADMIN') || users[0];
     const adminId = adminUser.userId;
 
-    // --- Pending booking + purchase request (dashboard Action Items) ---
     if (await tableExists('bookings')) {
         try {
             const { generateBookingNumber } = require('./utils/idGenerator');
@@ -351,9 +325,9 @@ async function main() {
          VALUES (?, ?, 5, ?, ?, 'PENDING', '[SEED]')`,
                 [bkNum, pidOk, adminId, daysFromToday(7)]
             );
-            console.log('✅ Seeded pending booking:', bkNum);
+            console.log('Seeded pending booking:', bkNum);
         } catch (e) {
-            console.warn('⚠️  Booking seed skipped:', e.message);
+            console.warn('Booking seed skipped:', e.message);
         }
     }
 
@@ -366,13 +340,12 @@ async function main() {
          VALUES (?, ?, 24, ?, ?, 'PENDING', 'high', '[SEED]')`,
                 [prNum, pidLow, adminId, daysFromToday(14)]
             );
-            console.log('✅ Seeded pending purchase request:', prNum);
+            console.log('Seeded pending purchase request:', prNum);
         } catch (e) {
-            console.warn('⚠️  Purchase request seed skipped:', e.message);
+            console.warn('Purchase request seed skipped:', e.message);
         }
     }
 
-    // --- Notifications (~10 per user, unread) ---
     const templates = [
         { type: 'Alert', ntype: 'WARNING', relT: 'alert', msg: `${SEED_TAG} Low stock: SEED — Low stock vs minimum is below target. Open Alerts or Inventory.` },
         { type: 'Alert', ntype: 'WARNING', relT: null, msg: `${SEED_TAG} Expired inventory: review SEED — All batches expired (demo) for disposal workflow.` },
@@ -409,17 +382,13 @@ async function main() {
         }
     }
 
-    console.log(`✅ Seeded ${notifCount} unread notifications across ${users.length} user(s).`);
-    console.log('\nDone. Next steps:');
-    console.log('  • Refresh Inventory — filter Expired / Low Stock to see SEED rows.');
-    console.log('  • Open Notifications — bell badge should show unread count.');
-    console.log('  • Open Dashboard — Action Items / priority list should repopulate.');
-    console.log('  • Re-run anytime:  node seed.js  (cleans old [SEED] data first)\n');
+    console.log(`Seeded ${notifCount} unread notifications for ${users.length} user(s).`);
+    console.log('Done. Re-run: node seed.js (cleans old [SEED] first).');
 }
 
 main()
     .catch((e) => {
-        console.error('❌ Seed failed:', e);
+        console.error('Seed failed:', e);
         process.exitCode = 1;
     })
     .finally(async () => {

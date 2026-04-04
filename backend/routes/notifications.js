@@ -16,9 +16,6 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 
-// ============================================
-// GET ALL NOTIFICATIONS FOR USER
-// ============================================
 router.get('/', async (req, res) => {
     try {
         const userId = req.user && req.user.userId ? parseInt(req.user.userId, 10) : parseInt(req.query.userId, 10);
@@ -64,9 +61,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// ============================================
-// GET UNREAD NOTIFICATIONS COUNT
-// ============================================
 async function handleUnreadCount(req, res) {
     try {
         const userId = req.user && req.user.userId ? parseInt(req.user.userId, 10) : parseInt(req.query.userId, 10);
@@ -113,9 +107,6 @@ router.get('/unread', handleUnreadCount);
 // Backwards-compatible alias for older frontends: /unread-count
 router.get('/unread-count', handleUnreadCount);
 
-// ============================================
-// MARK NOTIFICATION AS READ
-// ============================================
 router.put('/:id/read', async (req, res) => {
     try {
         const notificationId = parseInt(req.params.id);
@@ -145,9 +136,6 @@ router.put('/:id/read', async (req, res) => {
     }
 });
 
-// ============================================
-// MARK NOTIFICATION AS UNREAD
-// ============================================
 router.put('/:id/unread', async (req, res) => {
     try {
         const notificationId = parseInt(req.params.id);
@@ -177,9 +165,6 @@ router.put('/:id/unread', async (req, res) => {
     }
 });
 
-// ============================================
-// DELETE NOTIFICATION
-// ============================================
 // Only match numeric IDs so "/clear-all" is not swallowed by this route.
 router.delete('/:id(\\d+)', async (req, res) => {
     try {
@@ -208,9 +193,6 @@ router.delete('/:id(\\d+)', async (req, res) => {
     }
 });
 
-// ============================================
-// MARK ALL NOTIFICATIONS AS READ
-// ============================================
 router.put('/read-all', async (req, res) => {
     try {
         const userId = req.user && req.user.userId ? parseInt(req.user.userId, 10) : parseInt(req.body.userId);
@@ -242,9 +224,6 @@ router.put('/read-all', async (req, res) => {
     }
 });
 
-// ============================================
-// DELETE ALL NOTIFICATIONS FOR USER
-// ============================================
 router.delete('/clear-all', async (req, res) => {
     try {
         const userId = req.user && req.user.userId ? parseInt(req.user.userId, 10) : parseInt(req.body.userId);
@@ -271,9 +250,6 @@ router.delete('/clear-all', async (req, res) => {
     }
 });
 
-// ============================================
-// CREATE NOTIFICATION (Admin/System use)
-// ============================================
 router.post('/', async (req, res) => {
     try {
         const { userId, message, recipient, notificationType, relatedEntityType, relatedEntityId } = req.body;

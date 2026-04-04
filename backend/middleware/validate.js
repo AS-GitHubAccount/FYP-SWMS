@@ -1,7 +1,4 @@
-/**
- * Validation middleware - Enhancement #18
- * Uses Joi for request validation
- */
+// Joi validate(body|query|params)
 const Joi = require('joi');
 
 function validate(schema, property = 'body') {

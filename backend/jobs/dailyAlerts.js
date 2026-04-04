@@ -1,8 +1,4 @@
-/**
- * Daily Alerts Job - Enhancement #14
- * Runs daily at 9:00 AM: check alerts, auto-resolve, optional daily summary email
- */
-
+// cron: daily alert sweep
 const cron = require('node-cron');
 const { checkAllProducts, autoResolveAlerts } = require('../utils/alertChecker');
 

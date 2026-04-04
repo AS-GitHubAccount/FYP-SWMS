@@ -1,11 +1,4 @@
-/**
- * Authentication API Routes
- * 
- * Handles login and authentication:
- * - POST /api/auth/login - User login
- * - POST /api/auth/register - Register new user (for testing)
- */
-
+// /api/auth
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
@@ -20,9 +13,6 @@ const {
 const { sendEmailWithOptions, createSmtpTransport } = require('../utils/emailService');
 const { requestSelfServicePasswordReset, GENERIC_MESSAGE } = require('../utils/passwordResetRequest');
 
-// ============================================
-// AUTH INFO (GET /api/auth)
-// ============================================
 router.get('/', (req, res) => {
     res.json({
         message: 'SWMS Authentication API',
@@ -85,9 +75,6 @@ function isDbError(err) {
     return err && (codes.includes(err.code) || (err.code && String(err.code).startsWith('ER_')));
 }
 
-// ============================================
-// LOGIN
-// ============================================
 router.post('/login', async (req, res) => {
     try {
         const { email, password, role } = req.body;
@@ -152,7 +139,6 @@ router.post('/login', async (req, res) => {
             });
         }
         
-        // Create JWT access token (15min) + refresh token (7d) - Enhancement #6
         const token = jwt.sign(
             { userId: user.userId, email: user.email, role: user.role },
             process.env.JWT_SECRET || 'secret_key',
@@ -189,9 +175,6 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// ============================================
-// REFRESH TOKEN - Enhancement #6
-// ============================================
 router.post('/refresh', async (req, res) => {
     try {
         const { refreshToken } = req.body;
@@ -217,9 +200,6 @@ router.post('/refresh', async (req, res) => {
     }
 });
 
-// ============================================
-// REGISTER (for testing/admin use)
-// ============================================
 router.post('/register', async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
@@ -281,9 +261,6 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// ============================================
-// FORGOT PASSWORD (self-service — public)
-// ============================================
 router.post('/forgot-password', async (req, res) => {
     try {
         const body = req.body || {};
@@ -299,9 +276,6 @@ router.post('/forgot-password', async (req, res) => {
     }
 });
 
-// ============================================
-// TEST EMAIL (diagnostics - remove in production)
-// ============================================
 router.all('/test-email', async (req, res) => {
     const to = req.body?.to || req.query?.to;
     if (!to) {
@@ -341,9 +315,6 @@ router.all('/test-email', async (req, res) => {
     }
 });
 
-// ============================================
-// INVITATION / RESET — validate token (for Set Password page)
-// ============================================
 router.get('/invitation-preview', async (req, res) => {
     try {
         const token = (req.query.token || '').trim();
@@ -367,9 +338,6 @@ router.get('/invitation-preview', async (req, res) => {
     }
 });
 
-// ============================================
-// COMPLETE INVITATION (public, one-time token)
-// ============================================
 router.post('/complete-invitation', async (req, res) => {
     try {
         const { token, newPassword } = req.body || {};

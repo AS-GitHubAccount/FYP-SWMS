@@ -1,8 +1,4 @@
-/**
- * Stock Adjustments API - Enhancement #10
- * CORRECTION, DAMAGE, WRITEOFF, TRANSFER
- */
-
+// /api/stock-adjustments
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');

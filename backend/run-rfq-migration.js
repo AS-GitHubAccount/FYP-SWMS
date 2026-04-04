@@ -1,7 +1,4 @@
-/**
- * Run RFQ process migration (requires purchase_requests from enhancements.sql)
- * Usage: node run-rfq-migration.js
- */
+// node run-rfq-migration.js
 require('dotenv').config();
 const fs = require('fs');
 const mysql = require('mysql2/promise');
@@ -17,20 +14,18 @@ async function run() {
     multipleStatements: true
   });
 
-  // 1. Run enhancements.sql first (creates purchase_requests if missing)
   try {
     const enhancements = fs.readFileSync(path.join(__dirname, 'migrations', 'enhancements.sql'), 'utf8');
     await conn.query(enhancements);
-    console.log('Enhancements migration OK');
+    console.log('enhancements.sql applied');
   } catch (e) {
     if (e.code === 'ER_DUP_FIELDNAME' || e.code === 'ER_TABLE_EXISTS_ERROR') {
-      console.log('Enhancements: tables already exist');
+      console.log('enhancements.sql skipped (already applied)');
     } else {
       throw e;
     }
   }
 
-  // 2. Run RFQ migration
   const rfqSql = fs.readFileSync(path.join(__dirname, 'migrations', 'rfq_process.sql'), 'utf8');
   await conn.query(rfqSql);
   console.log('RFQ migration completed.');

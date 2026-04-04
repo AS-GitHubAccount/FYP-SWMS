@@ -6,6 +6,10 @@
 -- Instructions:
 -- 1. Open MySQL command line or phpMyAdmin
 -- 2. Run: source setup.sql;  (or copy-paste this entire file)
+--
+-- Aiven (defaultdb): you usually cannot CREATE DATABASE. In the Aiven SQL editor
+-- or mysql client, select database `defaultdb`, then comment out the CREATE line
+-- below and use:  USE defaultdb;
 -- ============================================
 
 -- Create database

@@ -1,8 +1,4 @@
-/**
- * Disposal Requests API - Enhancement #2
- * Mandatory disposal reason; Admin approval workflow; inventory deducted only on Approve.
- */
-
+// /api/disposal-requests
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');

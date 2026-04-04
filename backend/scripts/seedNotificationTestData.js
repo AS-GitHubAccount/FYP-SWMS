@@ -179,9 +179,9 @@ async function main() {
       message: '[Mini-seed] Warehouse configuration updated — Settings.',
     });
 
-    console.log('✅ Test products, batches, and notifications have been seeded.');
+    console.log('Seed notification test data done.');
   } catch (err) {
-    console.error('❌ Failed to seed test data:', err);
+    console.error('Seed failed:', err);
   } finally {
     try {
       if (db && typeof db.end === 'function') {

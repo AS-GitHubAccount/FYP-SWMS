@@ -94,9 +94,9 @@ async function main() {
       location: 'Main Warehouse - A3'
     });
 
-    console.log('✅ Seeded inventory levels test data (OK, LOW, OUT).');
+    console.log('Seeded inventory level test data.');
   } catch (err) {
-    console.error('❌ Failed to seed inventory levels test data:', err);
+    console.error('Seed failed:', err);
   } finally {
     try {
       if (db && typeof db.end === 'function') {

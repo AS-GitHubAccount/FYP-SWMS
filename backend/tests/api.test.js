@@ -1,8 +1,4 @@
-/**
- * Basic API tests - Enhancement #19
- * Run: npx jest tests/api.test.js (if Jest installed)
- * Or: node tests/api.test.js for a simple smoke test
- */
+// node tests/api.test.js
 const http = require('http');
 
 const BASE = process.env.API_URL || 'http://localhost:3000';

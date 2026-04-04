@@ -9,9 +9,6 @@ const router = express.Router();
 const db = require('../config/database');
 const { logAudit, getClientIp, getUserAgent } = require('../utils/auditLogger');
 
-// ============================================
-// POST QR SCAN AUDIT (log when user scans QR for an action)
-// ============================================
 router.post('/qr-scan', async (req, res) => {
     try {
         const { productId, batchId, actionType } = req.body;
@@ -41,9 +38,6 @@ router.post('/qr-scan', async (req, res) => {
     }
 });
 
-// ============================================
-// POST QR GENERATE AUDIT (log when user generates QR - e.g. client-side fallback)
-// ============================================
 router.post('/qr-generate', async (req, res) => {
     try {
         const { productId, batchId } = req.body;
@@ -71,9 +65,6 @@ router.post('/qr-generate', async (req, res) => {
     }
 });
 
-// ============================================
-// GET AUDIT FILTER OPTIONS (dynamic from database)
-// ============================================
 router.get('/filters', async (req, res) => {
     try {
         const [tables] = await db.execute(`
@@ -108,9 +99,6 @@ router.get('/filters', async (req, res) => {
     }
 });
 
-// ============================================
-// GET ALL AUDIT LOGS
-// ============================================
 router.get('/', async (req, res) => {
     try {
         const { tableName, recordId, action, userId, limit = 100, offset = 0 } = req.query;
@@ -175,9 +163,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// ============================================
-// GET AUDIT LOGS FOR SPECIFIC RECORD
-// ============================================
 router.get('/record/:tableName/:recordId', async (req, res) => {
     try {
         const { tableName, recordId } = req.params;

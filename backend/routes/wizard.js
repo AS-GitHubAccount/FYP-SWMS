@@ -1,24 +1,11 @@
-/**
- * Wizard API Routes
- * 
- * Handles multi-step wizard workflows:
- * - POST /api/wizard/start - Start a new wizard session
- * - POST /api/wizard/step - Submit data for current step and move to next
- * - GET /api/wizard/:sessionId - Get current wizard state
- * - GET /api/wizard/:sessionId/progress - Get wizard progress
- * - POST /api/wizard/:sessionId/complete - Complete wizard
- * - DELETE /api/wizard/:sessionId - Cancel/delete wizard session
- */
-
+// /api/wizard
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { generateBookingNumber } = require('../utils/idGenerator');
 
-// In-memory storage for wizard sessions (in production, use Redis or database)
 const wizardSessions = new Map();
 
-// Available wizard types (multi-warehouse setup removed; keep core setup and flows)
 const WIZARD_TYPES = {
     SETUP: 'setup',
     PRODUCT_CREATION: 'product_creation',
@@ -100,9 +87,6 @@ function initializeWizard(type, userId = null) {
     return session;
 }
 
-// ============================================
-// START WIZARD
-// ============================================
 router.post('/start', async (req, res) => {
     try {
         const { type, userId } = req.body;
@@ -144,9 +128,6 @@ router.post('/start', async (req, res) => {
     }
 });
 
-// ============================================
-// GET WIZARD STATE
-// ============================================
 router.get('/:sessionId', (req, res) => {
     try {
         const { sessionId } = req.params;
@@ -188,9 +169,6 @@ router.get('/:sessionId', (req, res) => {
     }
 });
 
-// ============================================
-// SUBMIT STEP DATA
-// ============================================
 router.post('/:sessionId/step', async (req, res) => {
     try {
         const { sessionId } = req.params;
@@ -262,9 +240,6 @@ router.post('/:sessionId/step', async (req, res) => {
     }
 });
 
-// ============================================
-// GET PROGRESS
-// ============================================
 router.get('/:sessionId/progress', (req, res) => {
     try {
         const { sessionId } = req.params;
@@ -298,9 +273,6 @@ router.get('/:sessionId/progress', (req, res) => {
     }
 });
 
-// ============================================
-// COMPLETE WIZARD
-// ============================================
 router.post('/:sessionId/complete', async (req, res) => {
     try {
         const { sessionId } = req.params;
@@ -362,9 +334,6 @@ router.post('/:sessionId/complete', async (req, res) => {
     }
 });
 
-// ============================================
-// PROCESS WIZARD COMPLETION
-// ============================================
 async function processWizardCompletion(session) {
     const { type, data } = session;
     
@@ -461,9 +430,6 @@ async function processWizardCompletion(session) {
     return { message: 'Wizard completed', data };
 }
 
-// ============================================
-// CANCEL/DELETE WIZARD
-// ============================================
 router.delete('/:sessionId', (req, res) => {
     try {
         const { sessionId } = req.params;
@@ -490,9 +456,6 @@ router.delete('/:sessionId', (req, res) => {
     }
 });
 
-// ============================================
-// GET AVAILABLE WIZARDS
-// ============================================
 router.get('/', (req, res) => {
     res.json({
         success: true,

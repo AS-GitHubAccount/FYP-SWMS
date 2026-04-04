@@ -62,9 +62,6 @@ async function getCurrentApprovalToken() {
     return rows[0] && rows[0].settingValue ? String(rows[0].settingValue).trim() : '';
 }
 
-// ============================================
-// PUT APPROVAL TOKEN (enable/change/disable) - Admin only
-// ============================================
 router.put('/approval-token', requireAdmin, async (req, res) => {
     try {
         const body = req.body || {};
@@ -131,9 +128,6 @@ router.put('/approval-token', requireAdmin, async (req, res) => {
     }
 });
 
-// ============================================
-// GET ALL SETTINGS
-// ============================================
 router.get('/', async (req, res) => {
     try {
         const settings = await loadAllSettings();
@@ -152,10 +146,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// ============================================
-// PUT BULK SETTINGS (update multiple keys at once) - Admin only
-// Frontend sends `PUT /api/settings` with an object payload of keys/values.
-// ============================================
 router.put('/', requireAdmin, async (req, res) => {
     try {
         const body = req.body || {};
@@ -195,9 +185,6 @@ router.put('/', requireAdmin, async (req, res) => {
     }
 });
 
-// ============================================
-// GET SINGLE SETTING
-// ============================================
 router.get('/:key', async (req, res) => {
     try {
         const { key } = req.params;
@@ -220,9 +207,6 @@ router.get('/:key', async (req, res) => {
     }
 });
 
-// ============================================
-// PUT SETTING (update) - Admin only
-// ============================================
 router.put('/:key', requireAdmin, async (req, res) => {
     try {
         const { key } = req.params;

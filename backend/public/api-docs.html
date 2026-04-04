@@ -5,6 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SWMS API Documentation</title>
     <style>
+        /* Visual style aligned with api-docs-new / screenshot: white page, #f5f5f5 cards, centered modules */
+        :root {
+            --page-bg: #ffffff;
+            --card-grey: #f5f5f5;
+            --text: #030213;
+            --text-muted: #6c757d;
+            --border: #e8e8e8;
+            --white: #ffffff;
+            --accent: #030213;
+            --accent-soft: #ececf0;
+            --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-hover: 0 4px 6px rgba(0, 0, 0, 0.15);
+            --radius: 0.625rem;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,10 +28,10 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #ffffff;
-            color: #030213;
+            background: var(--page-bg);
+            color: var(--text);
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+            line-height: 1.5;
         }
 
         .container {
@@ -25,10 +40,7 @@
             padding: 2rem;
         }
 
-        /* Landing Page Styles */
-        .landing-page {
-            display: block;
-        }
+        .landing-page { display: block; }
 
         .landing-header {
             text-align: center;
@@ -38,13 +50,13 @@
         .landing-header h1 {
             font-size: 2.5rem;
             font-weight: 700;
-            color: #030213;
+            color: var(--text);
             margin-bottom: 0.75rem;
         }
 
         .landing-header p {
             font-size: 1rem;
-            color: #6c757d;
+            color: var(--text-muted);
         }
 
         .modules-grid {
@@ -55,42 +67,41 @@
         }
 
         .module-card {
-            background: #f5f5f5;
-            border-radius: 0.625rem;
+            background: var(--card-grey);
+            border-radius: var(--radius);
             padding: 2rem;
             cursor: pointer;
             transition: all 0.2s;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow);
+            border: none;
         }
 
         .module-card:hover {
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--shadow-hover);
             transform: translateY(-4px);
         }
 
         .module-card h2 {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #030213;
+            color: var(--text);
             text-align: center;
             text-transform: capitalize;
         }
 
-        /* Module Detail Page Styles */
-        .module-detail-page {
-            display: none;
-        }
+        .module-detail-page { display: none; }
 
         .back-button {
             margin-bottom: 2rem;
             padding: 0.75rem 1.5rem;
-            background: #f5f5f5;
-            color: #030213;
+            background: var(--card-grey);
+            color: var(--text);
             font-weight: 600;
-            border-radius: 0.625rem;
+            font-size: 0.9375rem;
+            border-radius: var(--radius);
             border: none;
             cursor: pointer;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow);
             transition: all 0.2s;
             display: inline-flex;
             align-items: center;
@@ -98,7 +109,7 @@
         }
 
         .back-button:hover {
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--shadow-hover);
             transform: translateY(-2px);
         }
 
@@ -110,7 +121,7 @@
         .module-detail-header h1 {
             font-size: 2.5rem;
             font-weight: 700;
-            color: #030213;
+            color: var(--text);
             margin-bottom: 0.75rem;
             text-transform: capitalize;
         }
@@ -123,31 +134,53 @@
         }
 
         .endpoint-card {
-            background: #f5f5f5;
-            border-radius: 0.625rem;
+            background: var(--card-grey);
+            border-radius: var(--radius);
             padding: 2rem;
             cursor: pointer;
             transition: all 0.2s;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow);
+            text-align: center;
+            border: none;
         }
 
         .endpoint-card:hover {
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--shadow-hover);
             transform: translateY(-4px);
         }
+
+        .endpoint-card .ep-method {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .endpoint-card .ep-method.method-get { color: #0c5460; }
+        .endpoint-card .ep-method.method-post { color: #155724; }
+        .endpoint-card .ep-method.method-put { color: #856404; }
+        .endpoint-card .ep-method.method-delete { color: #721c24; }
+        .endpoint-card .ep-method.method-patch { color: #5b21b6; }
 
         .endpoint-card h2 {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #030213;
+            color: var(--text);
             text-align: center;
             text-transform: capitalize;
         }
 
-        /* Endpoint Detail Page Styles */
-        .endpoint-detail-page {
-            display: none;
+        .endpoint-card .ep-path {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            font-family: ui-monospace, monospace;
+            margin-top: 0.75rem;
+            word-break: break-all;
+            text-align: center;
         }
+
+        .endpoint-detail-page { display: none; }
 
         .endpoint-detail-header {
             margin-bottom: 2rem;
@@ -156,7 +189,7 @@
         .method-badge {
             display: inline-block;
             padding: 0.5rem 1rem;
-            border-radius: 0.625rem;
+            border-radius: var(--radius);
             font-weight: 700;
             font-size: 0.875rem;
             text-transform: uppercase;
@@ -167,95 +200,316 @@
         .method-post { background: #d4edda; color: #155724; }
         .method-put { background: #fff3cd; color: #856404; }
         .method-delete { background: #f8d7da; color: #721c24; }
+        .method-patch { background: #e2d5f7; color: #5b21b6; }
 
         .endpoint-detail-header h1 {
             font-size: 2.5rem;
             font-weight: 700;
-            color: #030213;
+            color: var(--text);
             margin-bottom: 0.75rem;
             text-transform: capitalize;
         }
 
         .endpoint-detail-header p {
             font-size: 1rem;
-            color: #6c757d;
+            color: var(--text-muted);
         }
 
-        .actions-section {
-            background: #f5f5f5;
-            border-radius: 0.625rem;
+        .spec-panel {
+            background: var(--card-grey);
+            border-radius: var(--radius);
+            padding: 1.5rem 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .spec-panel-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.5rem 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .spec-path {
+            font-family: ui-monospace, monospace;
+            font-size: 0.8125rem;
+            color: var(--text);
+            word-break: break-all;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .btn-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .btn-sm {
+            padding: 0.4rem 0.85rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            border-radius: var(--radius);
+            border: none;
+            background: var(--white);
+            cursor: pointer;
+            color: var(--text);
+            box-shadow: var(--shadow);
+        }
+
+        .btn-sm:hover {
+            background: var(--accent-soft);
+        }
+
+        .btn-sm.primary {
+            background: var(--text);
+            color: #fff;
+        }
+
+        .btn-sm.primary:hover {
+            opacity: 0.92;
+        }
+
+        .security-callout {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            padding: 0.85rem 1rem;
+            background: var(--white);
+            border-radius: var(--radius);
+            line-height: 1.45;
+            margin-top: 1rem;
+        }
+
+        .doc-section {
+            background: var(--card-grey);
+            border-radius: var(--radius);
             padding: 2rem;
             margin-bottom: 3rem;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow);
+            border: none;
         }
 
-        .actions-section h2 {
+        .doc-section h2 {
             font-size: 1.5rem;
             font-weight: 700;
-            color: #030213;
-            margin-bottom: 1.5rem;
+            color: var(--text);
+            margin-bottom: 1.25rem;
+            text-transform: none;
+            letter-spacing: normal;
         }
 
-        .actions-list {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
+        .doc-section-hint {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
         }
 
-        .action-item {
-            background: #ffffff;
-            border-radius: 0.625rem;
-            padding: 1.25rem;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-            transition: all 0.2s;
+        .api-spec-block {
+            font-size: 0.8125rem;
         }
 
-        .action-item:hover {
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-        }
-
-        .action-item h3 {
-            font-size: 1.125rem;
+        .api-spec-block .spec-sub {
+            font-size: 0.7rem;
             font-weight: 700;
-            color: #030213;
-            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin: 1rem 0 0.4rem;
         }
 
-        .action-item p {
+        .api-spec-block .spec-sub:first-child {
+            margin-top: 0;
+        }
+
+        .api-spec-block pre {
+            margin: 0 0 0.75rem;
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 1rem 1.125rem;
+            overflow-x: auto;
+            font-family: ui-monospace, monospace;
+            font-size: 0.8125rem;
+            line-height: 1.45;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+        }
+
+        .api-spec-block .spec-note {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin: 0 0 0.5rem;
+            line-height: 1.45;
+        }
+
+        .data-state {
             font-size: 0.875rem;
-            color: #6c757d;
+            color: var(--text-muted);
+            padding: 0.75rem;
         }
 
-        /* Footer */
+        .data-state.error {
+            color: #b91c1c;
+            background: #fef2f2;
+            border-radius: 6px;
+        }
+
+        .data-display {
+            font-size: 0.8125rem;
+        }
+
+        .data-display pre {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 1rem;
+            overflow-x: auto;
+            max-height: 420px;
+            overflow-y: auto;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+        }
+
+        .data-item {
+            border-radius: var(--radius);
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.65rem;
+            background: var(--white);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+        }
+
+        .data-item-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+
+        .data-item-title {
+            font-weight: 600;
+            font-size: 0.8125rem;
+        }
+
+        .data-item-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+
+        .data-item-btn {
+            padding: 0.35rem 0.65rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius);
+            background: var(--card-grey);
+            cursor: pointer;
+        }
+
+        .data-item-btn:hover {
+            box-shadow: var(--shadow);
+        }
+
+        .action-btn {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.8125rem;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: var(--accent);
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .action-btn.secondary {
+            background: #fff;
+            color: var(--text);
+        }
+
         .footer {
             text-align: center;
-            padding: 2rem 0;
-            color: #6c757d;
+            padding: 2rem 0 0;
+            font-size: 0.875rem;
+            color: var(--text-muted);
         }
 
         .footer a {
-            color: #6c757d;
+            color: var(--text-muted);
             text-decoration: underline;
-            transition: color 0.2s;
         }
 
         .footer a:hover {
-            color: #030213;
+            color: var(--text);
         }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container {
-                padding: 1rem;
-            }
+        .link-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font: inherit;
+            font-size: inherit;
+            cursor: pointer;
+            padding: 0;
+            text-decoration: underline;
+        }
 
+        .link-btn:hover {
+            color: var(--text);
+        }
+
+        .doc-panel {
+            display: none;
+            margin-bottom: 1.5rem;
+            border-radius: var(--radius);
+            background: var(--card-grey);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .doc-panel.open {
+            display: block;
+        }
+
+        .doc-panel-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid var(--border);
+            background: #fafbfc;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .doc-panel-body iframe {
+            width: 100%;
+            height: min(72vh, 640px);
+            border: 0;
+            display: block;
+            background: #fff;
+        }
+
+        .doc-panel-body pre {
+            margin: 0;
+            padding: 1rem;
+            max-height: min(72vh, 640px);
+            overflow: auto;
+            font-size: 0.75rem;
+            background: #f8fafc;
+        }
+
+        .doc-panel-body .panel-msg {
+            padding: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
             .landing-header h1,
             .module-detail-header h1,
             .endpoint-detail-header h1 {
                 font-size: 2rem;
             }
-
             .modules-grid,
             .endpoints-grid {
                 grid-template-columns: 1fr;
@@ -265,7 +519,14 @@
 </head>
 <body>
     <div class="container">
-        <!-- Landing Page -->
+        <div id="docPanel" class="doc-panel">
+            <div class="doc-panel-head">
+                <span id="docPanelTitle">Preview</span>
+                <button type="button" class="btn-sm" onclick="closeDocPanel()">Close</button>
+            </div>
+            <div id="docPanelBody" class="doc-panel-body"></div>
+        </div>
+
         <div id="landingPage" class="landing-page">
             <div class="landing-header">
                 <h1>SWMS API Documentation</h1>
@@ -273,17 +534,19 @@
             </div>
 
             <div class="modules-grid" id="modulesGrid">
-                <!-- Modules will be dynamically loaded -->
             </div>
 
             <footer class="footer">
-                <p>SWMS Backend API V1.0.0 | <a href="/health">Health Check</a> | <a href="/api/inventory">Unified Inventory API</a></p>
+                <p>SWMS Backend API V1.0.0 |
+                    <button type="button" class="link-btn" onclick="openDocPanel('swagger')">OpenAPI</button> |
+                    <button type="button" class="link-btn" onclick="openDocPanel('login')">Login UI</button> |
+                    <a href="/health">Health Check</a> |
+                    <a href="/api/inventory">Unified Inventory API</a></p>
             </footer>
         </div>
 
-        <!-- Module Detail Page -->
         <div id="moduleDetailPage" class="module-detail-page">
-            <button class="back-button" onclick="goBackToHome()">
+            <button type="button" class="back-button" onclick="goBackToHome()">
                 <span>←</span>
                 <span>Back To Home</span>
             </button>
@@ -293,17 +556,19 @@
             </div>
 
             <div class="endpoints-grid" id="endpointsGrid">
-                <!-- Endpoints will be dynamically loaded -->
             </div>
 
             <footer class="footer">
-                <p>SWMS Backend API V1.0.0 | <a href="/health">Health Check</a> | <a href="/api/inventory">Unified Inventory API</a></p>
+                <p>SWMS Backend API V1.0.0 |
+                    <button type="button" class="link-btn" onclick="openDocPanel('swagger')">OpenAPI</button> |
+                    <button type="button" class="link-btn" onclick="openDocPanel('login')">Login UI</button> |
+                    <a href="/health">Health Check</a> |
+                    <a href="/api/inventory">Unified Inventory API</a></p>
             </footer>
         </div>
 
-        <!-- Endpoint Detail Page -->
         <div id="endpointDetailPage" class="endpoint-detail-page">
-            <button class="back-button" onclick="goBackToModule()">
+            <button type="button" class="back-button" onclick="goBackToModule()">
                 <span>←</span>
                 <span id="backToModuleText">Back To Module</span>
             </button>
@@ -314,21 +579,154 @@
                 <p id="endpointDescription">Description</p>
             </div>
 
-            <div class="actions-section" id="actionsSection">
-                <h2>Actions</h2>
-                <ul class="actions-list" id="actionsList">
-                    <!-- Actions will be dynamically loaded -->
-                </ul>
+            <div class="spec-panel" id="specPanel">
+                <div class="spec-panel-row">
+                    <code class="spec-path" id="specPath"></code>
+                    <div class="btn-row">
+                        <button type="button" class="btn-sm" onclick="copyEndpointUrl()">Copy URL</button>
+                        <button type="button" class="btn-sm primary" onclick="testEndpoint()">Run request</button>
+                    </div>
+                </div>
+                <p class="security-callout">
+                    Production: HTTPS. Auth header <code>Authorization: Bearer &lt;JWT&gt;</code>. Token from login on the same machine is reused if present. Sensitive-looking keys are masked in the preview only.
+                </p>
+            </div>
+
+            <div class="doc-section" id="dataSection" style="display: none;">
+                <h2>Live sample</h2>
+                <p class="doc-section-hint">GET sample; 401 means auth required.</p>
+                <div id="dataLoading" class="data-state" style="display: none;">Loading…</div>
+                <div id="dataError" class="data-state error" style="display: none;"></div>
+                <div id="dataDisplay" class="data-display" style="display: none;"></div>
+                <div class="btn-row" style="margin-top: 0.75rem;">
+                    <button type="button" class="btn-sm" onclick="fetchEndpointData()">Retry request</button>
+                </div>
+            </div>
+
+            <div class="doc-section" id="actionsSection">
+                <h2 id="extrasSectionTitle">Request & response</h2>
+                <div id="apiSpecBlock" class="api-spec-block"></div>
             </div>
 
             <footer class="footer">
-                <p>SWMS Backend API V1.0.0 | <a href="/health">Health Check</a> | <a href="/api/inventory">Unified Inventory API</a></p>
+                <p>SWMS Backend API V1.0.0 |
+                    <button type="button" class="link-btn" onclick="openDocPanel('swagger')">OpenAPI</button> |
+                    <button type="button" class="link-btn" onclick="openDocPanel('login')">Login UI</button> |
+                    <a href="/health">Health Check</a> |
+                    <a href="/api/inventory">Unified Inventory API</a></p>
             </footer>
         </div>
     </div>
 
     <script>
-        // API Modules Data Structure
+        const LS_API_ORIGIN = 'swms_api_docs_origin';
+
+        function getApiOrigin() {
+            if (window.location.protocol === 'file:') {
+                try {
+                    const s = localStorage.getItem(LS_API_ORIGIN);
+                    if (s && String(s).trim()) return String(s).trim().replace(/\/$/, '');
+                } catch (e) {}
+                return 'http://localhost:3000';
+            }
+            return window.location.origin;
+        }
+
+        function closeDocPanel() {
+            const p = document.getElementById('docPanel');
+            const body = document.getElementById('docPanelBody');
+            if (p) p.classList.remove('open');
+            if (body) body.innerHTML = '';
+        }
+
+        async function openDocPanel(kind) {
+            const origin = getApiOrigin();
+            const p = document.getElementById('docPanel');
+            const title = document.getElementById('docPanelTitle');
+            const body = document.getElementById('docPanelBody');
+            if (!p || !body) return;
+            body.innerHTML = '';
+            p.classList.add('open');
+            p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            if (kind === 'swagger') {
+                if (title) title.textContent = 'OpenAPI (Swagger)';
+                const f = document.createElement('iframe');
+                f.title = 'Swagger UI';
+                f.src = origin + '/api-docs-swagger';
+                body.appendChild(f);
+                return;
+            }
+            if (kind === 'login') {
+                if (title) title.textContent = 'Login';
+                const f = document.createElement('iframe');
+                f.title = 'Login';
+                f.src = origin + '/login.html';
+                body.appendChild(f);
+                return;
+            }
+            if (kind === 'health') {
+                if (title) title.textContent = 'GET /health';
+                body.innerHTML = '<div class="panel-msg">Loading…</div>';
+                try {
+                    const res = await fetch(origin + '/health', { headers: { Accept: 'application/json' } });
+                    const text = await res.text();
+                    let pretty = text;
+                    try {
+                        pretty = JSON.stringify(JSON.parse(text), null, 2);
+                    } catch (e) {}
+                    body.innerHTML = '<pre>' + escapeHtml(pretty) + '</pre>';
+                } catch (err) {
+                    body.innerHTML = '<div class="panel-msg">Request failed: ' + escapeHtml(err.message) + '. Check API base' + (window.location.protocol === 'file:' ? ' (yellow box)' : '') + ' and that the server is running.</div>';
+                }
+                return;
+            }
+        }
+
+        async function resolveRequestUrl(endpoint, idOverride) {
+            const origin = getApiOrigin();
+            let path = endpoint.path;
+
+            if (idOverride != null && idOverride !== '') {
+                path = path
+                    .replace(':id', String(idOverride))
+                    .replace(':productId', String(idOverride))
+                    .replace(':recordId', String(idOverride));
+                if (path.includes(':quantity')) path = path.replace(':quantity', '1');
+            }
+
+            if (path.includes(':id')) {
+                const listPath = path.replace('/:id', '');
+                try {
+                    const listResponse = await fetch(origin + listPath);
+                    const listText = await listResponse.text();
+                    let listData = {};
+                    try {
+                        listData = listText ? JSON.parse(listText) : {};
+                    } catch (e) {}
+                    if (listData.success && listData.data && listData.data.length > 0) {
+                        const firstItem = listData.data[0];
+                        const itemId = firstItem.recordId || firstItem.id || firstItem.productId || firstItem.userId || firstItem.bookingId || firstItem.alertId || firstItem.notificationId || 1;
+                        path = endpoint.path.replace(':id', itemId);
+                    } else {
+                        path = endpoint.path.replace(':id', '1');
+                    }
+                } catch (e) {
+                    path = endpoint.path.replace(':id', '1');
+                }
+            } else if (path.includes(':productId')) {
+                path = path.replace(':productId', '1');
+            } else if (path.includes(':quantity')) {
+                path = path.replace(':quantity', '1');
+            } else if (path.includes(':tableName')) {
+                path = path.replace(':tableName', 'products');
+            } else if (path.includes(':sessionId')) {
+                path = path.replace(':sessionId', 'test');
+            }
+
+            return origin + path;
+        }
+
         const modules = [
             {
                 id: 'authentication',
@@ -339,36 +737,153 @@
                         path: '/api/auth/login',
                         title: 'Login',
                         description: 'Authenticate user with email and password credentials',
-                        actions: [
-                            { name: 'Send Credentials', description: 'Submit email and password for authentication' },
-                            { name: 'Receive Token', description: 'Obtain JWT token upon successful authentication' },
-                            { name: 'Store Session', description: 'Save authentication token for subsequent requests' },
-                            { name: 'Handle Errors', description: 'Process authentication failures and display appropriate messages' }
-                        ]
+                        apiSpec: {
+                            notes: [
+                                'Content-Type: application/json. The role value must match the account: use "Administrator" or "Warehouse Staff" (same as the web login form). Internally these map to ADMIN / STAFF.'
+                            ],
+                            request: {
+                                example: {
+                                    email: 'admin@example.com',
+                                    password: 'your-password',
+                                    role: 'Administrator'
+                                }
+                            },
+                            responses: [
+                                {
+                                    status: 200,
+                                    description: 'OK — returns JWT access token, refresh token, and user profile',
+                                    example: {
+                                        success: true,
+                                        message: 'Login successful',
+                                        data: {
+                                            token: '<access JWT, 15m>',
+                                            refreshToken: '<refresh JWT, 7d>',
+                                            expiresIn: 900,
+                                            user: {
+                                                userId: 1,
+                                                name: 'Admin User',
+                                                email: 'admin@example.com',
+                                                role: 'ADMIN'
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    status: 400,
+                                    description: 'Bad request — missing fields',
+                                    example: {
+                                        success: false,
+                                        error: 'Email, password, and role are required'
+                                    }
+                                },
+                                {
+                                    status: 401,
+                                    description: 'Unauthorized — wrong email or password',
+                                    example: { success: false, error: 'Incorrect password' }
+                                },
+                                {
+                                    status: 403,
+                                    description: 'Forbidden — role mismatch, or account pending invitation (password not set)',
+                                    example: { success: false, error: 'Incorrect position' }
+                                }
+                            ]
+                        }
                     },
                     {
                         method: 'POST',
                         path: '/api/auth/register',
                         title: 'Register',
                         description: 'Register a new user account with required information',
-                        actions: [
-                            { name: 'Validate Input', description: 'Check email format, password strength, and required fields' },
-                            { name: 'Create Account', description: 'Generate new user account in the system' },
-                            { name: 'Send Verification', description: 'Email verification link to the registered address' },
-                            { name: 'Return Response', description: 'Provide registration confirmation and next steps' }
-                        ]
+                        apiSpec: {
+                            notes: [
+                                'Content-Type: application/json. role is optional; defaults to STAFF (use ADMIN or STAFF).'
+                            ],
+                            request: {
+                                example: {
+                                    name: 'New User',
+                                    email: 'user@example.com',
+                                    password: 'secure-password',
+                                    role: 'STAFF'
+                                }
+                            },
+                            responses: [
+                                {
+                                    status: 201,
+                                    description: 'Created',
+                                    example: {
+                                        success: true,
+                                        message: 'User registered successfully',
+                                        data: {
+                                            userId: 1,
+                                            name: 'New User',
+                                            email: 'user@example.com',
+                                            role: 'STAFF',
+                                            createdAt: '2026-04-04T12:00:00.000Z'
+                                        }
+                                    }
+                                },
+                                {
+                                    status: 400,
+                                    description: 'Validation or duplicate email',
+                                    example: {
+                                        success: false,
+                                        error: 'Name, email, and password are required'
+                                    }
+                                },
+                                {
+                                    status: 400,
+                                    description: 'Duplicate email',
+                                    example: { success: false, error: 'User with this email already exists' }
+                                },
+                                {
+                                    status: 500,
+                                    description: 'Server error',
+                                    example: { success: false, error: 'Registration failed', message: '…' }
+                                }
+                            ]
+                        }
                     },
                     {
                         method: 'POST',
                         path: '/api/auth/forgot-password',
                         title: 'Forgot Password',
                         description: 'Request a password reset link via email',
-                        actions: [
-                            { name: 'Verify Email', description: 'Check if email exists in the system' },
-                            { name: 'Generate Token', description: 'Create secure password reset token' },
-                            { name: 'Send Reset Link', description: 'Email password reset link to user' },
-                            { name: 'Set Expiration', description: 'Token expires after 24 hours for security' }
-                        ]
+                        apiSpec: {
+                            notes: [
+                                'Content-Type: application/json. Send email only; if the account exists, behaviour depends on SMTP.',
+                                'Optional: include name and role (ADMIN / STAFF) together to verify identity before reset; both must match the account.'
+                            ],
+                            request: {
+                                example: {
+                                    email: 'user@example.com',
+                                    name: 'Optional — must match account if provided',
+                                    role: 'Optional — ADMIN or STAFF, must match if name is provided'
+                                }
+                            },
+                            responses: [
+                                {
+                                    status: 200,
+                                    description: 'OK — generic message (may be returned even if email is unknown, for privacy)',
+                                    example: {
+                                        success: true,
+                                        message: 'If an account exists for this email, further instructions have been sent.'
+                                    }
+                                },
+                                {
+                                    status: 400,
+                                    description: 'Invalid email or failed verification',
+                                    example: { success: false, error: 'Please enter a valid email address.' }
+                                },
+                                {
+                                    status: 400,
+                                    description: 'Name/role mismatch',
+                                    example: {
+                                        success: false,
+                                        error: 'The email, name, and position you entered do not match our records.'
+                                    }
+                                }
+                            ]
+                        }
                     }
                 ]
             },
@@ -920,11 +1435,214 @@
             }
         ];
 
-        // State Management
         let currentModule = null;
         let currentEndpoint = null;
 
-        // Initialize Landing Page
+        function getAuthToken() {
+            try {
+                return sessionStorage.getItem('authToken') || localStorage.getItem('authToken') || '';
+            } catch (e) {
+                return '';
+            }
+        }
+
+        function escapeHtml(s) {
+            if (s === null || s === undefined) return '';
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function sanitizeForDisplay(value) {
+            if (value === null || value === undefined) return value;
+            if (Array.isArray(value)) return value.map(sanitizeForDisplay);
+            if (typeof value !== 'object') return value;
+            const out = {};
+            Object.keys(value).forEach((k) => {
+                if (/password|passwd|secret|token|authorization|hash|apikey|api_key|refresh/i.test(k)) {
+                    out[k] = '••••••••';
+                } else {
+                    out[k] = sanitizeForDisplay(value[k]);
+                }
+            });
+            return out;
+        }
+
+        function buildApiSpecHtml(spec) {
+            if (!spec) return '';
+            let html = '';
+            (spec.notes || []).forEach((n) => {
+                html += '<p class="spec-note">' + escapeHtml(n) + '</p>';
+            });
+            if (spec.request && spec.request.example) {
+                html += '<div class="spec-sub">Request body (application/json)</div>';
+                html += '<pre>' + escapeHtml(JSON.stringify(spec.request.example, null, 2)) + '</pre>';
+            }
+            (spec.responses || []).forEach((r) => {
+                const label = (r.status != null ? String(r.status) : '?') + (r.description ? ' — ' + r.description : '');
+                html += '<div class="spec-sub">' + escapeHtml(label) + '</div>';
+                if (r.example) {
+                    html += '<pre>' + escapeHtml(JSON.stringify(r.example, null, 2)) + '</pre>';
+                }
+            });
+            return html;
+        }
+
+        /** Default contract block for endpoints without explicit apiSpec (same layout as Login). */
+        function inferDefaultApiSpec(endpoint) {
+            const m = String(endpoint.method || 'GET').toUpperCase();
+            const openApi =
+                'Field-level details: open OpenAPI from the page footer, or GET /api-docs-swagger.';
+
+            if (m === 'GET') {
+                return {
+                    notes: [
+                        openApi,
+                        'For this GET route, use Live sample above when shown, or Run request.'
+                    ],
+                    responses: [
+                        {
+                            status: 200,
+                            description: 'OK',
+                            example: {
+                                success: true,
+                                data: '(array or object — depends on route; inspect Live sample or OpenAPI)'
+                            }
+                        },
+                        {
+                            status: 401,
+                            description: 'Unauthorized',
+                            example: { success: false, error: 'Authentication required' }
+                        },
+                        {
+                            status: 403,
+                            description: 'Forbidden',
+                            example: { success: false, error: 'Insufficient permissions' }
+                        }
+                    ]
+                };
+            }
+
+            if (m === 'POST') {
+                return {
+                    notes: [openApi, 'Content-Type: application/json'],
+                    request: {
+                        example: {
+                            '(properties)': 'See OpenAPI — send a JSON object with the fields required for this route.'
+                        }
+                    },
+                    responses: [
+                        {
+                            status: 200,
+                            description: 'OK',
+                            example: { success: true, message: '…', data: {} }
+                        },
+                        {
+                            status: 201,
+                            description: 'Created',
+                            example: { success: true, data: {} }
+                        },
+                        {
+                            status: 400,
+                            description: 'Bad request',
+                            example: { success: false, error: 'Validation or business rule message' }
+                        },
+                        {
+                            status: 401,
+                            description: 'Unauthorized',
+                            example: { success: false, error: 'Authentication required' }
+                        },
+                        {
+                            status: 500,
+                            description: 'Server error',
+                            example: { success: false, error: '…', message: '…' }
+                        }
+                    ]
+                };
+            }
+
+            if (m === 'PUT' || m === 'PATCH') {
+                return {
+                    notes: [openApi, 'Content-Type: application/json'],
+                    request: {
+                        example: {
+                            '(properties)': 'See OpenAPI — include fields to update for this resource.'
+                        }
+                    },
+                    responses: [
+                        {
+                            status: 200,
+                            description: 'OK',
+                            example: { success: true, data: {} }
+                        },
+                        {
+                            status: 400,
+                            description: 'Bad request',
+                            example: { success: false, error: '…' }
+                        },
+                        {
+                            status: 404,
+                            description: 'Not found',
+                            example: { success: false, error: 'Resource not found' }
+                        },
+                        {
+                            status: 401,
+                            description: 'Unauthorized',
+                            example: { success: false, error: 'Authentication required' }
+                        }
+                    ]
+                };
+            }
+
+            if (m === 'DELETE') {
+                return {
+                    notes: [openApi],
+                    responses: [
+                        {
+                            status: 200,
+                            description: 'OK',
+                            example: { success: true, message: '…' }
+                        },
+                        {
+                            status: 204,
+                            description: 'No content (some routes)',
+                            example: { _note: 'Empty body possible' }
+                        },
+                        {
+                            status: 404,
+                            description: 'Not found',
+                            example: { success: false, error: 'Not found' }
+                        },
+                        {
+                            status: 401,
+                            description: 'Unauthorized',
+                            example: { success: false, error: 'Authentication required' }
+                        }
+                    ]
+                };
+            }
+
+            return {
+                notes: [openApi],
+                responses: [{ status: 200, description: 'OK', example: { success: true } }]
+            };
+        }
+
+        function effectiveApiSpec(endpoint) {
+            return endpoint.apiSpec || inferDefaultApiSpec(endpoint);
+        }
+
+        function renderEndpointExtras(endpoint) {
+            const titleEl = document.getElementById('extrasSectionTitle');
+            const specBlock = document.getElementById('apiSpecBlock');
+            if (!titleEl || !specBlock) return;
+            titleEl.textContent = 'Request & response';
+            specBlock.style.display = 'block';
+            specBlock.innerHTML = buildApiSpecHtml(effectiveApiSpec(endpoint));
+        }
+
         function initLandingPage() {
             const modulesGrid = document.getElementById('modulesGrid');
             modulesGrid.innerHTML = '';
@@ -938,7 +1656,6 @@
             });
         }
 
-        // Show Module Detail Page
         function showModuleDetail(module) {
             currentModule = module;
             
@@ -955,12 +1672,16 @@
                 const card = document.createElement('div');
                 card.className = 'endpoint-card';
                 card.onclick = () => showEndpointDetail(endpoint);
-                card.innerHTML = `<h2>${endpoint.title}</h2>`;
+                const m = endpoint.method || 'GET';
+                card.innerHTML = `
+                    <div class="ep-method method-${String(m).toLowerCase()}">${m}</div>
+                    <h2>${endpoint.title}</h2>
+                    <div class="ep-path">${endpoint.path}</div>
+                `;
                 endpointsGrid.appendChild(card);
             });
         }
 
-        // Show Endpoint Detail Page
         function showEndpointDetail(endpoint) {
             currentEndpoint = endpoint;
 
@@ -970,42 +1691,26 @@
 
             const methodBadge = document.getElementById('methodBadge');
             methodBadge.textContent = endpoint.method;
-            methodBadge.className = `method-badge method-${endpoint.method.toLowerCase()}`;
+            methodBadge.className = `method-badge method-${String(endpoint.method).toLowerCase()}`;
 
             document.getElementById('endpointTitle').textContent = endpoint.title;
             document.getElementById('endpointDescription').textContent = endpoint.description;
             document.getElementById('backToModuleText').textContent = `Back To ${currentModule.title}`;
+            document.getElementById('specPath').textContent = `${endpoint.method} ${endpoint.path}`;
 
-            // Show data section for GET endpoints and automatically fetch data
+            document.getElementById('actionsSection').style.display = 'block';
+            renderEndpointExtras(endpoint);
+
             if (endpoint.method === 'GET') {
                 document.getElementById('dataSection').style.display = 'block';
-                document.getElementById('actionsSection').style.display = 'none';
-                // Automatically fetch data when viewing GET endpoints
                 clearData();
                 fetchEndpointData();
             } else {
                 document.getElementById('dataSection').style.display = 'none';
-                document.getElementById('actionsSection').style.display = 'block';
-                
-                // Show actions for non-GET endpoints
-                const actionsList = document.getElementById('actionsList');
-                actionsList.innerHTML = '';
-
-                if (endpoint.actions) {
-                    endpoint.actions.forEach((action, index) => {
-                        const li = document.createElement('li');
-                        li.className = 'action-item';
-                        li.innerHTML = `
-                            <h3>${index + 1}. ${action.name}</h3>
-                            <p>${action.description}</p>
-                        `;
-                        actionsList.appendChild(li);
-                    });
-                }
+                clearData();
             }
         }
 
-        // Fetch data from API endpoint
         async function fetchEndpointData() {
             if (!currentEndpoint) return;
 
@@ -1013,109 +1718,84 @@
             const dataLoading = document.getElementById('dataLoading');
             const dataError = document.getElementById('dataError');
 
-            // Show loading
             dataLoading.style.display = 'block';
             dataDisplay.style.display = 'none';
             dataError.style.display = 'none';
 
             try {
-                // Build URL - try to get a real ID from list endpoint first
-                let url = window.location.origin + currentEndpoint.path;
-                
-                // Replace path parameters with sample values or try to get real IDs
-                if (currentEndpoint.path.includes(':id')) {
-                    // Try to get a real ID from the list endpoint
-                    const listPath = currentEndpoint.path.replace('/:id', '');
-                    try {
-                        const listResponse = await fetch(window.location.origin + listPath);
-                        const listData = await listResponse.json();
-                        if (listData.success && listData.data && listData.data.length > 0) {
-                            const firstItem = listData.data[0];
-                            const itemId = firstItem.recordId || firstItem.id || firstItem.productId || firstItem.userId || firstItem.bookingId || firstItem.alertId || firstItem.notificationId || 1;
-                            url = window.location.origin + currentEndpoint.path.replace(':id', itemId);
-                        } else {
-                            url = window.location.origin + currentEndpoint.path.replace(':id', '1');
-                        }
-                    } catch (e) {
-                        url = window.location.origin + currentEndpoint.path.replace(':id', '1');
-                    }
-                } else if (currentEndpoint.path.includes(':productId')) {
-                    url = window.location.origin + currentEndpoint.path.replace(':productId', '1');
-                } else if (currentEndpoint.path.includes(':tableName')) {
-                    url = window.location.origin + currentEndpoint.path.replace(':tableName', 'products');
-                } else if (currentEndpoint.path.includes(':sessionId')) {
-                    url = window.location.origin + currentEndpoint.path.replace(':sessionId', 'test');
-                }
-                
+                const url = await resolveRequestUrl(currentEndpoint, null);
+
+                const headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' };
+                const tok = getAuthToken();
+                if (tok) headers['Authorization'] = 'Bearer ' + tok;
+
                 const response = await fetch(url, {
                     method: currentEndpoint.method,
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    headers
                 });
 
-                const data = await response.json();
+                const text = await response.text();
+                let data;
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (parseErr) {
+                    data = { error: 'Non-JSON response', raw: String(text).slice(0, 500) };
+                }
+                const safeData = sanitizeForDisplay(data);
 
-                // Hide loading
                 dataLoading.style.display = 'none';
 
                 if (response.ok) {
-                    // Display data
                     dataDisplay.style.display = 'block';
                     
-                    // If data is an array, show each item with actions
                     if (Array.isArray(data.data) && data.data.length > 0) {
-                        let html = '<div style="margin-bottom: 1rem; font-weight: 600; color: #030213;">Found ' + data.data.length + ' items:</div>';
+                        let html = '<div style="margin-bottom: 0.75rem; font-weight: 600; font-size: 0.875rem;">' + data.data.length + ' record(s)</div>';
                         
                         data.data.forEach((item, index) => {
                             const itemId = item.recordId || item.id || item.productId || item.userId || item.bookingId || item.alertId || item.notificationId || index;
                             html += `
                                 <div class="data-item">
                                     <div class="data-item-header">
-                                        <div class="data-item-title">Item #${index + 1}</div>
+                                        <div class="data-item-title">#${index + 1}</div>
                                         <div class="data-item-actions">
-                                            <button class="data-item-btn" onclick="viewItemDetails(${index})">View</button>
-                                            <button class="data-item-btn" onclick="copyItemData(${index})">Copy</button>
-                                            ${itemId ? `<button class="data-item-btn" onclick="testItemEndpoint(${itemId})">Test</button>` : ''}
+                                            <button type="button" class="data-item-btn" onclick="viewItemDetails(${index})">JSON</button>
+                                            <button type="button" class="data-item-btn" onclick="copyItemData(${index})">Copy</button>
+                                            ${itemId ? `<button type="button" class="data-item-btn" onclick="testItemEndpoint(${itemId})">Run</button>` : ''}
                                         </div>
                                     </div>
-                                    <div style="font-size: 0.75rem; color: #6c757d; margin-top: 0.5rem;">
-                                        ${getItemPreview(item)}
+                                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.35rem;">
+                                        ${getItemPreview(sanitizeForDisplay(item))}
                                     </div>
                                 </div>
                             `;
                         });
                         
-                        // Store data for actions
                         window.currentData = data.data;
                         dataDisplay.innerHTML = html;
                     } else if (data.data && typeof data.data === 'object') {
-                        // Single object - show full details with all fields
                         window.currentData = [data.data];
-                        const dataObj = data.data;
+                        const dataObj = sanitizeForDisplay(data.data);
                         
-                        // Create a formatted display showing all fields
                         let html = '<div class="data-item">';
                         html += '<div class="data-item-header">';
-                        html += '<div class="data-item-title">Data Content</div>';
+                        html += '<div class="data-item-title">Payload</div>';
                         html += '<div class="data-item-actions">';
-                        html += '<button class="data-item-btn" onclick="viewItemDetails(0)">View Full</button>';
-                        html += '<button class="data-item-btn" onclick="copyItemData(0)">Copy</button>';
+                        html += '<button type="button" class="data-item-btn" onclick="viewItemDetails(0)">JSON</button>';
+                        html += '<button type="button" class="data-item-btn" onclick="copyItemData(0)">Copy</button>';
                         html += '</div></div>';
                         
-                        // Show data fields in a structured way
-                        html += '<div style="margin-top: 1rem;">';
+                        html += '<div style="margin-top: 0.75rem;">';
                         Object.keys(dataObj).forEach(key => {
                             const value = dataObj[key];
                             const displayValue = value === null ? '<em>null</em>' : 
                                                value === undefined ? '<em>undefined</em>' :
-                                               typeof value === 'string' ? `"${value}"` :
-                                               typeof value === 'object' ? JSON.stringify(value) :
-                                               String(value);
+                                               typeof value === 'string' ? escapeHtml(value) :
+                                               typeof value === 'object' ? escapeHtml(JSON.stringify(value)) :
+                                               escapeHtml(String(value));
                             html += `
-                                <div style="margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #dee2e6;">
-                                    <div style="font-weight: 600; color: #030213; margin-bottom: 0.25rem;">${key}</div>
-                                    <div style="color: #6c757d; font-family: 'Courier New', monospace; font-size: 0.875rem;">${displayValue}</div>
+                                <div style="margin-bottom: 0.65rem; padding-bottom: 0.65rem; border-bottom: 1px solid var(--border);">
+                                    <div style="font-weight: 600; font-size: 0.8125rem; margin-bottom: 0.2rem;">${escapeHtml(key)}</div>
+                                    <div style="color: var(--text-muted); font-family: ui-monospace, monospace; font-size: 0.8125rem;">${displayValue}</div>
                                 </div>
                             `;
                         });
@@ -1123,13 +1803,11 @@
                         
                         dataDisplay.innerHTML = html;
                     } else {
-                        // Raw JSON display
-                        dataDisplay.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                        dataDisplay.innerHTML = `<pre>${escapeHtml(JSON.stringify(safeData, null, 2))}</pre>`;
                     }
                 } else {
-                    // Show error
                     dataError.style.display = 'block';
-                    dataError.textContent = `Error ${response.status}: ${data.message || data.error || 'Request failed'}`;
+                    dataError.textContent = `HTTP ${response.status}: ${safeData.message || safeData.error || JSON.stringify(safeData)}`;
                 }
             } catch (error) {
                 dataLoading.style.display = 'none';
@@ -1138,20 +1816,18 @@
             }
         }
 
-        // Get preview text for item
         function getItemPreview(item) {
             const keys = Object.keys(item).slice(0, 3);
             return keys.map(key => {
                 const value = item[key];
                 if (value === null || value === undefined) return '';
-                const displayValue = typeof value === 'string' && value.length > 30 
-                    ? value.substring(0, 30) + '...' 
-                    : String(value);
-                return `<strong>${key}:</strong> ${displayValue}`;
-            }).filter(Boolean).join(' | ');
+                let displayValue = typeof value === 'string' && value.length > 40
+                    ? value.substring(0, 40) + '…'
+                    : (typeof value === 'object' ? JSON.stringify(value) : String(value));
+                return '<strong>' + escapeHtml(key) + ':</strong> ' + escapeHtml(displayValue);
+            }).filter(Boolean).join(' · ');
         }
 
-        // View item details
         function viewItemDetails(index) {
             if (!window.currentData || !window.currentData[index]) return;
             
@@ -1174,7 +1850,7 @@
                 <div style="background: white; padding: 2rem; border-radius: 0.625rem; max-width: 600px; max-height: 80vh; overflow-y: auto; position: relative;">
                     <button onclick="this.closest('div').parentElement.remove()" style="position: absolute; top: 1rem; right: 1rem; background: #f5f5f5; border: none; padding: 0.5rem; border-radius: 0.375rem; cursor: pointer;">✕</button>
                     <h3 style="margin-bottom: 1rem; color: #030213;">Item Details</h3>
-                    <pre style="background: #f5f5f5; padding: 1rem; border-radius: 0.5rem; overflow-x: auto;">${JSON.stringify(item, null, 2)}</pre>
+                    <pre style="background: #f8fafc; padding: 1rem; border-radius: 6px; overflow-x: auto; border: 1px solid var(--border);">${escapeHtml(JSON.stringify(sanitizeForDisplay(item), null, 2))}</pre>
                     <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
                         <button onclick="copyItemData(${index}); this.closest('div').parentElement.parentElement.remove();" class="action-btn">Copy Data</button>
                         <button onclick="this.closest('div').parentElement.remove()" class="action-btn secondary">Close</button>
@@ -1185,12 +1861,11 @@
             document.body.appendChild(modal);
         }
 
-        // Copy item data to clipboard
         function copyItemData(index) {
             if (!window.currentData || !window.currentData[index]) return;
             
             const item = window.currentData[index];
-            const jsonString = JSON.stringify(item, null, 2);
+            const jsonString = JSON.stringify(sanitizeForDisplay(item), null, 2);
             
             navigator.clipboard.writeText(jsonString).then(() => {
                 alert('Item data copied to clipboard!');
@@ -1200,36 +1875,77 @@
             });
         }
 
-        // Test endpoint for specific item
-        function testItemEndpoint(itemId) {
+        async function testItemEndpoint(itemId) {
             if (!currentEndpoint) return;
-            
-            // Replace :id in path with actual item ID
-            const url = window.location.origin + currentEndpoint.path.replace(':id', itemId).replace(':productId', itemId).replace(':recordId', itemId);
-            window.open(url, '_blank');
+            const p = document.getElementById('docPanel');
+            const title = document.getElementById('docPanelTitle');
+            const body = document.getElementById('docPanelBody');
+            if (!p || !body) return;
+            p.classList.add('open');
+            if (title) title.textContent = currentEndpoint.method + ' ' + currentEndpoint.path;
+            body.innerHTML = '<div class="panel-msg">Loading…</div>';
+            try {
+                const url = await resolveRequestUrl(currentEndpoint, itemId);
+                const headers = { Accept: 'application/json', 'Content-Type': 'application/json' };
+                const tok = getAuthToken();
+                if (tok) headers.Authorization = 'Bearer ' + tok;
+                const res = await fetch(url, { method: currentEndpoint.method, headers });
+                const text = await res.text();
+                let data;
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    data = { raw: text.slice(0, 2000) };
+                }
+                body.innerHTML = '<pre>' + escapeHtml(JSON.stringify(sanitizeForDisplay(data), null, 2)) + '</pre>';
+            } catch (err) {
+                body.innerHTML = '<div class="panel-msg">' + escapeHtml(err.message) + '</div>';
+            }
+            p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
-        // Copy endpoint URL to clipboard
         function copyEndpointUrl() {
             if (!currentEndpoint) return;
-
-            const url = window.location.origin + currentEndpoint.path;
-            navigator.clipboard.writeText(url).then(() => {
-                alert('URL copied to clipboard!');
-            }).catch(err => {
-                console.error('Failed to copy:', err);
-            });
+            const path = currentEndpoint.path;
+            const full = getApiOrigin() + path;
+            navigator.clipboard.writeText(full).then(() => {
+                alert('Copied: ' + full);
+            }).catch(() => {});
         }
 
-        // Test endpoint (open in new tab)
-        function testEndpoint() {
+        async function testEndpoint() {
             if (!currentEndpoint) return;
-
-            const url = window.location.origin + currentEndpoint.path.replace(':id', '1').replace(':productId', '1').replace(':tableName', 'products').replace(':sessionId', 'test');
-            window.open(url, '_blank');
+            if (currentEndpoint.method !== 'GET') {
+                openDocPanel('swagger');
+                return;
+            }
+            const p = document.getElementById('docPanel');
+            const title = document.getElementById('docPanelTitle');
+            const body = document.getElementById('docPanelBody');
+            if (!p || !body) return;
+            p.classList.add('open');
+            if (title) title.textContent = 'GET ' + currentEndpoint.path;
+            body.innerHTML = '<div class="panel-msg">Loading…</div>';
+            try {
+                const url = await resolveRequestUrl(currentEndpoint, null);
+                const headers = { Accept: 'application/json', 'Content-Type': 'application/json' };
+                const tok = getAuthToken();
+                if (tok) headers.Authorization = 'Bearer ' + tok;
+                const res = await fetch(url, { method: 'GET', headers });
+                const text = await res.text();
+                let data;
+                try {
+                    data = text ? JSON.parse(text) : {};
+                } catch (e) {
+                    data = { raw: text.slice(0, 2000) };
+                }
+                body.innerHTML = '<pre>' + escapeHtml(JSON.stringify(sanitizeForDisplay(data), null, 2)) + '</pre>';
+            } catch (err) {
+                body.innerHTML = '<div class="panel-msg">' + escapeHtml(err.message) + '</div>';
+            }
+            p.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
-        // Clear displayed data
         function clearData() {
             document.getElementById('dataDisplay').style.display = 'none';
             document.getElementById('dataLoading').style.display = 'none';
@@ -1239,7 +1955,6 @@
             window.currentData = null;
         }
 
-        // Navigation Functions
         function goBackToHome() {
             document.getElementById('landingPage').style.display = 'block';
             document.getElementById('moduleDetailPage').style.display = 'none';
@@ -1256,7 +1971,6 @@
             }
         }
 
-        // Initialize on page load
         initLandingPage();
     </script>
 </body>

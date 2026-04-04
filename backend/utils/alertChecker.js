@@ -188,7 +188,7 @@ async function checkAllProducts(connection = null) {
     }
 }
 
-/** Enhancement #13: Auto-resolve alerts when conditions no longer apply */
+/** Drop alerts when stock/expiry no longer triggers them */
 async function autoResolveAlerts(connection = null) {
     const conn = connection || db;
     const today = new Date().toISOString().split('T')[0];

@@ -13,6 +13,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const getConnectionErrorMessage = db.getConnectionErrorMessage || ((e) => e && e.message);
 const QRCode = require('qrcode');
 const { logAudit, getClientIp, getUserAgent } = require('../utils/auditLogger');
 
@@ -64,9 +65,6 @@ function formatBatchForFrontend(batch, reservedQuantity = 0) {
     };
 }
 
-// ============================================
-// GET ALL BATCHES
-// ============================================
 router.get('/', async (req, res) => {
     try {
         // Get all batches with product info
@@ -109,17 +107,24 @@ router.get('/', async (req, res) => {
         });
     } catch (error) {
         console.error('Error fetching batches:', error);
-        res.status(500).json({ 
+        const isDbError =
+            error.code === 'ECONNREFUSED' ||
+            error.code === 'ENOTFOUND' ||
+            error.code === 'EAI_AGAIN' ||
+            error.code === 'ER_ACCESS_DENIED_ERROR' ||
+            error.code === 'ER_BAD_DB_ERROR' ||
+            error.code === 'ETIMEDOUT';
+        const status = isDbError ? 503 : 500;
+        res.status(status).json({
             success: false,
-            error: 'Failed to fetch batches',
-            message: error.message 
+            error: isDbError
+                ? (error.userMessage || getConnectionErrorMessage(error) || 'Unable to connect to the database.')
+                : 'Failed to fetch batches',
+            message: error.message || error.sqlMessage
         });
     }
 });
 
-// ============================================
-// GET BATCHES BY PRODUCT ID
-// ============================================
 router.get('/product/:productId', async (req, res) => {
     try {
         const productId = req.params.productId;
@@ -175,18 +180,25 @@ router.get('/product/:productId', async (req, res) => {
         }
     } catch (error) {
         console.error('Error fetching batches by product:', error);
-        res.status(500).json({ 
+        const isDbError =
+            error.code === 'ECONNREFUSED' ||
+            error.code === 'ENOTFOUND' ||
+            error.code === 'EAI_AGAIN' ||
+            error.code === 'ER_ACCESS_DENIED_ERROR' ||
+            error.code === 'ER_BAD_DB_ERROR' ||
+            error.code === 'ETIMEDOUT';
+        const status = isDbError ? 503 : 500;
+        res.status(status).json({
             success: false,
-            error: 'Failed to fetch batches',
-            message: error.message 
+            error: isDbError
+                ? (error.userMessage || getConnectionErrorMessage(error) || 'Unable to connect to the database.')
+                : 'Failed to fetch batches',
+            message: error.message || error.sqlMessage
         });
     }
 });
 
-// ============================================
-// GET BATCH QR CODE (unique per batch: lotCode, expiryDate, batchId)
-// Must be before GET /:id to match first
-// ============================================
+// before GET /:id
 router.get('/:id/qr', async (req, res) => {
     try {
         const rawId = req.params.id;
@@ -236,9 +248,6 @@ router.get('/:id/qr', async (req, res) => {
     }
 });
 
-// ============================================
-// GET SINGLE BATCH BY ID
-// ============================================
 router.get('/:id', async (req, res) => {
     try {
         const batchId = req.params.id;
@@ -285,9 +294,6 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// ============================================
-// CREATE NEW BATCH
-// ============================================
 router.post('/', async (req, res) => {
     try {
         const { productId, lotCode, quantity, expiryDate, receivedDate, supplier, location, notes } = req.body;
@@ -341,9 +347,6 @@ router.post('/', async (req, res) => {
     }
 });
 
-// ============================================
-// UPDATE BATCH
-// ============================================
 router.put('/:id', async (req, res) => {
     try {
         const batchId = req.params.id;
@@ -421,9 +424,6 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// ============================================
-// DELETE BATCH
-// ============================================
 router.delete('/:id', async (req, res) => {
     try {
         const batchId = req.params.id;

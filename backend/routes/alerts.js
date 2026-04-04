@@ -15,9 +15,6 @@ const db = require('../config/database');
 const { notifyAdmins } = require('../utils/notificationHelper');
 const { checkAllProducts, autoResolveAlerts } = require('../utils/alertChecker');
 
-// ============================================
-// CHECK FOR NEW ALERTS (run alert checker)
-// ============================================
 router.get('/check', async (req, res) => {
     try {
         await checkAllProducts();
@@ -40,9 +37,6 @@ router.get('/check', async (req, res) => {
     }
 });
 
-// ============================================
-// GET ALL ALERTS
-// ============================================
 router.get('/', async (req, res) => {
     try {
         const { resolved, alertType, severity } = req.query;
@@ -96,9 +90,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// ============================================
-// GET SINGLE ALERT
-// ============================================
 router.get('/:id', async (req, res) => {
     try {
         const alertId = req.params.id;
@@ -138,9 +129,6 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// ============================================
-// CREATE ALERT
-// ============================================
 router.post('/', async (req, res) => {
     try {
         const { alertType, severity, productId, batchId, message } = req.body;
@@ -189,9 +177,6 @@ router.post('/', async (req, res) => {
     }
 });
 
-// ============================================
-// RESOLVE ALERT
-// ============================================
 router.put('/:id/resolve', async (req, res) => {
     try {
         const alertId = req.params.id;
@@ -252,9 +237,6 @@ router.put('/:id/resolve', async (req, res) => {
     }
 });
 
-// ============================================
-// DELETE ALERT
-// ============================================
 router.delete('/:id', async (req, res) => {
     try {
         const alertId = req.params.id;

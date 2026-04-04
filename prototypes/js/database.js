@@ -4,9 +4,17 @@
 // Node API runs on port 3000; use that when page is from port 80 (XAMPP) or file://
 const API_BASE = (function() {
     if (typeof window === 'undefined') return 'http://localhost:3000/api';
+    if (window.API_BASE_URL) return window.API_BASE_URL;
     if (window.API_BASE) return window.API_BASE;
-    var origin = window.location && window.location.origin;
-    return (origin && origin !== 'null' && origin.includes(':3000')) ? origin + '/api' : 'http://localhost:3000/api';
+    var loc = window.location;
+    var origin = loc && loc.origin;
+    if (origin && origin !== 'null') {
+        var port = loc.port ? parseInt(loc.port, 10) : (loc.protocol === 'https:' ? 443 : 80);
+        if (port === 80 || port === 443 || origin.indexOf(':3000') !== -1) {
+            return origin.replace(/\/$/, '') + '/api';
+        }
+    }
+    return 'http://localhost:3000/api';
 })();
 
 // Helper: get auth headers (token + optional refresh on 401)
@@ -37,7 +45,7 @@ async function apiCall(endpoint, options = {}) {
         
         // 503 or 500: Database/connection error - show professional banner
         if (response.status === 503 || response.status === 500) {
-            const errMsg = (data && data.message) || (data && data.error) || 'Unable to connect to the database. Please contact the administrator.';
+            const errMsg = (data && data.error) || (data && data.message) || 'Unable to connect to the database. Please contact the administrator.';
             if (typeof window.showConnectionErrorBanner === 'function') {
                 window.showConnectionErrorBanner(errMsg);
             }

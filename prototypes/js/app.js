@@ -55,16 +55,11 @@
     }
 })();
 
-/** Safe for inline scripts: never use location.origin+/api as fallback (wrong port when UI ≠ API). */
 window.getSwmsApiBase = function() {
     return window.API_BASE || window.API_BASE_URL || 'http://localhost:3000/api';
 };
 const API_BASE = window.API_BASE;
 
-/**
- * JWT from sessionStorage, then localStorage (login writes both for cross-tab use).
- * Syncs missing side so new tabs and fetchWithAuth agree on the same token.
- */
 function getAuthToken() {
     var s = sessionStorage.getItem('authToken');
     var l = null;
@@ -79,13 +74,7 @@ function getAuthToken() {
 }
 window.getAuthToken = getAuthToken;
 
-// -----------------------------------------------------------------------------
-// Alerts prototype compatibility
-// -----------------------------------------------------------------------------
-// Some pages (notably `alerts.html`) may route API calls through a legacy
-// `api-proxy.php?path=...` endpoint when they think they're on XAMPP.
-// That PHP proxy doesn't exist in this repo, so the UI ends up with empty data.
-// We transparently forward those requests to the real backend `/api/*`.
+// Rewrite legacy api-proxy.php?path=... to real /api (no PHP in this repo).
 (function patchLegacyApiProxyFetch() {
     if (typeof window === 'undefined' || !window.fetch) return;
     if (window.__swmsLegacyApiProxyFetchPatched) return;
@@ -101,19 +90,15 @@ window.getAuthToken = getAuthToken;
                 const pathParam = idx >= 0 ? url.slice(idx + marker.length) : '';
 
                 const base = window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api';
-                // `pathParam` is usually something like `/alerts` or `/alerts?resolved=false`
                 const cleanedPath = pathParam.startsWith('/') ? pathParam : '/' + pathParam;
                 const forwardedUrl = base.replace(/\/$/, '') + cleanedPath;
                 return originalFetch(forwardedUrl, init);
             }
-        } catch (e) {
-            // Fall back to original fetch
-        }
+        } catch (e) {}
         return originalFetch(input, init);
     };
 })();
 
-// Authenticated fetch - adds Bearer token, handles 401 (refresh + redirect)
 window.fetchWithAuth = async function(url, options) {
     const authRetry = Math.min(3, Math.max(0, parseInt((options && options._authRetry) || 0, 10) || 0));
     const safeOpts = (options != null && typeof options === 'object') ? options : {};
@@ -135,7 +120,7 @@ window.fetchWithAuth = async function(url, options) {
     }
     if (res.status === 503 || res.status === 500) {
         res.clone().json().then(function(d) {
-            const msg = (d && (d.message || d.error)) || 'Unable to connect to the database. Please contact the administrator.';
+            const msg = (d && (d.error || d.message)) || 'Unable to connect to the database. Please contact the administrator.';
             if (typeof window.showNotification === 'function') window.showNotification('Error', msg, 'error');
             if (typeof window.showConnectionErrorBanner === 'function') window.showConnectionErrorBanner(msg);
         }).catch(function() {
@@ -1164,11 +1149,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     console.log('SWMS Prototype Loaded');
 });
-
-// ============================================
-// Zoom and Scroll Position Restoration
-// Ensures consistent zoom level and scroll position across all pages
-// ============================================
 
 (function() {
     'use strict';

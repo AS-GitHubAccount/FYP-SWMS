@@ -70,9 +70,6 @@ async function getBatchesForFEFO(productId, quantity, connection) {
     };
 }
 
-// ============================================
-// GET ALL ISSUING RECORDS
-// ============================================
 router.get('/', async (req, res) => {
     try {
         const [records] = await db.execute(`
@@ -106,9 +103,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// ============================================
-// GET SINGLE ISSUING RECORD
-// ============================================
 router.get('/:id', async (req, res) => {
     try {
         const recordId = req.params.id;
@@ -148,9 +142,6 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// ============================================
-// ISSUE STOCK (Create Out Record)
-// ============================================
 router.post('/', async (req, res) => {
     const connection = await pool.getConnection();
     
@@ -396,9 +387,6 @@ router.post('/', async (req, res) => {
     }
 });
 
-// ============================================
-// GET FEFO PREVIEW (for frontend)
-// ============================================
 router.get('/fefo/preview/:productId/:quantity', async (req, res) => {
     try {
         const productId = parseInt(req.params.productId);
@@ -429,9 +417,6 @@ router.get('/fefo/preview/:productId/:quantity', async (req, res) => {
     }
 });
 
-// ============================================
-// UPDATE ISSUING RECORD
-// ============================================
 router.put('/:id', async (req, res) => {
     const connection = await pool.getConnection();
     

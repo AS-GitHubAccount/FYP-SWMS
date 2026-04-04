@@ -1,7 +1,4 @@
-/**
- * ISO 4217-style reporting currencies for Settings → Reporting Currency.
- * Sorted by code at runtime. Names are English short labels for display.
- */
+// Currency codes + labels for reporting settings
 (function (global) {
     var RAW =
         'AED:United Arab Emirates dirham\n' +

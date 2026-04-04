@@ -20,9 +20,6 @@ const { notifyUser } = require('../utils/notificationHelper');
 
 const MIN_REASON_LENGTH = 1;
 
-// ============================================
-// GET ALL BOOKINGS
-// ============================================
 router.get('/', async (req, res) => {
     try {
         const { status, requestedBy } = req.query;
@@ -71,9 +68,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// ============================================
-// GET SINGLE BOOKING (with issuing record for traceability)
-// ============================================
 router.get('/:id', async (req, res) => {
     try {
         const bookingId = req.params.id;
@@ -159,9 +153,6 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// ============================================
-// CREATE BOOKING
-// ============================================
 router.post('/', async (req, res) => {
     try {
         const { productId, quantity, requestedBy, neededBy, notes, orderRequester, deliveryTo } = req.body;
@@ -229,9 +220,6 @@ router.post('/', async (req, res) => {
     }
 });
 
-// ============================================
-// UPDATE BOOKING
-// ============================================
 router.put('/:id', async (req, res) => {
     try {
         const bookingId = req.params.id;
@@ -292,9 +280,6 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// ============================================
-// APPROVE BOOKING (mandatory reason, min 15 characters)
-// ============================================
 router.put('/:id/approve', async (req, res) => {
     try {
         const bookingId = req.params.id;
@@ -395,9 +380,6 @@ router.put('/:id/approve', async (req, res) => {
     }
 });
 
-// ============================================
-// CANCEL BOOKING (mandatory reason, min 15 characters)
-// ============================================
 router.put('/:id/cancel', async (req, res) => {
     try {
         const bookingId = req.params.id;
@@ -475,9 +457,6 @@ router.put('/:id/cancel', async (req, res) => {
     }
 });
 
-// ============================================
-// DELETE BOOKING
-// ============================================
 router.delete('/:id', async (req, res) => {
     try {
         const bookingId = req.params.id;

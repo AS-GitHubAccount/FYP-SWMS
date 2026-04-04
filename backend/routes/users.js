@@ -1,8 +1,4 @@
-/**
- * Users API — Admin creates users via email invitation (no admin-set passwords).
- * Self-service: PUT /api/users/me/password (authenticated).
- */
-
+// /api/users
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
@@ -73,9 +69,6 @@ function mapUserPublic(row) {
     };
 }
 
-// ============================================
-// PUT /me/password — current user changes password
-// ============================================
 router.put('/me/password', async (req, res) => {
     try {
         const userId = req.user && req.user.userId;
@@ -116,9 +109,6 @@ router.put('/me/password', async (req, res) => {
     }
 });
 
-// ============================================
-// PUT /me — current user updates name/email (no password here)
-// ============================================
 router.put('/me', async (req, res) => {
     try {
         const userId = req.user && req.user.userId;
@@ -182,9 +172,6 @@ router.put('/me', async (req, res) => {
     }
 });
 
-// ============================================
-// GET ALL USERS
-// ============================================
 router.get('/', async (req, res) => {
     try {
         let rows;
@@ -227,9 +214,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// ============================================
-// GET USER BY ID (numeric only — not "me")
-// ============================================
 router.get('/:id(\\d+)', async (req, res) => {
     try {
         const userId = parseInt(req.params.id, 10);
@@ -259,7 +243,7 @@ router.get('/:id(\\d+)', async (req, res) => {
     }
 });
 
-/** mode: 'invite' (new user / no password yet) | 'reset' (existing password — keep ACTIVE) */
+// mode: invite | reset
 async function setInviteTokenForUser(userId, mode) {
     const rawToken = generateInviteToken();
     const hash = hashInviteToken(rawToken);
@@ -275,9 +259,6 @@ async function setInviteTokenForUser(userId, mode) {
     return { rawToken, exp };
 }
 
-// ============================================
-// CREATE USER — invitation only (admin)
-// ============================================
 router.post('/', requireAdmin, async (req, res) => {
     try {
         const { name, email, role, password } = req.body || {};
@@ -357,9 +338,6 @@ router.post('/', requireAdmin, async (req, res) => {
     }
 });
 
-// ============================================
-// UPDATE USER — no password field (admin)
-// ============================================
 router.put('/:id(\\d+)', requireAdmin, async (req, res) => {
     try {
         const userId = parseInt(req.params.id, 10);
@@ -420,9 +398,6 @@ router.put('/:id(\\d+)', requireAdmin, async (req, res) => {
     }
 });
 
-// ============================================
-// DELETE USER (admin)
-// ============================================
 router.delete('/:id(\\d+)', requireAdmin, async (req, res) => {
     try {
         const userId = parseInt(req.params.id, 10);
@@ -445,9 +420,6 @@ router.delete('/:id(\\d+)', requireAdmin, async (req, res) => {
     }
 });
 
-// ============================================
-// RESEND INVITATION (admin)
-// ============================================
 router.post('/:id(\\d+)/resend-invitation', requireAdmin, async (req, res) => {
     try {
         const userId = parseInt(req.params.id, 10);
@@ -481,9 +453,6 @@ router.post('/:id(\\d+)/resend-invitation', requireAdmin, async (req, res) => {
     }
 });
 
-// ============================================
-// SEND PASSWORD RESET EMAIL (admin) — same template as self-service forgot-password (plaintext new password)
-// ============================================
 router.post('/:id(\\d+)/send-password-reset', requireAdmin, async (req, res) => {
     try {
         const userId = parseInt(req.params.id, 10);

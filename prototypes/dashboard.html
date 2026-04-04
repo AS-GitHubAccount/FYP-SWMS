@@ -10,19 +10,7 @@
 </head>
 <body>
     <div class="app-layout">
-        <aside class="sidebar" id="sidebar">
-            <a href="dashboard.html" class="logo">SWMS</a>
-            <nav class="sidebar-nav">
-                <a href="dashboard.html" class="active"><i data-lucide="layout-dashboard" class="nav-icon"></i> Dashboard</a>
-                <a href="inventory.html"><i data-lucide="package" class="nav-icon"></i> Inventory</a>
-                <a href="alerts.html"><i data-lucide="bell" class="nav-icon"></i> Alerts</a>
-                <a href="reports.html"><i data-lucide="bar-chart-2" class="nav-icon"></i> Reports</a>
-                <a href="users.html" id="usersLink" style="display: none;"><i data-lucide="users" class="nav-icon"></i> Users</a>
-                <a href="suppliers.html"><i data-lucide="truck" class="nav-icon"></i> Suppliers</a>
-                <a href="warehouses.html"><i data-lucide="warehouse" class="nav-icon"></i> Warehouses</a>
-                <a href="approval.html" id="approvalCenterLink" style="display: none;"><i data-lucide="shield-check" class="nav-icon"></i> Approval</a>
-            </nav>
-        </aside>
+        <aside class="sidebar" id="sidebar" aria-label="Main navigation"></aside>
         <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()" aria-hidden="true"></div>
         <div class="main-wrapper">
     <header class="header">
@@ -177,6 +165,7 @@
 
     <script src="js/api-config.js"></script>
     <script src="js/app.js?v=3"></script>
+    <script src="js/shell-nav.js"></script>
     <script src="js/notifications.js"></script>
     <script>
         // handleLogout function is now in app.js (shared)
@@ -919,7 +908,7 @@
             if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
             checkBackendHealth().then(function(h) {
                 if (!h.ok && typeof window.showNotification === 'function') {
-                    window.showNotification('Connection Check', 'Backend unreachable or database error: ' + (h.error || 'unknown') + '. Ensure: 1) Backend running (npm start in backend folder) 2) MySQL running 3) Database swms_db exists (run setup.sql)', 'error');
+                    window.showNotification('Connection Check', 'Backend unreachable or database error: ' + (h.error || 'unknown') + '. On Railway+Aiven set DB_HOST/DB_PORT/DB_USER/DB_PASSWORD (and redeploy). Schema: run backend/setup.sql on your MySQL database (Aiven: defaultdb).', 'error');
                 }
             });
             safeLoadDashboard(true);

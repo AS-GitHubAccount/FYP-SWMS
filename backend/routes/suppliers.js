@@ -13,9 +13,6 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 
-// ============================================
-// GET ALL SUPPLIERS
-// ============================================
 router.get('/', async (req, res) => {
     try {
         const [suppliers] = await db.execute(
@@ -37,9 +34,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// ============================================
-// GET SUPPLIER BY ID
-// ============================================
 router.get('/:id', async (req, res) => {
     try {
         const supplierId = parseInt(req.params.id);
@@ -70,9 +64,6 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// ============================================
-// CREATE NEW SUPPLIER
-// ============================================
 router.post('/', async (req, res) => {
     try {
         const { name, contactPerson, email, phone, address, status } = req.body;
@@ -129,9 +120,6 @@ router.post('/', async (req, res) => {
     }
 });
 
-// ============================================
-// UPDATE SUPPLIER
-// ============================================
 router.put('/:id', async (req, res) => {
     try {
         const supplierId = parseInt(req.params.id);
@@ -225,9 +213,6 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// ============================================
-// DELETE SUPPLIER
-// ============================================
 router.delete('/:id', async (req, res) => {
     try {
         const supplierId = parseInt(req.params.id);

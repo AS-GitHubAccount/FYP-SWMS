@@ -1,16 +1,5 @@
 #!/usr/bin/env node
-/**
- * Import a phpMyAdmin / mysqldump SQL file into the database configured in backend/.env
- * (e.g. Aiven defaultdb). Strips CREATE DATABASE swms_db and rewrites USE swms_db -> USE <DB_NAME>.
- *
- * Usage (from backend/):
- *   node scripts/import-sql-dump.js ../exports/swms_db.sql
- *   node scripts/import-sql-dump.js --fresh ../exports/swms_db.sql   # drop all tables/views in DB_NAME first
- *
- * Or: DB_IMPORT_FRESH=1 npm run db:import -- ../exports/swms_db.sql
- *
- * Export from phpMyAdmin first: select swms_db → Export → SQL → Go.
- */
+// Import .sql into DB from .env. Usage: node scripts/import-sql-dump.js [--fresh] <file.sql>
 const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
@@ -52,7 +41,6 @@ function escapeSqlIdent(id) {
     return String(id).replace(/`/g, '``');
 }
 
-/** Drop every table and view in schema (for re-import). Requires FOREIGN_KEY_CHECKS off for tables. */
 async function dropAllUserTablesAndViews(conn, schemaName) {
     await conn.query('SET FOREIGN_KEY_CHECKS = 0');
     const [rows] = await conn.query(
@@ -94,10 +82,9 @@ async function main() {
         if (fresh) {
             await dropAllUserTablesAndViews(conn, targetDb);
         }
-        // Aiven (and some managed MySQL) enable sql_require_primary_key; legacy dumps may create tables without PK.
         await conn.query('SET SESSION sql_require_primary_key = 0');
         await conn.query(sql);
-        console.log('✅ Import completed successfully.');
+        console.log('Import done.');
         const [tables] = await conn.query(
             'SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? ORDER BY TABLE_NAME',
             [targetDb]
@@ -109,7 +96,7 @@ async function main() {
 }
 
 main().catch((err) => {
-    console.error('❌ Import failed:', err.message);
+    console.error('Import failed:', err.message);
     if (err.code === 'ENOTFOUND') {
         console.error('   DNS cannot resolve DB_HOST. Fix network / copy correct Host from Aiven.');
     }

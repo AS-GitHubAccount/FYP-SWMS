@@ -1,8 +1,4 @@
-/**
- * Purchase Requests API - Enhancement #1
- * Migrated from localStorage to database
- */
-
+// /api/purchase-requests
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');

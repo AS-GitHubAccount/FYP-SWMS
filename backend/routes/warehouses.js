@@ -1,21 +1,16 @@
-/**
- * Warehouses API - Enhancement #24 (Multi-warehouse)
- * Status toggle and safe delete with audit trail (Least Privilege, Admin-only).
- */
+// /api/warehouses
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { requireAdmin } = require('../middleware/auth');
 const { logAudit, getClientIp, getUserAgent } = require('../utils/auditLogger');
 
-/** Normalize status from row (status column or isActive) */
 function getStatus(row) {
     if (row == null) return 'Active';
     if (row.status != null && String(row.status).trim() !== '') return String(row.status).trim();
     return row.isActive === false || row.isActive === 0 ? 'Inactive' : 'Active';
 }
 
-/** GET all warehouses (for admin UI: show Active and Inactive) */
 router.get('/', async (req, res) => {
     try {
         let rows;
@@ -33,7 +28,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-/** GET active warehouses only (for booking/purchase forms: Sending Location dropdown) */
 router.get('/active', async (req, res) => {
     try {
         let rows;
@@ -51,7 +45,6 @@ router.get('/active', async (req, res) => {
     }
 });
 
-/** GET one warehouse (admin UI edit form) */
 router.get('/:id', async (req, res) => {
     try {
         const id = req.params.id;
@@ -65,7 +58,6 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-/** PUT update name, code, address (Admin only; audit logged). */
 router.put('/:id', requireAdmin, async (req, res) => {
     try {
         const id = req.params.id;
@@ -126,7 +118,6 @@ router.post('/', requireAdmin, async (req, res) => {
     }
 });
 
-/** PUT toggle status (Active <-> Inactive). Admin only; audit logged. */
 router.put('/:id/toggle-status', requireAdmin, async (req, res) => {
     try {
         const id = req.params.id;
@@ -165,7 +156,6 @@ router.put('/:id/toggle-status', requireAdmin, async (req, res) => {
     }
 });
 
-/** DELETE warehouse only if no linked inventory or transaction history (audit trail intact). Admin only. */
 router.delete('/:id', requireAdmin, async (req, res) => {
     try {
         const id = req.params.id;

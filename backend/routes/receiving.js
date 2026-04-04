@@ -15,9 +15,6 @@ const getConnectionErrorMessage = db.getConnectionErrorMessage || (e => e && e.m
 const { logAudit, getClientIp, getUserAgent } = require('../utils/auditLogger');
 const { generateRecordNumber } = require('../utils/idGenerator');
 
-// ============================================
-// GET ALL RECEIVING RECORDS
-// ============================================
 router.get('/', async (req, res) => {
     try {
         const [records] = await db.execute(`
@@ -51,9 +48,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// ============================================
-// GET SINGLE RECEIVING RECORD
-// ============================================
 router.get('/:id', async (req, res) => {
     try {
         const recordId = req.params.id;
@@ -93,9 +87,6 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// ============================================
-// RECEIVE STOCK (Create Batch + In Record)
-// ============================================
 router.post('/', async (req, res) => {
     const connection = await pool.getConnection();
     
@@ -302,9 +293,6 @@ router.post('/', async (req, res) => {
     }
 });
 
-// ============================================
-// UPDATE RECEIVING RECORD
-// ============================================
 router.put('/:id', async (req, res) => {
     const connection = await pool.getConnection();
     

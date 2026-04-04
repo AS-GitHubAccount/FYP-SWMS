@@ -16,9 +16,6 @@ const QRCode = require('qrcode');
 const { requireCriticalApproval } = require('../utils/criticalApproval');
 const { logAudit, getClientIp, getUserAgent } = require('../utils/auditLogger');
 
-// ============================================
-// GET ALL PRODUCTS
-// ============================================
 router.get('/', async (req, res) => {
     try {
         // Query database
@@ -41,9 +38,6 @@ router.get('/', async (req, res) => {
     }
 });
 
-// ============================================
-// GET PRODUCT QR CODE (JSON payload: type, id, sku → PNG data URL)
-// ============================================
 router.get('/:id/qr', async (req, res) => {
     try {
         const rawId = req.params.id;
@@ -80,9 +74,6 @@ router.get('/:id/qr', async (req, res) => {
     }
 });
 
-// ============================================
-// GET SINGLE PRODUCT BY ID
-// ============================================
 router.get('/:id', async (req, res) => {
     try {
         const productId = req.params.id;
@@ -115,9 +106,6 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// ============================================
-// CREATE NEW PRODUCT
-// ============================================
 router.post('/', async (req, res) => {
     try {
         const { sku, name, category, unit, minStock, productType, warrantyMonths, maintenanceIntervalMonths } = req.body;
@@ -204,9 +192,6 @@ router.post('/', async (req, res) => {
     }
 });
 
-// ============================================
-// UPDATE PRODUCT
-// ============================================
 router.put('/:id', async (req, res) => {
     try {
         const productId = req.params.id;
@@ -318,9 +303,6 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// ============================================
-// DELETE PRODUCT (critical: verification layer + optional approval token for Admin)
-// ============================================
 router.delete('/:id', async (req, res) => {
     try {
         const productId = req.params.id;

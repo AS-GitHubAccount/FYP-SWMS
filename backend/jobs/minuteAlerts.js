@@ -1,9 +1,4 @@
-/**
- * Minute Alerts Job - Automation Mechanism (Interim Report II)
- * Runs every 60 seconds: check products/batches for alerts, auto-resolve when conditions no longer apply.
- * Keeps "Digital Footprint" and "Real-time Notification" requirements up to date.
- */
-
+// cron: alert check every minute
 const cron = require('node-cron');
 const { checkAllProducts, autoResolveAlerts } = require('../utils/alertChecker');
 

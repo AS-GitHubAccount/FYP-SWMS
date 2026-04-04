@@ -1,13 +1,4 @@
-/**
- * Unified Inventory API Routes
- * 
- * Handles all inventory-related endpoints including:
- * - Inventory items (GET, POST)
- * - Bookings (GET, POST, PUT, DELETE, approve, cancel)
- * - Issuing (GET, POST, PUT, FEFO preview)
- * - Receiving (GET, POST, PUT)
- */
-
+// /api/inventory
 const express = require('express');
 const router = express.Router();
 const QRCode = require('qrcode');
@@ -18,7 +9,16 @@ const { notifyAdmins, notifyUser } = require('../utils/notificationHelper');
 const { checkAndCreateAlerts } = require('../utils/alertChecker');
 const { generateBookingNumber, generateRecordNumber } = require('../utils/idGenerator');
 
-// Helper function to get batches using FEFO (First Expired First Out)
+function resolvedDbLabel() {
+    try {
+        return typeof db.getResolvedDatabaseName === 'function'
+            ? db.getResolvedDatabaseName()
+            : (process.env.DB_NAME || 'swms_db');
+    } catch (e) {
+        return process.env.DB_NAME || 'swms_db';
+    }
+}
+
 async function getBatchesForFEFO(productId, quantity, connection) {
     const [batches] = await connection.execute(`
         SELECT 
@@ -40,13 +40,11 @@ async function getBatchesForFEFO(productId, quantity, connection) {
             b.receivedDate ASC
     `, [productId]);
     
-    // Calculate available quantity for each batch
     const batchesWithAvailable = batches.map(batch => ({
         ...batch,
         available: batch.quantity - (batch.reservedQty || 0)
     }));
     
-    // Allocate quantity using FEFO
     let remainingQty = quantity;
     const allocation = [];
     
@@ -73,13 +71,6 @@ async function getBatchesForFEFO(productId, quantity, connection) {
     };
 }
 
-// ============================================
-// INVENTORY ITEMS ROUTES
-// ============================================
-
-// GET ALL INVENTORY ITEMS (with status: Product Health = Expiry first, then Volume)
-// Uses LEFT JOIN from products so products without inventory_items (e.g. newly added or orphaned) still appear.
-// ValidQty = quantity from batches where expiryDate > CURDATE(). Status prioritizes expiry over quantity.
 router.get('/', async (req, res) => {
     try {
         const [inventory] = await db.execute(`
@@ -192,7 +183,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// GET reorder suggestions (Enhancement #9)
+// reorder suggestions
 router.get('/reorder-suggestions', async (req, res) => {
     try {
         const [rows] = await db.execute(`
@@ -249,9 +240,6 @@ router.get('/items/:id', async (req, res) => {
     }
 });
 
-// ============================================
-// BATCH-LEVEL DETAIL & QR SCAN HELPERS
-// ============================================
 
 // GET batch QR code (fallback when /api/batches/:id/qr is unreachable)
 router.get('/batches/:id/qr', async (req, res) => {
@@ -748,9 +736,6 @@ router.post('/items', async (req, res) => {
     }
 });
 
-// ============================================
-// BOOKINGS ROUTES
-// ============================================
 
 // GET ALL BOOKINGS
 router.get('/bookings', async (req, res) => {
@@ -1229,9 +1214,6 @@ router.delete('/bookings/:id', async (req, res) => {
     }
 });
 
-// ============================================
-// ISSUING ROUTES
-// ============================================
 
 // GET ALL ISSUING RECORDS
 router.get('/issuing', async (req, res) => {
@@ -1249,7 +1231,7 @@ router.get('/issuing', async (req, res) => {
             } else if (dbError.code === 'ER_ACCESS_DENIED_ERROR') {
                 dbErrorMessage = 'Database access denied. Check username/password in .env file.';
             } else if (dbError.code === 'ER_BAD_DB_ERROR') {
-                dbErrorMessage = 'Database "swms_db" does not exist. Please create it first.';
+                dbErrorMessage = `Database "${resolvedDbLabel()}" does not exist or is not accessible. Create it and run setup.sql (Aiven: defaultdb).`;
             } else if (dbError.message) {
                 dbErrorMessage = dbError.message;
             }
@@ -1293,7 +1275,7 @@ router.get('/issuing', async (req, res) => {
         } else if (error.code === 'ER_ACCESS_DENIED_ERROR') {
             errorMessage = 'Database access denied. Check username/password in .env file.';
         } else if (error.code === 'ER_BAD_DB_ERROR') {
-            errorMessage = 'Database "swms_db" does not exist. Please create it first.';
+            errorMessage = `Database "${resolvedDbLabel()}" does not exist or is not accessible. Create it and run setup.sql (Aiven: defaultdb).`;
         } else if (error.message) {
             errorMessage = error.message;
         } else if (error.sqlMessage) {
@@ -1715,9 +1697,6 @@ router.put('/issuing/:id', async (req, res) => {
     }
 });
 
-// ============================================
-// RECEIVING ROUTES
-// ============================================
 
 // GET ALL RECEIVING RECORDS
 router.get('/receiving', async (req, res) => {
@@ -1735,7 +1714,7 @@ router.get('/receiving', async (req, res) => {
             } else if (dbError.code === 'ER_ACCESS_DENIED_ERROR') {
                 dbErrorMessage = 'Database access denied. Check username/password in .env file.';
             } else if (dbError.code === 'ER_BAD_DB_ERROR') {
-                dbErrorMessage = 'Database "swms_db" does not exist. Please create it first.';
+                dbErrorMessage = `Database "${resolvedDbLabel()}" does not exist or is not accessible. Create it and run setup.sql (Aiven: defaultdb).`;
             } else if (dbError.message) {
                 dbErrorMessage = dbError.message;
             }
@@ -1779,7 +1758,7 @@ router.get('/receiving', async (req, res) => {
         } else if (error.code === 'ER_ACCESS_DENIED_ERROR') {
             errorMessage = 'Database access denied. Check username/password in .env file.';
         } else if (error.code === 'ER_BAD_DB_ERROR') {
-            errorMessage = 'Database "swms_db" does not exist. Please create it first.';
+            errorMessage = `Database "${resolvedDbLabel()}" does not exist or is not accessible. Create it and run setup.sql (Aiven: defaultdb).`;
         } else if (error.message) {
             errorMessage = error.message;
         } else if (error.sqlMessage) {
