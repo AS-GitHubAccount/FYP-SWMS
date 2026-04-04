@@ -25,7 +25,7 @@ const limiter = rateLimit({
     skip: (req) => {
         // In prototype mode, don't rate-limit GETs from the UI.
         if (req.method === 'GET' && req.path.startsWith('/api/')) return true;
-        if (req.path === '/api/health' || req.path === '/health') return true;
+        if (req.path === '/api/health' || req.path === '/health' || req.path === '/live') return true;
         return false;
     }
 });
@@ -191,6 +191,11 @@ app.get('/api-docs.html', (req, res) => {
             res.status(500).json({ error: 'Failed to load documentation', message: err.message });
         }
     });
+});
+
+// Liveness for load balancers / PaaS (no DB — avoids failed deploys when DB vars are still being set)
+app.get('/live', (req, res) => {
+    res.status(200).json({ status: 'alive', timestamp: new Date().toISOString() });
 });
 
 // Health check with database status
