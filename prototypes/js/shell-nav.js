@@ -1,6 +1,6 @@
 /**
- * SWMS enterprise shell: grouped sidebar, role-based items, desktop collapse.
- * Mounts into #sidebar after DOM ready; runs after app.js (second DOMContentLoaded).
+ * SWMS shell: flat light sidebar (classic layout), role-based items, desktop collapse.
+ * Mounts into #sidebar after DOM ready.
  */
 (function () {
     'use strict';
@@ -20,27 +20,20 @@
     function currentNavKey() {
         var file = pageFile();
         var base = file.replace(/\.html$/, '');
-        var sp = new URLSearchParams(window.location.search);
-        var tab = (sp.get('tab') || '').toLowerCase();
-        var hash = (window.location.hash || '').replace(/^#/, '').toLowerCase();
-        var t = tab || hash;
 
-        if (base === 'inventory') {
-            if (!t || t === 'inventory') return 'inv-inventory';
-            return 'inv-' + t;
+        if (base === 'inventory' || base === 'compare' || base === 'purchasing-history') {
+            return 'nav-inventory';
         }
-        if (base === 'dashboard' || base === 'staff-dashboard') return 'dashboard';
-        if (base === 'warehouses') return 'inv-warehouses';
-        if (base === 'suppliers') return 'proc-suppliers';
-        if (base === 'purchasing-history') return 'proc-history';
-        if (base === 'compare') return 'proc-compare';
-        if (base === 'alerts') return 'op-alerts';
-        if (base === 'approval') return 'admin-approval';
-        if (base === 'users') return 'admin-users';
-        if (base === 'settings') return 'admin-settings';
-        if (base === 'audit') return 'admin-audit';
-        if (base === 'notifications') return 'workspace-inbox';
-        if (base === 'reports') return 'insights-reports';
+        if (base === 'dashboard' || base === 'staff-dashboard') return 'nav-dashboard';
+        if (base === 'warehouses') return 'nav-warehouses';
+        if (base === 'suppliers') return 'nav-suppliers';
+        if (base === 'alerts') return 'nav-alerts';
+        if (base === 'approval') return 'nav-approval';
+        if (base === 'users') return 'nav-users';
+        if (base === 'reports') return 'nav-reports';
+        if (base === 'settings') return 'nav-settings';
+        if (base === 'audit') return 'nav-audit';
+        if (base === 'notifications') return 'nav-notifications';
         return '';
     }
 
@@ -57,89 +50,55 @@
         );
     }
 
-    function group(title, inner) {
-        return (
-            '<div class="sidebar-nav-group" role="group" aria-label="' + title + '">' +
-            '<div class="sidebar-group-label">' + title + '</div>' +
-            '<nav class="sidebar-nav">' + inner + '</nav></div>'
-        );
-    }
-
     function buildSidebarHtml(admin) {
         var parts = [];
 
         parts.push(
             '<div class="sidebar-brand-row">' +
-            '<a href="dashboard.html" class="logo sidebar-logo" title="SWMS">' +
-            '<span class="sidebar-logo-text">SWMS</span>' +
-            '<span class="sidebar-logo-mark" aria-hidden="true">S</span>' +
-            '</a>' +
-            '<button type="button" class="sidebar-collapse-btn" id="sidebarCollapseBtn" aria-label="Collapse sidebar" title="Collapse">' +
-            icon('panel-left-close') +
-            '</button></div>'
+                '<a href="dashboard.html" class="logo sidebar-logo" title="SWMS">' +
+                '<span class="sidebar-logo-text">SWMS</span>' +
+                '<span class="sidebar-logo-mark" aria-hidden="true">S</span>' +
+                '</a>' +
+                '<button type="button" class="sidebar-collapse-btn" id="sidebarCollapseBtn" aria-label="Collapse sidebar" title="Collapse">' +
+                icon('panel-left-close') +
+                '</button></div>'
         );
+
+        var main =
+            link('dashboard.html', 'gauge', 'Dashboard', 'nav-dashboard') +
+            link('inventory.html', 'package', 'Inventory', 'nav-inventory') +
+            link('alerts.html', 'alert-triangle', 'Alerts', 'nav-alerts') +
+            link('reports.html', 'bar-chart-2', 'Reports', 'nav-reports');
+
+        if (admin) {
+            main += link('users.html', 'user', 'Users', 'nav-users');
+        }
+
+        main +=
+            link('suppliers.html', 'truck', 'Suppliers', 'nav-suppliers') +
+            link('warehouses.html', 'warehouse', 'Warehouses', 'nav-warehouses');
+
+        if (admin) {
+            main += link('approval.html', 'shield-check', 'Approval', 'nav-approval');
+        } else {
+            main += link('notifications.html', 'inbox', 'Notifications', 'nav-notifications');
+        }
 
         parts.push(
             '<div class="sidebar-scroll">' +
-            group(
-                'Overview',
-                link('dashboard.html', 'layout-dashboard', 'Dashboard', 'dashboard')
-            )
-        );
-
-        parts.push(
-            group(
-                'Inventory control',
-                link('inventory.html', 'package', 'Stock & catalog', 'inv-inventory') +
-                    link('inventory.html?tab=booking', 'calendar-check', 'Bookings', 'inv-booking') +
-                    link('warehouses.html', 'warehouse', 'Warehouses', 'inv-warehouses')
-            )
-        );
-
-        parts.push(
-            group(
-                'Procurement',
-                link('inventory.html?tab=purchasing', 'shopping-cart', 'Purchasing', 'inv-purchasing') +
-                    link('compare.html', 'git-compare', 'RFQ compare', 'proc-compare') +
-                    link('purchasing-history.html', 'file-text', 'Purchase requests', 'proc-history') +
-                    link('suppliers.html', 'truck', 'Suppliers', 'proc-suppliers')
-            )
-        );
-
-        parts.push(
-            group(
-                'Operations',
-                link('inventory.html?tab=receiving', 'package-plus', 'Receiving', 'inv-receiving') +
-                    link('inventory.html?tab=issuing', 'package-minus', 'Issuing', 'inv-issuing') +
-                    link('alerts.html', 'bell', 'Alerts', 'op-alerts')
-            )
+                '<nav class="sidebar-nav sidebar-nav--flat" aria-label="Main">' +
+                main +
+                '</nav>'
         );
 
         if (admin) {
             parts.push(
-                group(
-                    'Admin & audit',
-                    link('approval.html', 'shield-check', 'Approval center', 'admin-approval', 'data-admin-nav="1"') +
-                        link('users.html', 'users', 'User management', 'admin-users', 'data-admin-nav="1"') +
-                        link('settings.html', 'settings', 'System settings', 'admin-settings', 'data-admin-nav="1"') +
-                        link('audit.html', 'scroll-text', 'Audit log', 'admin-audit', 'data-admin-nav="1"')
-                )
-            );
-        } else {
-            parts.push(
-                group(
-                    'Workspace',
-                    link('notifications.html', 'inbox', 'Tasks & inbox', 'workspace-inbox', 'data-staff-nav="1"')
-                )
+                '<nav class="sidebar-nav sidebar-nav--secondary" aria-label="System">' +
+                    link('settings.html', 'settings', 'Settings', 'nav-settings') +
+                    link('audit.html', 'scroll-text', 'Audit log', 'nav-audit') +
+                '</nav>'
             );
         }
-
-        parts.push(
-            group(
-                'Insights',
-                link('reports.html', 'bar-chart-2', 'Reports', 'insights-reports')
-            )
-        );
 
         parts.push('</div>');
         return parts.join('');

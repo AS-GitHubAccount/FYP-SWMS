@@ -10,12 +10,13 @@
     --border: #e2e8f0;
     --text-main: #0f172a;
     --text-muted: #64748b;
-    --sidebar-bg: #1e293b;
-    --sidebar-border: #334155;
-    --sidebar-text: #cbd5e1;
-    --sidebar-text-muted: #94a3b8;
-    --sidebar-active-bg: rgba(255, 255, 255, 0.08);
-    --sidebar-hover-bg: rgba(255, 255, 255, 0.06);
+    /* Light sidebar (classic SWMS nav — white panel, green accents) */
+    --sidebar-bg: #ffffff;
+    --sidebar-border: #e2e8f0;
+    --sidebar-text: #334155;
+    --sidebar-text-muted: #64748b;
+    --sidebar-active-bg: rgba(77, 124, 15, 0.12);
+    --sidebar-hover-bg: #f1f5f9;
     --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.06);
     
     /* Muted Forest Green - Primary Brand */
@@ -125,7 +126,7 @@ html, body {
     overflow-x: hidden;
 }
 
-/* Sidebar — enterprise navy, grouped nav, collapsible (desktop) */
+/* Sidebar — light panel, flat nav, collapsible (desktop) */
 .sidebar {
     width: 232px;
     min-width: 232px;
@@ -154,9 +155,9 @@ html, body {
     padding: 0;
     margin: 0;
     border: none;
-    font-size: 1.0625rem;
+    font-size: 1.125rem;
     font-weight: 700;
-    color: #f8fafc;
+    color: var(--primary);
     text-decoration: none;
     letter-spacing: -0.02em;
     flex: 1;
@@ -169,7 +170,7 @@ html, body {
     display: none;
     font-size: 1rem;
     font-weight: 700;
-    color: #f8fafc;
+    color: var(--primary);
     text-align: center;
     width: 100%;
 }
@@ -188,17 +189,18 @@ html, body {
     align-items: center;
     justify-content: center;
     padding: 0;
-    border: 1px solid var(--sidebar-border);
+    border: 1px solid var(--border);
     border-radius: 6px;
-    background: transparent;
-    color: var(--sidebar-text-muted);
+    background: var(--surface);
+    color: var(--text-muted);
     cursor: pointer;
-    transition: background 0.12s ease, color 0.12s ease;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
 }
 
 .sidebar-collapse-btn:hover {
     background: var(--sidebar-hover-bg);
-    color: #f8fafc;
+    color: var(--text-main);
+    border-color: var(--slate-300);
 }
 
 .sidebar-collapse-btn svg {
@@ -245,29 +247,56 @@ html, body {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.35rem 0.65rem;
-    margin: 0 0.4rem;
+    padding: 0.45rem 0.75rem;
+    margin: 0 0.5rem;
     color: var(--sidebar-text);
     text-decoration: none;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     font-weight: 500;
     border-radius: 6px;
     border: 1px solid transparent;
-    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+    transition: background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
 }
 
 .sidebar-nav .sidebar-nav-link:hover,
 .sidebar-nav a.sidebar-nav-link:hover {
-    color: #fff;
+    color: var(--text-main);
     background: var(--sidebar-hover-bg);
 }
 
 .sidebar-nav .sidebar-nav-link.active,
 .sidebar-nav a.sidebar-nav-link.active {
-    color: #fff;
+    color: var(--primary);
     background: var(--sidebar-active-bg);
-    border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: var(--shadow-sm);
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.sidebar-nav--flat {
+    gap: 0.125rem;
+}
+
+.sidebar-nav--secondary {
+    margin-top: 0.5rem;
+    padding-top: 0.65rem;
+    border-top: 1px solid var(--sidebar-border);
+}
+
+.sidebar-nav--secondary .sidebar-nav-link,
+.sidebar-nav--secondary a.sidebar-nav-link {
+    font-size: 0.8125rem;
+    color: var(--sidebar-text-muted);
+    padding: 0.35rem 0.75rem;
+}
+
+.sidebar-nav--secondary .sidebar-nav-link:hover,
+.sidebar-nav--secondary a.sidebar-nav-link:hover {
+    color: var(--text-main);
+}
+
+.sidebar-nav--secondary .sidebar-nav-link.active,
+.sidebar-nav--secondary a.sidebar-nav-link.active {
+    color: var(--primary);
 }
 
 .sidebar-nav .nav-icon {
