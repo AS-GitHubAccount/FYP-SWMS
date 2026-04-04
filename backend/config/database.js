@@ -2,6 +2,8 @@
 const path = require('path');
 const fs = require('fs');
 const mysql = require('mysql2/promise');
+/** Escapes ?-style values for the text protocol (not the binary prepared-statement path). */
+const sqlFormat = require('mysql2').format;
 
 function loadDbConfig() {
     const envPath = path.join(__dirname, '..', '.env');
@@ -70,7 +72,12 @@ function loadDbConfig() {
 
 let _pool = null;
 
-/** mysql2 + some MySQL builds reject undefined/NaN bound values (ER_WRONG_ARGUMENTS / mysqld_stmt_execute). */
+/**
+ * Normalize values before sqlstring.format. Undefined → NULL in SQL; NaN numbers → NULL.
+ * MySQL 8.0.22+ often throws ER_WRONG_ARGUMENTS / "Incorrect arguments to mysqld_stmt_execute"
+ * when using pool.execute() (binary prepared statements) with LIMIT/OFFSET ints and similar.
+ * We route db.execute through format + query (escaped literals) to avoid that server/driver combo.
+ */
 function sanitizeExecuteParams(values) {
     if (values == null) return values;
     if (!Array.isArray(values)) return values;
@@ -81,19 +88,27 @@ function sanitizeExecuteParams(values) {
     });
 }
 
-function attachExecuteParamSanitizer(pool) {
+function attachExecuteRouting(pool) {
     if (pool.__swmsExecuteSanitizerAttached) return pool;
-    const origExecute = pool.execute.bind(pool);
-    pool.execute = function executeSanitized(sql, values) {
-        return origExecute(sql, sanitizeExecuteParams(values));
+    const poolQuery = pool.query.bind(pool);
+    pool.execute = function executeViaEscapedQuery(sql, values) {
+        if (values === undefined || values === null) {
+            return poolQuery(sql);
+        }
+        const vals = Array.isArray(values) ? sanitizeExecuteParams(values) : values;
+        return poolQuery(sqlFormat(sql, vals));
     };
     const origGetConnection = pool.getConnection.bind(pool);
     pool.getConnection = async function getConnectionSanitized() {
         const conn = await origGetConnection();
         if (!conn.__swmsExecuteWrapped) {
-            const ce = conn.execute.bind(conn);
-            conn.execute = function (sql, values) {
-                return ce(sql, sanitizeExecuteParams(values));
+            const connQuery = conn.query.bind(conn);
+            conn.execute = function connExecute(sql, values) {
+                if (values === undefined || values === null) {
+                    return connQuery(sql);
+                }
+                const vals = Array.isArray(values) ? sanitizeExecuteParams(values) : values;
+                return connQuery(sqlFormat(sql, vals));
             };
             conn.__swmsExecuteWrapped = true;
         }
@@ -106,7 +121,7 @@ function attachExecuteParamSanitizer(pool) {
 function getPool() {
     if (!_pool) {
         const config = loadDbConfig();
-        _pool = attachExecuteParamSanitizer(mysql.createPool(config));
+        _pool = attachExecuteRouting(mysql.createPool(config));
     }
     return _pool;
 }
