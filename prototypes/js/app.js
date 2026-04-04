@@ -247,11 +247,8 @@ window.showNotification = function(titleOrMessage, messageOrType, typeOrDuration
 
     document.addEventListener('keydown', onNotifyKeydown);
     closeBtn.addEventListener('click', function(e) { e.stopPropagation(); close(); });
-    overlay.addEventListener('click', function(e) {
-        if (e.target === overlay) close();
-    });
-    // Intentionally no auto-close for window-box notifications.
-    // Keep `duration` parsing only for backward API compatibility.
+    // Do not close when clicking the backdrop — user must dismiss via the close button (or Escape).
+    // Intentionally no auto-close timer; `duration` is parsed for API compatibility only and never schedules dismiss.
     var href = opts.href || opts.link;
     if (href && typeof href === 'string') {
         var bodyEl = box.querySelector('.notification-window-body');

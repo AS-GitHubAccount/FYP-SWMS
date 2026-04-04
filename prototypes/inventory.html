@@ -2014,12 +2014,12 @@
             showApproveRejectModal('approve', 'Approve Booking', async (reason) => {
                 try {
                     const userId = sessionStorage.getItem('userId');
-                    const response = await fetch(`${API_BASE_URL}/inventory/bookings/${bookingId}/approve`, {
+                    const response = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/inventory/bookings/${bookingId}/approve`, {
                         method: 'PUT',
                         headers: getAuthHeaders(),
                         body: JSON.stringify({ approvedBy: userId, reason: reason || '', approvalReason: reason || '' })
                     });
-                    const result = await response.json();
+                    const result = await response.json().catch(function () { return {}; });
                     if (result.success) {
                         showNotification('Booking approved successfully', 'success');
                         loadBookings();
@@ -2037,12 +2037,12 @@
             showApproveRejectModal('reject', 'Reject Booking', async (reason) => {
                 try {
                     const userId = parseInt(sessionStorage.getItem('userId') || '1');
-                    const response = await fetch(`${API_BASE_URL}/inventory/bookings/${bookingId}/cancel`, {
+                    const response = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/inventory/bookings/${bookingId}/cancel`, {
                         method: 'PUT',
                         headers: getAuthHeaders(),
                         body: JSON.stringify({ rejectReason: reason || undefined, cancelledBy: userId })
                     });
-                    const result = await response.json();
+                    const result = await response.json().catch(function () { return {}; });
                     if (result.success) {
                         showNotification('Booking rejected successfully', 'success');
                         loadBookings();
@@ -2560,12 +2560,12 @@
                 return;
             }
             try {
-                const res = await fetch(`${API_BASE_URL}/purchase-requests`, {
+                const res = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/purchase-requests`, {
                     method: 'POST',
                     headers: getAuthHeaders(),
                     body: JSON.stringify({ productId, quantity, supplierIds, priority, neededBy, sendingLocation, notes, requestedBy: userId })
                 });
-                const data = await res.json();
+                const data = await res.json().catch(function () { return {}; });
                 if (!data.success) throw new Error(data.error || 'Failed');
                 showNotification('Purchase request created', 'success');
                 document.getElementById('purchaseRequestForm').reset();
@@ -2582,13 +2582,13 @@
             showApproveRejectModal('approve', 'Approve Purchase Request', async (approvalNote) => {
             const userId = parseInt(sessionStorage.getItem('userId') || '1');
             try {
-                const res = await fetch(`${API_BASE_URL}/purchase-requests/${id}/approve`, {
+                const res = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/purchase-requests/${id}/approve`, {
                     method: 'PUT',
                     headers: getAuthHeaders(),
                         body: JSON.stringify({ approvedBy: userId, approvalNote })
                 });
-                const data = await res.json();
-                if (!data.success) throw new Error(data.error || 'Failed');
+                const data = await res.json().catch(function () { return {}; });
+                if (!data.success) throw new Error(data.error || data.message || 'Failed');
                 showNotification('Purchase request approved', 'success');
                 loadPurchaseRequests();
             } catch (e) {
@@ -2601,13 +2601,13 @@
             showApproveRejectModal('reject', 'Reject Purchase Request', async (reason) => {
                 const userId = parseInt(sessionStorage.getItem('userId') || '1');
                 try {
-                    const res = await fetch(`${API_BASE_URL}/purchase-requests/${id}/reject`, {
+                    const res = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/purchase-requests/${id}/reject`, {
                         method: 'PUT',
                         headers: getAuthHeaders(),
                         body: JSON.stringify({ rejectedBy: userId, rejectReason: reason || '' })
                     });
-                    const data = await res.json();
-                    if (!data.success) throw new Error(data.error || 'Failed');
+                    const data = await res.json().catch(function () { return {}; });
+                    if (!data.success) throw new Error(data.error || data.message || 'Failed');
                     showNotification('Purchase request rejected', 'info');
                     loadPurchaseRequests();
                 } catch (e) {
@@ -3053,12 +3053,12 @@
             if (!viewSentRfqCurrent || !viewSentRfqCurrent.rfqId) return;
             const userId = parseInt(sessionStorage.getItem('userId') || '0', 10);
             try {
-                const res = await fetch(`${API_BASE_URL}/rfqs/${viewSentRfqCurrent.rfqId}/request-withdrawal`, {
+                const res = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/rfqs/${viewSentRfqCurrent.rfqId}/request-withdrawal`, {
                     method: 'PUT',
                     headers: getAuthHeaders(),
                     body: JSON.stringify({ reason, requestedBy: userId })
                 });
-                const data = await res.json();
+                const data = await res.json().catch(function () { return {}; });
                 if (!data.success) throw new Error(data.error || 'Request failed');
                 showNotification('Success', 'Withdrawal requested. Pending admin approval.', 'success');
                 closeWithdrawConfirmModal();
@@ -3077,12 +3077,12 @@
             if (!verification.confirmed) return;
             const userId = parseInt(sessionStorage.getItem('userId') || '0', 10);
             try {
-                const res = await fetch(`${API_BASE_URL}/rfqs/${viewSentRfqCurrent.rfqId}/approve-withdrawal`, {
+                const res = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/rfqs/${viewSentRfqCurrent.rfqId}/approve-withdrawal`, {
                     method: 'PUT',
                     headers: getAuthHeaders(),
                     body: JSON.stringify({ approvedBy: userId, approvalToken: verification.approvalToken || undefined })
                 });
-                const data = await res.json();
+                const data = await res.json().catch(function () { return {}; });
                 if (!data.success) throw new Error(data.error || data.message || 'Approval failed');
                 showNotification('Success', 'Withdrawal approved and notification sent to suppliers.', 'success');
                 closeViewSentRfqModal();

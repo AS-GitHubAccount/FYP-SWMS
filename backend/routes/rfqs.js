@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { generateRfqNumber } = require('../utils/idGenerator');
-const { sendEmailWithOptions } = require('../utils/emailService');
+const { sendEmailWithOptions, buildSmtpTransportOptions } = require('../utils/emailService');
 const { requireCriticalApproval } = require('../utils/criticalApproval');
 const { notifyAdmins } = require('../utils/notificationHelper');
 const { getProductPriceBenchmark } = require('../utils/priceHistoryQueries');
@@ -309,6 +309,12 @@ router.post('/:id/send-email', async (req, res) => {
         const rfq = rfqs[0];
         const htmlBody = (html && typeof html === 'string') ? html : (body || '').replace(/\n/g, '<br>');
         const textFallback = (body && typeof body === 'string') ? body.replace(/<[^>]+>/g, '') : htmlBody.replace(/<[^>]+>/g, '');
+        if (!buildSmtpTransportOptions()) {
+            return res.status(503).json({
+                success: false,
+                error: 'SMTP is not configured. In backend/.env set SMTP_USER and SMTP_PASS (Gmail: use an App Password, not your normal password). Optional: SMTP_HOST, SMTP_PORT, SMTP_SECURE. Restart the server after saving.'
+            });
+        }
         const ok = await sendEmailWithOptions({
             to: to.trim(),
             cc: (cc || '').trim() || undefined,
@@ -319,7 +325,10 @@ router.post('/:id/send-email', async (req, res) => {
             text: textFallback
         });
         if (!ok) {
-            return res.status(500).json({ success: false, error: 'Failed to send email. Ensure SMTP is configured in backend (.env: SMTP_USER, SMTP_PASS, SMTP_HOST).' });
+            return res.status(500).json({
+                success: false,
+                error: 'Email could not be sent (SMTP connection or provider rejected the message). Check the backend terminal logs. Common fixes: correct App Password for Gmail, allow “less secure” is not enough—enable 2FA + App Password; or verify SMTP_HOST/port for your provider.'
+            });
         }
         const now = new Date();
         const toVal = (to || '').trim();

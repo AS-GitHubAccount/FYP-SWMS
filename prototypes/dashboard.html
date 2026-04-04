@@ -806,11 +806,11 @@
                 API_BASE_URL + '/bookings/' + encodeURIComponent(bookingId) + '/approve'
             ];
             try {
-                let res = await fetch(endpoints[0], { method: 'PUT', headers, body });
+                const doFetch = window.fetchWithAuth || fetch;
+                let res = await doFetch(endpoints[0], { method: 'PUT', headers, body });
                 if (res.status === 404 && endpoints[1]) {
-                    res = await fetch(endpoints[1], { method: 'PUT', headers, body });
+                    res = await doFetch(endpoints[1], { method: 'PUT', headers, body });
                 }
-                if (handle401(res)) return;
                 const data = await res.json().catch(function() { return {}; });
                 if (data.success) {
                     showNotification('Booking approved successfully', 'success');
@@ -819,6 +819,7 @@
                     showNotification(data.error || data.message || 'Failed to approve booking', 'error');
                 }
             } catch (e) {
+                if (e && e.message === 'Session expired') return;
                 showNotification('Failed to approve booking', 'error');
             }
         }
@@ -852,11 +853,11 @@
                 API_BASE_URL + '/bookings/' + encodeURIComponent(bookingId) + '/cancel'
             ];
             try {
-                let res = await fetch(endpoints[0], { method: 'PUT', headers, body });
+                const doFetch = window.fetchWithAuth || fetch;
+                let res = await doFetch(endpoints[0], { method: 'PUT', headers, body });
                 if (res.status === 404 && endpoints[1]) {
-                    res = await fetch(endpoints[1], { method: 'PUT', headers, body });
+                    res = await doFetch(endpoints[1], { method: 'PUT', headers, body });
                 }
-                if (handle401(res)) return;
                 const data = await res.json().catch(function() { return {}; });
                 if (data.success) {
                     showNotification('Booking rejected successfully', 'success');
@@ -865,6 +866,7 @@
                     showNotification(data.error || data.message || 'Failed to reject booking', 'error');
                 }
             } catch (e) {
+                if (e && e.message === 'Session expired') return;
                 showNotification('Failed to reject booking', 'error');
             }
         }

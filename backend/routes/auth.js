@@ -13,6 +13,14 @@ const {
 const { sendEmailWithOptions, createSmtpTransport } = require('../utils/emailService');
 const { requestSelfServicePasswordReset, GENERIC_MESSAGE } = require('../utils/passwordResetRequest');
 
+/** Access JWT lifetime (default 1 day). Override with JWT_EXPIRES_IN (e.g. 12h, 1d) and optional JWT_EXPIRES_IN_SEC for API metadata. */
+function getAccessTokenExpiry() {
+    const expiresIn = process.env.JWT_EXPIRES_IN || '1d';
+    const parsed = parseInt(process.env.JWT_EXPIRES_IN_SEC || '86400', 10);
+    const expiresInSec = Number.isFinite(parsed) && parsed > 0 ? parsed : 86400;
+    return { expiresIn, expiresInSec };
+}
+
 router.get('/', (req, res) => {
     res.json({
         message: 'SWMS Authentication API',
@@ -138,17 +146,31 @@ router.post('/login', async (req, res) => {
                 error: 'Incorrect email address'
             });
         }
-        
+
+        const { expiresIn: accessExpiresIn, expiresInSec: accessExpiresSec } = getAccessTokenExpiry();
+
         const token = jwt.sign(
             { userId: user.userId, email: user.email, role: user.role },
             process.env.JWT_SECRET || 'secret_key',
-            { expiresIn: '15m' }
+            { expiresIn: accessExpiresIn }
         );
         const refreshToken = jwt.sign(
             { userId: user.userId, type: 'refresh' },
             process.env.JWT_SECRET || 'secret_key',
             { expiresIn: '7d' }
         );
+
+        // Persist refresh token so POST /auth/refresh can validate (was missing — refresh always failed → expired access JWT on protected actions).
+        try {
+            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            await db.execute('DELETE FROM refresh_tokens WHERE userId = ?', [user.userId]);
+            await db.execute(
+                'INSERT INTO refresh_tokens (userId, token, expiresAt) VALUES (?, ?, ?)',
+                [user.userId, refreshToken, expiresAt]
+            );
+        } catch (persistErr) {
+            console.warn('[Login] Could not persist refresh token (table missing or DB error):', persistErr.message);
+        }
         
         res.json({
             success: true,
@@ -156,7 +178,7 @@ router.post('/login', async (req, res) => {
             data: {
                 token,
                 refreshToken,
-                expiresIn: 900,
+                expiresIn: accessExpiresSec,
                 user: {
                     userId: user.userId,
                     name: user.name,
@@ -189,12 +211,14 @@ router.post('/refresh', async (req, res) => {
         const [users] = await db.execute('SELECT * FROM users WHERE userId = ?', [decoded.userId]);
         if (!users.length) return res.status(401).json({ success: false, error: 'User not found' });
         const user = users[0];
+        const { expiresIn: accessExpiresIn, expiresInSec: accessExpiresSec } = getAccessTokenExpiry();
+
         const token = jwt.sign(
             { userId: user.userId, email: user.email, role: user.role },
             process.env.JWT_SECRET || 'secret_key',
-            { expiresIn: '15m' }
+            { expiresIn: accessExpiresIn }
         );
-        res.json({ success: true, data: { token, expiresIn: 900 } });
+        res.json({ success: true, data: { token, expiresIn: accessExpiresSec } });
     } catch (e) {
         res.status(401).json({ success: false, error: 'Invalid or expired refresh token' });
     }
