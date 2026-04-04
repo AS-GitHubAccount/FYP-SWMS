@@ -31,7 +31,6 @@ const issuingRoutes = require('./routes/issuing');
 const alertsRoutes = require('./routes/alerts');
 const bookingsRoutes = require('./routes/bookings');
 const notificationsRoutes = require('./routes/notifications');
-const auditRoutes = require('./routes/audit');
 const wizardRoutes = require('./routes/wizard');
 const suppliersRoutes = require('./routes/suppliers');
 const purchaseRequestsRoutes = require('./routes/purchaseRequests');
@@ -102,7 +101,6 @@ app.get('/', (req, res) => {
                         alerts: '/api/alerts',
                         bookings: '/api/bookings (legacy - use /api/inventory/bookings)',
                         notifications: '/api/notifications',
-                        audit: '/api/audit',
                         wizard: '/api/wizard'
                     }
                 });
@@ -127,7 +125,6 @@ app.get('/', (req, res) => {
                 alerts: '/api/alerts',
                 bookings: '/api/bookings (legacy - use /api/inventory/bookings)',
                 notifications: '/api/notifications',
-                audit: '/api/audit',
                 wizard: '/api/wizard'
             }
         });
@@ -262,7 +259,6 @@ app.use('/api/issuing', authMiddleware, issuingRoutes);
 app.use('/api/alerts', optionalAuth, alertsRoutes);
 app.use('/api/bookings', authMiddleware, bookingsRoutes);
 app.use('/api/notifications', optionalAuth, notificationsRoutes);
-app.use('/api/audit', authMiddleware, auditRoutes);
 app.use('/api/wizard', authMiddleware, wizardRoutes);
 app.use('/api/suppliers', authMiddleware, suppliersRoutes);
 app.use('/api/purchase-requests', authMiddleware, purchaseRequestsRoutes);
@@ -303,7 +299,7 @@ app.get(/^\/prototypes\/(.+)$/, (req, res) => {
   const file = req.params[0] || 'login.html';
   res.sendFile(path.join(prototypesPath, file), (err) => { if (err) res.status(404).send('Not found'); });
 });
-app.get(/^\/(login|dashboard|staff-dashboard|suppliers|inventory|alerts|bookings|reports|users|notifications|purchasing|compare|forgot-password|set-password|my-account|audit|settings|receiving|issuing|warehouses)\.html$/, (req, res) => {
+app.get(/^\/(login|dashboard|staff-dashboard|suppliers|inventory|alerts|bookings|reports|users|notifications|purchasing|compare|forgot-password|set-password|my-account|settings|receiving|issuing|warehouses)\.html$/, (req, res) => {
   res.sendFile(path.join(prototypesPath, req.params[0] + '.html'), (err) => { if (err) res.status(404).send('Not found'); });
 });
 

@@ -357,10 +357,7 @@ router.post('/', async (req, res) => {
         await connection.commit();
         
         // Action-based alert removal: clear EXPIRED/NEAR_EXPIRY alerts for this batch
-        await removeAlertsAndLog(
-            { productId, batchId: finalBatchId, alertTypes: ['EXPIRED', 'NEAR_EXPIRY'] },
-            { userId: issuedBy || null, actionName: 'Quick Issue', req }
-        );
+        await removeAlertsAndLog({ productId, batchId: finalBatchId, alertTypes: ['EXPIRED', 'NEAR_EXPIRY'] });
         
         // Fetch the created out_record with details
         const [newRecords] = await connection.execute(`

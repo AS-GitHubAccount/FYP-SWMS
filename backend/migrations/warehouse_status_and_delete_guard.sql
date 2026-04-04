@@ -17,7 +17,7 @@ DEALLOCATE PREPARE stmt;
 
 -- (Optional) Backfill: UPDATE warehouses SET status = IF(isActive = 1, 'Active', 'Inactive'); run if isActive exists.
 
--- 2. Add warehouseId to in_records for audit trail / delete guard (optional link)
+-- 2. Add warehouseId to in_records for traceability / delete guard (optional link)
 SET @col_ir = (
   SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'in_records' AND COLUMN_NAME = 'warehouseId'
@@ -30,7 +30,7 @@ PREPARE stmt_ir FROM @sql_ir;
 EXECUTE stmt_ir;
 DEALLOCATE PREPARE stmt_ir;
 
--- 3. Add warehouseId to out_records for audit trail / delete guard (optional link)
+-- 3. Add warehouseId to out_records for traceability / delete guard (optional link)
 SET @col_or = (
   SELECT COUNT(*) FROM information_schema.COLUMNS
   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'out_records' AND COLUMN_NAME = 'warehouseId'

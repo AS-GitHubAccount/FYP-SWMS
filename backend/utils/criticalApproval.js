@@ -1,10 +1,8 @@
 /**
- * Swiss Cheese / layered security: require approval token for critical actions (Admin).
- * Logs all attempts to audit_log.
+ * Require approval token (safe word) for critical admin actions.
  */
 
 const db = require('../config/database');
-const { logAudit, getClientIp, getUserAgent } = require('./auditLogger');
 
 async function getApprovalSafeWord() {
     try {
@@ -21,33 +19,10 @@ async function getApprovalSafeWord() {
 /**
  * If approval token is required (Admin + safe word set), verify req.body.approvalToken.
  * Returns: null if caller should proceed; otherwise res has been sent (caller should return).
- * @param {object} req - Express request (req.user, req.body.approvalToken)
- * @param {object} res - Express response
- * @param {string} criticalAction - e.g. 'delete_product', 'approve_disposal', 'approve_withdrawal'
  */
-async function requireCriticalApproval(req, res, criticalAction) {
-    const userId = req.user && req.user.userId;
-    const userName = req.user && req.user.name;
+async function requireCriticalApproval(req, res) {
     const isAdmin = req.user && (req.user.role === 'ADMIN' || req.user.role === 'Admin');
     const safeWord = await getApprovalSafeWord();
-
-    const logAttempt = async (success, tokenProvided) => {
-        try {
-            await logAudit({
-                tableName: 'critical_action',
-                recordId: 0,
-                action: 'VERIFY',
-                userId,
-                userName,
-                oldValues: null,
-                newValues: { criticalAction, success, tokenProvided },
-                ipAddress: getClientIp(req),
-                userAgent: getUserAgent(req)
-            });
-        } catch (e) {
-            console.error('criticalApproval logAttempt:', e);
-        }
-    };
 
     if (!safeWord) {
         return null;
@@ -58,7 +33,6 @@ async function requireCriticalApproval(req, res, criticalAction) {
 
     const token = req.body && req.body.approvalToken ? String(req.body.approvalToken).trim() : '';
     const match = token === safeWord;
-    await logAttempt(match, !!token);
 
     if (!match) {
         res.status(403).json({

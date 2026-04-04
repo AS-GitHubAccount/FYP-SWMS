@@ -10,7 +10,6 @@ const { generateRfqNumber } = require('../utils/idGenerator');
 const { sendEmailWithOptions } = require('../utils/emailService');
 const { requireCriticalApproval } = require('../utils/criticalApproval');
 const { notifyAdmins } = require('../utils/notificationHelper');
-const { logAudit, getClientIp, getUserAgent } = require('../utils/auditLogger');
 const { getProductPriceBenchmark } = require('../utils/priceHistoryQueries');
 
 // GET all RFQs
@@ -140,7 +139,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-// PUT reject quotation (mandatory reason for audit)
+// PUT reject quotation (mandatory reason)
 router.put('/quotations/:quotationId/reject', async (req, res) => {
     try {
         const quotationId = parseInt(req.params.quotationId, 10);
@@ -339,22 +338,6 @@ router.post('/:id/send-email', async (req, res) => {
             } else {
                 throw updErr;
             }
-        }
-        try {
-            const recipientEmails = [toVal, bccVal].filter(Boolean).join('; ');
-            await logAudit({
-                tableName: 'rfqs',
-                recordId: parseInt(rfqId, 10),
-                action: 'UPDATE',
-                userId: req.user?.userId || null,
-                userName: req.user?.name || null,
-                oldValues: { status: rfq.status },
-                newValues: { status: 'SENT', recipient_email: recipientEmails, subject: subjVal, last_sent_at: now },
-                ipAddress: getClientIp(req),
-                userAgent: getUserAgent(req)
-            });
-        } catch (auditErr) {
-            console.error('[rfqs] audit log:', auditErr.message);
         }
         res.json({ success: true, message: 'RFQ email sent', data: { rfqId, status: 'SENT' } });
     } catch (err) {

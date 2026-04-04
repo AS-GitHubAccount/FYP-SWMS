@@ -1002,19 +1002,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (isMatch) link.classList.add('active');
     });
 
-    // Get user role from session - show Admin-only vs Staff-only nav links
-    // Admin: Dashboard, Inventory, Alert, Reports, User, Supplier, Audit Log, Settings
-    // Staff: Dashboard, Inventory, Alert, Reports, Supplier (Account settings in profile dropdown)
+    // Get user role from session - show Admin-only vs Staff-only nav links (legacy header ids; sidebar is shell-nav.js)
     const userRole = sessionStorage.getItem('userRole') || 'Admin';
     const isAdmin = userRole === 'Admin' || userRole === 'ADMIN';
     const usersLink = document.getElementById('usersLink');
-    const auditLink = document.getElementById('auditLink');
     const settingsLink = document.getElementById('settingsLink');
     const approvalCenterLink = document.getElementById('approvalCenterLink');
     const altApprovalLink = document.getElementById('disposalApprovalsLink'); // legacy id used on dashboard.html
     const myAccountLink = document.getElementById('myAccountLink');
     if (usersLink) usersLink.style.display = isAdmin ? '' : 'none';
-    if (auditLink) auditLink.style.display = isAdmin ? '' : 'none';
     if (settingsLink) settingsLink.style.display = isAdmin ? '' : 'none';
     if (approvalCenterLink) approvalCenterLink.style.display = isAdmin ? '' : 'none';
     if (altApprovalLink) altApprovalLink.style.display = isAdmin ? '' : 'none';

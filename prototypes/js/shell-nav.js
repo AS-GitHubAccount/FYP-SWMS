@@ -31,9 +31,6 @@
         if (base === 'approval') return 'nav-approval';
         if (base === 'users') return 'nav-users';
         if (base === 'reports') return 'nav-reports';
-        if (base === 'settings') return 'nav-settings';
-        if (base === 'audit') return 'nav-audit';
-        if (base === 'notifications') return 'nav-notifications';
         return '';
     }
 
@@ -65,10 +62,10 @@
         );
 
         var main =
-            link('dashboard.html', 'gauge', 'Dashboard', 'nav-dashboard') +
+            link('dashboard.html', 'layout-dashboard', 'Dashboard', 'nav-dashboard') +
             link('inventory.html', 'package', 'Inventory', 'nav-inventory') +
-            link('alerts.html', 'alert-triangle', 'Alerts', 'nav-alerts') +
-            link('reports.html', 'bar-chart-2', 'Reports', 'nav-reports');
+            link('alerts.html', 'bell', 'Alerts', 'nav-alerts') +
+            link('reports.html', 'bar-chart-3', 'Reports', 'nav-reports');
 
         if (admin) {
             main += link('users.html', 'user', 'Users', 'nav-users');
@@ -80,27 +77,14 @@
 
         if (admin) {
             main += link('approval.html', 'shield-check', 'Approval', 'nav-approval');
-        } else {
-            main += link('notifications.html', 'inbox', 'Notifications', 'nav-notifications');
         }
 
         parts.push(
             '<div class="sidebar-scroll">' +
                 '<nav class="sidebar-nav sidebar-nav--flat" aria-label="Main">' +
                 main +
-                '</nav>'
+                '</nav></div>'
         );
-
-        if (admin) {
-            parts.push(
-                '<nav class="sidebar-nav sidebar-nav--secondary" aria-label="System">' +
-                    link('settings.html', 'settings', 'Settings', 'nav-settings') +
-                    link('audit.html', 'scroll-text', 'Audit log', 'nav-audit') +
-                '</nav>'
-            );
-        }
-
-        parts.push('</div>');
         return parts.join('');
     }
 

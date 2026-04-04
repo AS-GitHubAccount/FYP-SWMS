@@ -412,10 +412,8 @@
             const role = sessionStorage.getItem('userRole') || 'Admin';
             const isAdmin = role === 'Admin' || role === 'ADMIN';
             const ul = document.getElementById('usersLink');
-            const al = document.getElementById('auditLink');
             const dal = document.getElementById('approvalCenterLink');
             if (ul) ul.style.display = isAdmin ? '' : 'none';
-            if (al) al.style.display = isAdmin ? '' : 'none';
             if (dal) dal.style.display = isAdmin ? '' : 'none';
             loadSuppliers();
         });

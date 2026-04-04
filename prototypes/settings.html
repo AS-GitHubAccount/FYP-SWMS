@@ -257,7 +257,7 @@
                                     </button>
                                 </div>
                                 <p id="settingsApprovalTokenMessage" class="form-hint" style="margin-top: 0.5rem;"></p>
-                                <p class="form-hint">When enabled, certain high-stakes admin actions require this safe word. Attempts are audited.</p>
+                                <p class="form-hint">When enabled, certain high-stakes admin actions require this safe word before they can proceed.</p>
                             </div>
                         </div>
                         </div><!-- .settings-content -->
@@ -350,7 +350,7 @@
             if (s) s.classList.toggle('open');
             if (o) o.classList.toggle('open');
         }
-        ['usersLink', 'auditLink', 'approvalCenterLink'].forEach(function(id) {
+        ['usersLink', 'approvalCenterLink'].forEach(function(id) {
             const el = document.getElementById(id);
             if (el) el.style.display = '';
         });

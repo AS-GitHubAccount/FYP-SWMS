@@ -3,8 +3,6 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { requireAdmin } = require('../middleware/auth');
-const { logAudit, getClientIp, getUserAgent } = require('../utils/auditLogger');
-
 function getStatus(row) {
     if (row == null) return 'Active';
     if (row.status != null && String(row.status).trim() !== '') return String(row.status).trim();
@@ -79,18 +77,6 @@ router.put('/:id', requireAdmin, async (req, res) => {
             'UPDATE warehouses SET name = ?, code = ?, address = ? WHERE warehouseId = ?',
             [nameNorm, codeNorm, address != null && String(address).trim() !== '' ? String(address).trim() : null, id]
         );
-        const userName = (req.user && req.user.name) || (req.user && req.user.email) || 'Admin';
-        await logAudit({
-            tableName: 'warehouses',
-            recordId: parseInt(id, 10),
-            action: 'UPDATE',
-            userId: req.user && req.user.userId,
-            userName,
-            oldValues: { name: row.name, code: row.code, address: row.address },
-            newValues: { name: nameNorm, code: codeNorm, address: address },
-            ipAddress: getClientIp(req),
-            userAgent: getUserAgent(req)
-        });
         const [updated] = await db.execute('SELECT * FROM warehouses WHERE warehouseId = ?', [id]);
         res.json({ success: true, data: { ...updated[0], status: getStatus(updated[0]) } });
     } catch (e) {
@@ -137,18 +123,6 @@ router.put('/:id/toggle-status', requireAdmin, async (req, res) => {
                 await db.execute('UPDATE warehouses SET isActive = ? WHERE warehouseId = ?', [isActive, id]);
             } else throw colErr;
         }
-        const userName = (req.user && req.user.name) || (req.user && req.user.email) || 'Admin';
-        await logAudit({
-            tableName: 'warehouses',
-            recordId: parseInt(id),
-            action: 'UPDATE',
-            userId: req.user && req.user.userId,
-            userName,
-            oldValues: { status: currentStatus },
-            newValues: { status: newStatus },
-            ipAddress: getClientIp(req),
-            userAgent: getUserAgent(req)
-        });
         const [updated] = await db.execute('SELECT * FROM warehouses WHERE warehouseId = ?', [id]);
         res.json({ success: true, data: { ...updated[0], status: newStatus } });
     } catch (e) {
@@ -184,20 +158,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
             });
         }
 
-        const row = existing[0];
         await db.execute('DELETE FROM warehouses WHERE warehouseId = ?', [id]);
-        const userName = (req.user && req.user.name) || (req.user && req.user.email) || 'Admin';
-        await logAudit({
-            tableName: 'warehouses',
-            recordId: parseInt(id),
-            action: 'DELETE',
-            userId: req.user && req.user.userId,
-            userName,
-            oldValues: { name: row.name, code: row.code },
-            newValues: null,
-            ipAddress: getClientIp(req),
-            userAgent: getUserAgent(req)
-        });
         res.json({ success: true, message: 'Warehouse deleted.' });
     } catch (e) {
         res.status(500).json({ success: false, error: e.message });

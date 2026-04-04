@@ -420,7 +420,7 @@
                         actions: [
                             { name: 'Validate ID', description: 'Ensure product exists before update' },
                             { name: 'Update Fields', description: 'Modify specified product attributes' },
-                            { name: 'Log Changes', description: 'Record audit trail of modifications' },
+                            { name: 'Persist Changes', description: 'Save modifications to database' },
                             { name: 'Return Updated', description: 'Send back updated product data' }
                         ]
                     },
@@ -589,7 +589,7 @@
                             { name: 'Validate Request', description: 'Ensure booking can be cancelled' },
                             { name: 'Release Stock', description: 'Free up reserved inventory' },
                             { name: 'Update Status', description: 'Mark booking as cancelled' },
-                            { name: 'Log Action', description: 'Record cancellation in audit log' }
+                            { name: 'Confirm Cancellation', description: 'Apply cancellation to booking' }
                         ]
                     }
                 ]
@@ -822,7 +822,7 @@
                         actions: [
                             { name: 'Validate User', description: 'Ensure user exists' },
                             { name: 'Update Fields', description: 'Modify specified attributes' },
-                            { name: 'Log Changes', description: 'Record audit trail' },
+                            { name: 'Persist Changes', description: 'Save user field updates' },
                             { name: 'Return Updated', description: 'Send updated user data' }
                         ]
                     }
@@ -854,36 +854,6 @@
                             { name: 'Update Status', description: 'Mark as read' },
                             { name: 'Update Count', description: 'Decrease unread counter' },
                             { name: 'Return Success', description: 'Send confirmation' }
-                        ]
-                    }
-                ]
-            },
-            {
-                id: 'audit',
-                title: 'Audit',
-                endpoints: [
-                    {
-                        method: 'GET',
-                        path: '/api/audit',
-                        title: 'List Audit Logs',
-                        description: 'View all system audit logs and activity records',
-                        actions: [
-                            { name: 'Query Logs', description: 'Fetch audit records' },
-                            { name: 'Filter Period', description: 'Filter by date range' },
-                            { name: 'Filter User', description: 'Show logs for specific user' },
-                            { name: 'Return Results', description: 'Send audit log data' }
-                        ]
-                    },
-                    {
-                        method: 'GET',
-                        path: '/api/audit/table/:tableName',
-                        title: 'Get Logs For Table',
-                        description: 'Retrieve audit logs for a specific database table',
-                        actions: [
-                            { name: 'Validate Table', description: 'Check table name is valid' },
-                            { name: 'Query Logs', description: 'Fetch logs for table' },
-                            { name: 'Include Changes', description: 'Show before/after values' },
-                            { name: 'Return Data', description: 'Send filtered logs' }
                         ]
                     }
                 ]

@@ -15,7 +15,6 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { generateBookingNumber } = require('../utils/idGenerator');
-const { logAudit, getClientIp, getUserAgent } = require('../utils/auditLogger');
 const { notifyUser } = require('../utils/notificationHelper');
 
 const MIN_REASON_LENGTH = 1;
@@ -123,21 +122,6 @@ router.get('/:id', async (req, res) => {
             issuingRecordId: booking.issuingRecordId ?? booking.issuing_id ?? null,
             issuingRecordNumber: booking.issuingRecordNumber ?? null
         };
-        
-        // Audit: track who viewed this booking (non-repudiation)
-        const userId = req.user && req.user.userId;
-        try {
-            await logAudit({
-                tableName: 'bookings',
-                recordId: parseInt(bookingId, 10),
-                action: 'VIEW',
-                userId: userId || null,
-                userName: null,
-                newValues: { view: 'booking_detail' },
-                ipAddress: getClientIp(req),
-                userAgent: getUserAgent(req)
-            });
-        } catch (_) { /* audit must not break response */ }
         
         res.json({
             success: true,
@@ -325,20 +309,6 @@ router.put('/:id/approve', async (req, res) => {
                 );
             } else throw colErr;
         }
-        
-        try {
-            await logAudit({
-                tableName: 'bookings',
-                recordId: parseInt(bookingId),
-                action: 'UPDATE',
-                userId: approvedBy || null,
-                userName: null,
-                oldValues: { status: 'PENDING' },
-                newValues: { status: 'APPROVED', approvedBy, reason: note, summary: `Booking ${bookingId} approved. Reason: ${note}` },
-                ipAddress: getClientIp(req),
-                userAgent: getUserAgent(req)
-            });
-        } catch (_) {}
 
         const [updated] = await db.execute(`
             SELECT 
@@ -417,20 +387,6 @@ router.put('/:id/cancel', async (req, res) => {
                 await db.execute("UPDATE bookings SET status = 'CANCELLED' WHERE bookingId = ?", [bookingId]);
             } else throw colErr;
         }
-        
-        try {
-            await logAudit({
-                tableName: 'bookings',
-                recordId: parseInt(bookingId),
-                action: 'UPDATE',
-                userId: cancelledBy || null,
-                userName: null,
-                oldValues: { status: existing[0].status },
-                newValues: { status: 'CANCELLED', reason: reasonVal, summary: `Booking ${bookingId} cancelled. Reason: ${reasonVal}` },
-                ipAddress: getClientIp(req),
-                userAgent: getUserAgent(req)
-            });
-        } catch (_) {}
         
         const [updated] = await db.execute(`
             SELECT 

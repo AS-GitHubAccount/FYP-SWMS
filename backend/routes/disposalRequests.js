@@ -5,7 +5,6 @@ const db = require('../config/database');
 const { notifyAdmins, notifyUser } = require('../utils/notificationHelper');
 const { generateRequestNumber } = require('../utils/idGenerator');
 const { requireAdmin } = require('../middleware/auth');
-const { logAudit, getClientIp, getUserAgent } = require('../utils/auditLogger');
 const { removeAlertsAndLog } = require('../utils/alertRemoval');
 
 const MIN_REASON_LENGTH = 1;
@@ -76,10 +75,7 @@ router.post('/', async (req, res) => {
             triggeredBy: requestedBy, relatedEntityType: 'disposal_request', relatedEntityId: result.insertId
         });
         // Action-based alert removal: clear EXPIRED/NEAR_EXPIRY alerts for this batch
-        await removeAlertsAndLog(
-            { productId, batchId, alertTypes: ['EXPIRED', 'NEAR_EXPIRY'] },
-            { userId: requestedBy, actionName: 'Request Disposal', req }
-        );
+        await removeAlertsAndLog({ productId, batchId, alertTypes: ['EXPIRED', 'NEAR_EXPIRY'] });
         res.status(201).json({ success: true, message: 'Disposal request created', data: newRow[0] });
     } catch (err) {
         console.error('Error creating disposal request:', err);
@@ -127,17 +123,6 @@ router.put('/:id/approve', requireAdmin, async (req, res) => {
                 );
             } else throw colErr;
         }
-        await logAudit({
-            tableName: 'disposal_requests',
-            recordId: parseInt(id),
-            action: 'UPDATE',
-            userId: approvedBy,
-            userName: req.user && req.user.name,
-            oldValues: { status: 'PENDING' },
-            newValues: { status: 'APPROVED', approvedBy, batchId, productId, quantityDeducted: qty, approvalReason },
-            ipAddress: getClientIp(req),
-            userAgent: getUserAgent(req)
-        });
         await notifyUser(rec.requestedBy, `Your disposal request ${rec.requestNumber} was approved. Reason: ${approvalReason}`,
             { triggeredBy: approvedBy, relatedEntityType: 'disposal_request', relatedEntityId: parseInt(id), notificationType: 'SUCCESS' });
         const [updated] = await db.execute('SELECT * FROM disposal_requests WHERE disposalId = ?', [id]);

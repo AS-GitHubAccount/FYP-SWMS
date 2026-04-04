@@ -14,7 +14,6 @@ const router = express.Router();
 const db = require('../config/database');
 const QRCode = require('qrcode');
 const { requireCriticalApproval } = require('../utils/criticalApproval');
-const { logAudit, getClientIp, getUserAgent } = require('../utils/auditLogger');
 
 router.get('/', async (req, res) => {
     try {
@@ -56,17 +55,6 @@ router.get('/:id/qr', async (req, res) => {
         if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image')) {
             return res.status(500).json({ success: false, error: 'QR generation failed' });
         }
-        await logAudit({
-            tableName: 'qr_generate',
-            recordId: p.productId,
-            action: 'QR_GENERATE',
-            userId: req.user && req.user.userId,
-            userName: (req.user && req.user.name) || (req.user && req.user.email) || null,
-            oldValues: null,
-            newValues: { productId: p.productId, scope: 'product' },
-            ipAddress: getClientIp(req),
-            userAgent: getUserAgent(req)
-        });
         res.json({ success: true, dataUrl, payload });
     } catch (err) {
         console.error('Error generating product QR:', err);

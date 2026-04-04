@@ -276,29 +276,6 @@ html, body {
     gap: 0.125rem;
 }
 
-.sidebar-nav--secondary {
-    margin-top: 0.5rem;
-    padding-top: 0.65rem;
-    border-top: 1px solid var(--sidebar-border);
-}
-
-.sidebar-nav--secondary .sidebar-nav-link,
-.sidebar-nav--secondary a.sidebar-nav-link {
-    font-size: 0.8125rem;
-    color: var(--sidebar-text-muted);
-    padding: 0.35rem 0.75rem;
-}
-
-.sidebar-nav--secondary .sidebar-nav-link:hover,
-.sidebar-nav--secondary a.sidebar-nav-link:hover {
-    color: var(--text-main);
-}
-
-.sidebar-nav--secondary .sidebar-nav-link.active,
-.sidebar-nav--secondary a.sidebar-nav-link.active {
-    color: var(--primary);
-}
-
 .sidebar-nav .nav-icon {
     width: 17px;
     height: 17px;

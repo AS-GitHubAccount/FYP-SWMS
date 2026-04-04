@@ -12,7 +12,6 @@ const router = express.Router();
 const db = require('../config/database');
 const pool = require('../config/database');
 const getConnectionErrorMessage = db.getConnectionErrorMessage || (e => e && e.message);
-const { logAudit, getClientIp, getUserAgent } = require('../utils/auditLogger');
 const { generateRecordNumber } = require('../utils/idGenerator');
 
 router.get('/', async (req, res) => {
@@ -227,34 +226,6 @@ router.post('/', async (req, res) => {
         
         await connection.commit();
         
-        // Get user name for audit log
-        const [users] = await connection.execute(
-            'SELECT name FROM users WHERE userId = ?',
-            [receivedBy || 0]
-        );
-        const userName = users.length > 0 ? users[0].name : null;
-        
-        // Log the creation to audit_log
-        await logAudit({
-            tableName: 'in_records',
-            recordId: recordResult.insertId,
-            action: 'INSERT',
-            userId: receivedBy || null,
-            userName: userName,
-            oldValues: null,
-            newValues: {
-                recordNumber: recordNumber,
-                productId: productId,
-                batchId: batchId,
-                quantity: quantity,
-                supplier: supplier,
-                receivedDate: receivedDate || new Date().toISOString().split('T')[0],
-                notes: notes
-            },
-            ipAddress: getClientIp(req),
-            userAgent: getUserAgent(req)
-        });
-        
         // Fetch the created in_record with details
         const [newRecords] = await connection.execute(`
             SELECT 
@@ -379,55 +350,21 @@ router.put('/:id', async (req, res) => {
         
         values.push(recordId);
         
-        // Get user name for audit log and update
         const [users] = await connection.execute(
             'SELECT name FROM users WHERE userId = ?',
             [userId]
         );
         const userName = users.length > 0 ? users[0].name : null;
         
-        // If receivedBy should be updated, get the name
-        // Note: receivedBy now stores the name, not the ID
-        // We'll update it to the current user's name if they're editing
         if (userName) {
             updates.push('receivedBy = ?');
-            values.splice(values.length - 1, 0, userName); // Insert before recordId
+            values.splice(values.length - 1, 0, userName);
         }
-        
-        // Prepare old and new values for audit log
-        const oldValues = {
-            quantity: record.quantity,
-            supplier: record.supplier,
-            receivedDate: record.receivedDate,
-            notes: record.notes,
-            receivedBy: record.receivedBy
-        };
-        
-        const newValues = {
-            quantity: quantity !== undefined ? quantity : record.quantity,
-            supplier: supplier !== undefined ? supplier : record.supplier,
-            receivedDate: receivedDate !== undefined ? receivedDate : record.receivedDate,
-            notes: notes !== undefined ? notes : record.notes,
-            receivedBy: userName || record.receivedBy
-        };
         
         await connection.execute(
             `UPDATE in_records SET ${updates.join(', ')} WHERE recordId = ?`,
             values
         );
-        
-        // Log the change to audit_log
-        await logAudit({
-            tableName: 'in_records',
-            recordId: recordId,
-            action: 'UPDATE',
-            userId: parseInt(userId),
-            userName: userName,
-            oldValues: oldValues,
-            newValues: newValues,
-            ipAddress: getClientIp(req),
-            userAgent: getUserAgent(req)
-        });
         
         // Fetch updated record with details
         const [updatedRecords] = await connection.execute(`

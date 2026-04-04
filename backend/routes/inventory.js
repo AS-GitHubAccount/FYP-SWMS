@@ -4,7 +4,6 @@ const router = express.Router();
 const QRCode = require('qrcode');
 const db = require('../config/database');
 const pool = require('../config/database');
-const { logAudit, getClientIp, getUserAgent } = require('../utils/auditLogger');
 const { notifyAdmins, notifyUser } = require('../utils/notificationHelper');
 const { checkAndCreateAlerts } = require('../utils/alertChecker');
 const { generateBookingNumber, generateRecordNumber } = require('../utils/idGenerator');
@@ -838,21 +837,6 @@ router.get('/bookings/:id', async (req, res) => {
             issuingRecordId: booking.issuingRecordId ?? null,
             issuingRecordNumber: booking.issuingRecordNumber ?? null
         };
-        
-        // Audit: track who viewed this booking (non-repudiation)
-        const userId = req.user && req.user.userId;
-        try {
-            await logAudit({
-                tableName: 'bookings',
-                recordId: parseInt(bookingId, 10),
-                action: 'VIEW',
-                userId: userId || null,
-                userName: null,
-                newValues: { view: 'booking_detail' },
-                ipAddress: getClientIp(req),
-                userAgent: getUserAgent(req)
-            });
-        } catch (_) { /* audit must not break response */ }
         
         res.json({
             success: true,
@@ -1975,32 +1959,6 @@ router.post('/receiving', async (req, res) => {
         
         checkAndCreateAlerts(productId).catch(err => console.error('[receiving] alert check failed:', err.message));
         
-        const [users] = await connection.execute(
-            'SELECT name FROM users WHERE userId = ?',
-            [receivedBy || 0]
-        );
-        const userName = users.length > 0 ? users[0].name : null;
-        
-        await logAudit({
-            tableName: 'in_records',
-            recordId: recordResult.insertId,
-            action: 'INSERT',
-            userId: receivedBy || null,
-            userName: userName,
-            oldValues: null,
-            newValues: {
-                recordNumber: recordNumber,
-                productId: productId,
-                batchId: batchId,
-                quantity: quantity,
-                supplier: supplier,
-                receivedDate: receivedDate || new Date().toISOString().split('T')[0],
-                notes: notes
-            },
-            ipAddress: getClientIp(req),
-            userAgent: getUserAgent(req)
-        });
-        
         const [newRecords] = await connection.execute(`
             SELECT 
                 ir.*,
@@ -2130,38 +2088,10 @@ router.put('/receiving/:id', async (req, res) => {
             values.splice(values.length - 1, 0, userName);
         }
         
-        const oldValues = {
-            quantity: record.quantity,
-            supplier: record.supplier,
-            receivedDate: record.receivedDate,
-            notes: record.notes,
-            receivedBy: record.receivedBy
-        };
-        
-        const newValues = {
-            quantity: quantity !== undefined ? quantity : record.quantity,
-            supplier: supplier !== undefined ? supplier : record.supplier,
-            receivedDate: receivedDate !== undefined ? receivedDate : record.receivedDate,
-            notes: notes !== undefined ? notes : record.notes,
-            receivedBy: userName || record.receivedBy
-        };
-        
         await connection.execute(
             `UPDATE in_records SET ${updates.join(', ')} WHERE recordId = ?`,
             values
         );
-        
-        await logAudit({
-            tableName: 'in_records',
-            recordId: recordId,
-            action: 'UPDATE',
-            userId: parseInt(userId),
-            userName: userName,
-            oldValues: oldValues,
-            newValues: newValues,
-            ipAddress: getClientIp(req),
-            userAgent: getUserAgent(req)
-        });
         
         const [updatedRecords] = await connection.execute(`
             SELECT 

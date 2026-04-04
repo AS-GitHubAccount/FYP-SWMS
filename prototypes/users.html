@@ -578,11 +578,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
             const ul = document.getElementById('usersLink');
-            const al = document.getElementById('auditLink');
             const sl = document.getElementById('settingsLink');
             const ml = document.getElementById('myAccountLink');
             if (ul) ul.style.display = '';
-            if (al) al.style.display = '';
             if (sl) sl.style.display = '';
             if (ml) ml.style.display = 'none';
             loadUsers();

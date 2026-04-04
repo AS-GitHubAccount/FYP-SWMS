@@ -109,7 +109,7 @@
         </div>
     </div>
 
-    <!-- Rejection Reason Modal (mandatory for audit trail) -->
+    <!-- Rejection Reason Modal (mandatory) -->
     <div id="rejectReasonModalBackdrop" onclick="window.closeRejectReasonModal && window.closeRejectReasonModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001;"></div>
     <div id="rejectReasonModal" class="card" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1002; max-width: 420px; width: 90%; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.10); border: 1px solid var(--border, #e5e7eb); border-radius: 4px;">
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; background: #fff; border-bottom: 1px solid var(--border, #e5e7eb);">
@@ -227,7 +227,7 @@
             }
         }
 
-        ['usersLink', 'approvalCenterLink', 'auditLink'].forEach(id => {
+        ['usersLink', 'approvalCenterLink'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = '';
         });

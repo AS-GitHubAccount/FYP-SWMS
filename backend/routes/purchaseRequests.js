@@ -200,10 +200,7 @@ router.post('/', async (req, res) => {
             triggeredBy: requestedBy, relatedEntityType: 'purchase_request', relatedEntityId: requestId
         });
         // Action-based alert removal: clear LOW_STOCK alert for this product
-        await removeAlertsAndLog(
-            { productId, alertTypes: ['LOW_STOCK'] },
-            { userId: requestedBy, actionName: 'Purchase', req }
-        );
+        await removeAlertsAndLog({ productId, alertTypes: ['LOW_STOCK'] });
         res.status(201).json({ success: true, message: 'Purchase request created', data: newRow[0] });
     } catch (err) {
         console.error('Error creating purchase request:', err);

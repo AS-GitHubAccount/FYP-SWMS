@@ -172,7 +172,7 @@
         const userRole = sessionStorage.getItem('userRole') || 'Admin';
         if (userRole === 'Admin' || userRole === 'ADMIN') {
             // Show admin-only nav links
-            ['usersLink', 'approvalCenterLink', 'auditLink'].forEach(function(id) {
+            ['usersLink', 'approvalCenterLink'].forEach(function(id) {
                 const el = document.getElementById(id);
                 if (el) el.style.display = '';
             });

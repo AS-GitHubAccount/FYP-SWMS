@@ -1,6 +1,6 @@
 /**
  * Settings page - Control Center (unified layout like inventory.html)
- * GET /api/settings to load, PUT /api/settings to save (bulk). Audit logged on backend.
+ * GET /api/settings to load, PUT /api/settings to save (bulk).
  */
 (function() {
     const API_BASE = typeof window.getSwmsApiBase === 'function' ? window.getSwmsApiBase() : (window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api');

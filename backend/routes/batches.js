@@ -15,7 +15,6 @@ const router = express.Router();
 const db = require('../config/database');
 const getConnectionErrorMessage = db.getConnectionErrorMessage || ((e) => e && e.message);
 const QRCode = require('qrcode');
-const { logAudit, getClientIp, getUserAgent } = require('../utils/auditLogger');
 
 // Helper function to calculate batch status and available quantity
 function calculateBatchStatus(batch, reservedQuantity = 0) {
@@ -230,17 +229,6 @@ router.get('/:id/qr', async (req, res) => {
         if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:image')) {
             return res.status(500).json({ success: false, error: 'QR generation failed' });
         }
-        await logAudit({
-            tableName: 'qr_generate',
-            recordId: b.productId,
-            action: 'QR_GENERATE',
-            userId: req.user && req.user.userId,
-            userName: (req.user && req.user.name) || (req.user && req.user.email) || null,
-            oldValues: null,
-            newValues: { productId: b.productId, batchId: b.batchId, lotCode: b.lotCode, scope: 'batch' },
-            ipAddress: getClientIp(req),
-            userAgent: getUserAgent(req)
-        });
         res.json({ success: true, dataUrl, payload });
     } catch (err) {
         console.error('Error generating batch QR:', err);

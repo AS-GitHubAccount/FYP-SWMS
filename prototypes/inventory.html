@@ -6129,15 +6129,6 @@
                 }
             });
         }
-        async function logQRGenerateAudit(productId, batchId) {
-            try {
-                await fetch(`${API_BASE_URL}/audit/qr-generate`, {
-                    method: 'POST',
-                    headers: Object.assign({ 'Content-Type': 'application/json' }, getAuthHeaders()),
-                    body: JSON.stringify({ productId, batchId: batchId || undefined })
-                });
-            } catch (e) { console.warn('QR generate audit log failed:', e); }
-        }
         async function openQRLabelModal(productId, batchId) {
             productId = productId != null ? parseInt(productId, 10) : null;
             batchId = batchId != null ? parseInt(batchId, 10) : null;
@@ -6194,7 +6185,6 @@
                         var dataUrl = await generateQRToCanvas(productId, sku, name, batchExtra);
                         if (dataUrl && typeof dataUrl === 'string' && dataUrl.startsWith('data:image')) {
                             showQRLabelSuccess(dataUrl, sku, batchExtra && batchExtra.lotCode, name);
-                            await logQRGenerateAudit(productId, qrLabelBatchId);
                             return;
                         }
                     } catch (e) { console.warn('Client-side QR fallback:', e.message || e); }
@@ -6254,7 +6244,6 @@
                         var dataUrl = await generateQRToCanvas(productId, sku, name, batchExtra);
                         if (dataUrl && typeof dataUrl === 'string' && dataUrl.startsWith('data:image')) {
                             showQRLabelSuccess(dataUrl, sku, batchExtra && batchExtra.lotCode, name);
-                            await logQRGenerateAudit(productId, qrLabelBatchId);
                         } else {
                             showQRLabelError(e.message || 'QR generation failed');
                         }
@@ -6419,15 +6408,6 @@
                 osc.stop(ctx.currentTime + 0.1);
             } catch (e) {}
         }
-        async function logQRAudit(productId, actionType, batchId) {
-            try {
-                await fetch(`${API_BASE_URL}/audit/qr-scan`, {
-                    method: 'POST',
-                    headers: getAuthHeaders(),
-                    body: JSON.stringify({ productId, actionType, batchId: batchId || null })
-                });
-            } catch (e) { console.warn('QR audit log failed:', e); }
-        }
         async function onQRScanSuccess(decodedText) {
             if (qrScanInProgress) return;
             qrScanInProgress = true;
@@ -6557,10 +6537,9 @@
                     `;
                 }
 
-                // Page-specific scanner effects + audit logging.
                 if (onInventory) {
-                    await logQRAudit(pid, 'VIEW', batchId || null);
-            } else if (onIssuing) {
+                    // Product passport modal already shown above
+                } else if (onIssuing) {
                 const sel = document.getElementById('issueProductSelect') || document.getElementById('productSelect');
                 if (sel) {
                         sel.value = pid;
@@ -6569,7 +6548,6 @@
                     const qtyInput = document.getElementById('issueQuantity') || document.getElementById('quantity');
                     if (qtyInput) { const v = parseInt(qtyInput.value, 10) || 0; qtyInput.value = v + 1; }
                 }
-                    await logQRAudit(pid, 'ISSUE', batchId || undefined);
                 if (typeof showNotification === 'function') showNotification('Added 1 unit to issue list.', 'success');
             } else if (onReceiving) {
                 const sel = document.getElementById('receiveProductSelect');
@@ -6578,10 +6556,7 @@
                     const qtyInput = document.getElementById('receiveQuantity');
                     if (qtyInput) qtyInput.focus();
                 }
-                    await logQRAudit(pid, 'RECEIVE', null);
                 if (typeof showNotification === 'function') showNotification('Product selected for receiving.', 'success');
-            } else {
-                    await logQRAudit(pid, 'SCAN', batchId || null);
                 }
             } catch (e) {
                 console.error('QR scan passport error:', e);
