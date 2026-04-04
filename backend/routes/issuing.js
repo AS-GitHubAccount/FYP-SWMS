@@ -279,9 +279,21 @@ router.post('/', async (req, res) => {
         try {
             // If the migration added `warehouseId`, store issued-from warehouse.
             if (warehouseId !== undefined) {
+                let warehouseIdForDb = null;
+                if (warehouseId !== null && warehouseId !== '') {
+                    const wid = parseInt(warehouseId, 10);
+                    if (!Number.isFinite(wid)) {
+                        await connection.rollback();
+                        return res.status(400).json({
+                            success: false,
+                            error: 'Invalid warehouseId'
+                        });
+                    }
+                    warehouseIdForDb = wid;
+                }
                 const insertValuesWithWarehouse = [
                     ...insertValuesWithoutWarehouse,
-                    warehouseId ? parseInt(warehouseId, 10) : null
+                    warehouseIdForDb
                 ];
                 const [r] = await connection.execute(
                     `INSERT INTO out_records

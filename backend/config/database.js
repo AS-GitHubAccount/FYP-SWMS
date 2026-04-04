@@ -69,10 +69,44 @@ function loadDbConfig() {
 }
 
 let _pool = null;
+
+/** mysql2 + some MySQL builds reject undefined/NaN bound values (ER_WRONG_ARGUMENTS / mysqld_stmt_execute). */
+function sanitizeExecuteParams(values) {
+    if (values == null) return values;
+    if (!Array.isArray(values)) return values;
+    return values.map((v) => {
+        if (v === undefined) return null;
+        if (typeof v === 'number' && Number.isNaN(v)) return null;
+        return v;
+    });
+}
+
+function attachExecuteParamSanitizer(pool) {
+    if (pool.__swmsExecuteSanitizerAttached) return pool;
+    const origExecute = pool.execute.bind(pool);
+    pool.execute = function executeSanitized(sql, values) {
+        return origExecute(sql, sanitizeExecuteParams(values));
+    };
+    const origGetConnection = pool.getConnection.bind(pool);
+    pool.getConnection = async function getConnectionSanitized() {
+        const conn = await origGetConnection();
+        if (!conn.__swmsExecuteWrapped) {
+            const ce = conn.execute.bind(conn);
+            conn.execute = function (sql, values) {
+                return ce(sql, sanitizeExecuteParams(values));
+            };
+            conn.__swmsExecuteWrapped = true;
+        }
+        return conn;
+    };
+    pool.__swmsExecuteSanitizerAttached = true;
+    return pool;
+}
+
 function getPool() {
     if (!_pool) {
         const config = loadDbConfig();
-        _pool = mysql.createPool(config);
+        _pool = attachExecuteParamSanitizer(mysql.createPool(config));
     }
     return _pool;
 }
