@@ -66,7 +66,7 @@ router.get('/', async (req, res) => {
         let rows;
         if (usePagination) {
             const [r] = await withQueryTimeout(
-                db.execute(query + ' LIMIT ? OFFSET ?', [...params, limitNum, offset]),
+                db.execute(`${query} LIMIT ${limitNum} OFFSET ${offset}`, params),
                 QUERY_TIMEOUT_MS
             );
             rows = r;

@@ -132,10 +132,13 @@ router.get('/', async (req, res) => {
             query += ' AND a.userId = ?';
             params.push(parseInt(userId));
         }
-        
-        query += ' ORDER BY a.createdAt DESC LIMIT ? OFFSET ?';
-        params.push(parseInt(limit), parseInt(offset));
-        
+
+        const lim = Math.min(500, Math.max(1, parseInt(limit, 10)));
+        const off = Math.max(0, parseInt(offset, 10));
+        const safeLimit = Number.isFinite(lim) ? lim : 100;
+        const safeOffset = Number.isFinite(off) ? off : 0;
+        query += ` ORDER BY a.createdAt DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
+
         const [logs] = await db.execute(query, params);
         
         // Parse JSON fields

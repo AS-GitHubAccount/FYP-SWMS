@@ -65,7 +65,8 @@ router.get('/stats', async (req, res) => {
 // GET /api/dashboard/operations - Recent in/out records, newest first (ID sort descending)
 router.get('/operations', async (req, res) => {
     try {
-        const limit = Math.min(parseInt(req.query.limit, 10) || 20, 100);
+        // Avoid LIMIT ? prepared params — some MySQL/Aiven builds return ER_WRONG_ARGUMENTS / mysqld_stmt_execute errors.
+        const limit = Math.min(Math.max(1, parseInt(req.query.limit, 10) || 20), 100);
         const [inRows] = await db.execute(`
             SELECT
                 ir.recordId AS id,
@@ -77,8 +78,8 @@ router.get('/operations', async (req, res) => {
             FROM in_records ir
             INNER JOIN products p ON ir.productId = p.productId
             ORDER BY ir.receivedDate DESC, ir.recordId DESC
-            LIMIT ?
-        `, [limit]);
+            LIMIT ${limit}
+        `);
         const [outRows] = await db.execute(`
             SELECT
                 o.recordId AS id,
@@ -90,8 +91,8 @@ router.get('/operations', async (req, res) => {
             FROM out_records o
             INNER JOIN products p ON o.productId = p.productId
             ORDER BY o.issuedDate DESC, o.recordId DESC
-            LIMIT ?
-        `, [limit]);
+            LIMIT ${limit}
+        `);
 
         const combined = [
             ...(inRows || []).map(r => ({ ...r, sortDate: new Date(r.date), sortId: r.id })),
