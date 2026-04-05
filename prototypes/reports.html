@@ -1020,8 +1020,9 @@
                         const titleY = 10;
                         const contentTopFirst = 18;
                         const bottomMargin = 12;
-                        const availFirst = pdfPageH - contentTopFirst - bottomMargin;
-                        const availRest = pdfPageH - margin - bottomMargin;
+                        const footerBand = 8;
+                        const availFirst = pdfPageH - contentTopFirst - bottomMargin - footerBand;
+                        const availRest = pdfPageH - margin - bottomMargin - footerBand;
                         
                         let offsetMm = 0;
                         let pageIndex = 0;
@@ -1068,21 +1069,27 @@
                             }
                         }
 
+                        function formatPdfPrintedAt(d) {
+                            var y = d.getFullYear();
+                            var m = String(d.getMonth() + 1).padStart(2, '0');
+                            var day = String(d.getDate()).padStart(2, '0');
+                            var h = String(d.getHours()).padStart(2, '0');
+                            var min = String(d.getMinutes()).padStart(2, '0');
+                            return y + '-' + m + '-' + day + ' ' + h + ':' + min;
+                        }
                         var printedAt = new Date();
-                        var printedStr =
-                            'Printed: ' +
-                            printedAt.toLocaleString(undefined, {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            });
-                        pdf.addPage();
+                        var printedLine = 'Printed: ' + formatPdfPrintedAt(printedAt);
+                        var footerY = pdfPageH - 4;
+                        var totalPdfPages = pdf.internal.getNumberOfPages();
+                        var p;
                         pdf.setFont('helvetica', 'normal');
-                        pdf.setFontSize(11);
-                        pdf.setTextColor(72, 72, 72);
-                        pdf.text(printedStr, pdfPageW / 2, pdfPageH - 22, { align: 'center' });
+                        for (p = 1; p <= totalPdfPages; p++) {
+                            pdf.setPage(p);
+                            pdf.setFontSize(8.5);
+                            pdf.setTextColor(90, 90, 90);
+                            pdf.text(printedLine, margin, footerY);
+                            pdf.text('Page ' + p + ' of ' + totalPdfPages, pdfPageW - margin, footerY, { align: 'right' });
+                        }
                         pdf.setTextColor(0, 0, 0);
                         
                         var fileName = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_' + new Date().toISOString().split('T')[0] + '.pdf';
