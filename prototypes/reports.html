@@ -85,6 +85,7 @@
             font-size: 14px;
             line-height: 1.35;
             max-width: 100%;
+            box-sizing: border-box;
         }
         #reportContent.report-pdf-capture p {
             margin: 0 0 6px 0 !important;
@@ -103,6 +104,8 @@
         }
         #reportContent.report-pdf-capture table {
             line-height: 1.25 !important;
+            border-collapse: collapse !important;
+            border: 1px solid #1a1a1a !important;
         }
         #reportContent.report-pdf-capture table th,
         #reportContent.report-pdf-capture table td {
@@ -110,6 +113,7 @@
             font-size: 13px !important;
             line-height: 1.3 !important;
             vertical-align: top;
+            border: 1px solid #333 !important;
         }
         #reportContent.report-pdf-capture table th {
             font-size: 12px !important;
@@ -1017,10 +1021,10 @@
                         const pdfPageH = pdf.internal.pageSize.getHeight();
                         const imgWidthMm = pdfPageW - margin * 2;
                         const fullImgHeightMm = (canvas.height / canvas.width) * imgWidthMm;
-                        const titleY = 10;
-                        const contentTopFirst = 18;
+                        const titleY = 14;
+                        const contentTopFirst = 22;
                         const bottomMargin = 12;
-                        const footerBand = 8;
+                        const footerBand = 10;
                         const availFirst = pdfPageH - contentTopFirst - bottomMargin - footerBand;
                         const availRest = pdfPageH - margin - bottomMargin - footerBand;
                         
@@ -1079,18 +1083,24 @@
                         }
                         var printedAt = new Date();
                         var printedLine = 'Printed: ' + formatPdfPrintedAt(printedAt);
-                        var footerY = pdfPageH - 4;
+                        var footerInset = 2;
+                        var footerY = pdfPageH - margin - 4;
                         var totalPdfPages = pdf.internal.getNumberOfPages();
                         var p;
                         pdf.setFont('helvetica', 'normal');
                         for (p = 1; p <= totalPdfPages; p++) {
                             pdf.setPage(p);
+                            pdf.setDrawColor(55, 55, 55);
+                            pdf.setLineWidth(0.4);
+                            pdf.rect(margin, margin, pdfPageW - 2 * margin, pdfPageH - 2 * margin, 'S');
                             pdf.setFontSize(8.5);
                             pdf.setTextColor(90, 90, 90);
-                            pdf.text(printedLine, margin, footerY);
-                            pdf.text('Page ' + p + ' of ' + totalPdfPages, pdfPageW - margin, footerY, { align: 'right' });
+                            pdf.text(printedLine, margin + footerInset, footerY);
+                            pdf.text('Page ' + p + ' of ' + totalPdfPages, pdfPageW - margin - footerInset, footerY, { align: 'right' });
                         }
                         pdf.setTextColor(0, 0, 0);
+                        pdf.setDrawColor(0, 0, 0);
+                        pdf.setLineWidth(0.2);
                         
                         var fileName = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_' + new Date().toISOString().split('T')[0] + '.pdf';
                         pdf.save(fileName);
