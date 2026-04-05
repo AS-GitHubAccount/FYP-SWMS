@@ -3293,7 +3293,7 @@
                         <td><span id="rfq-quote-count-${r.rfqId}">-</span></td>
                         <td><span class="badge badge-${statusBadge}">${status.replace(/_/g, ' ')}</span></td>
                         <td>
-                        ${status === 'draft' ? `<button type="button" class="btn btn-primary-green btn-sm" onclick="openReviewRfqEmailModal(${r.rfqId}, [])" style="margin-right: 0.25rem;"><i data-lucide="eye" style="width:12px;height:12px;vertical-align:middle;"></i> Preview & Send</button>` : ''}
+                        ${status === 'draft' ? `<button type="button" class="btn btn-outline btn-sm" onclick="showPurchasingSection('requests')" style="margin-right: 0.25rem;" title="Preview &amp; Send is in section 2"><i data-lucide="arrow-left" style="width:12px;height:12px;vertical-align:middle;"></i> 2. Purchase Requests</button>` : ''}
                         ${isSentLike ? `<button type="button" class="btn btn-view-sent btn-sm" onclick="openViewSentRfqModal(${r.rfqId})" style="margin-right: 0.25rem;"><i data-lucide="mail" style="width:12px;height:12px;vertical-align:middle;"></i> Sent</button>` : ''}
                         ${status === 'withdraw_pending' && isAdmin ? `<button type="button" class="btn btn-primary btn-sm" onclick="openViewSentRfqModal(${r.rfqId})" style="margin-right: 0.25rem;">Approve Withdrawal</button>` : ''}
                             ${status !== 'awarded' && status !== 'closed' ? `<button type="button" class="btn btn-outline btn-sm" onclick="openAddQuoteModal(${r.rfqId})" style="margin-right: 0.25rem;">Add Quote</button>` : ''}
