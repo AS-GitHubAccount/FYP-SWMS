@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { generateRfqNumber } = require('../utils/idGenerator');
-const { sendEmailWithOptions, buildSmtpTransportOptions } = require('../utils/emailService');
+const { sendEmailWithResult, isOutboundEmailConfigured } = require('../utils/emailService');
 const { requireCriticalApproval } = require('../utils/criticalApproval');
 const { notifyAdmins } = require('../utils/notificationHelper');
 const { getProductPriceBenchmark } = require('../utils/priceHistoryQueries');
@@ -309,13 +309,14 @@ router.post('/:id/send-email', async (req, res) => {
         const rfq = rfqs[0];
         const htmlBody = (html && typeof html === 'string') ? html : (body || '').replace(/\n/g, '<br>');
         const textFallback = (body && typeof body === 'string') ? body.replace(/<[^>]+>/g, '') : htmlBody.replace(/<[^>]+>/g, '');
-        if (!buildSmtpTransportOptions()) {
+        if (!isOutboundEmailConfigured()) {
             return res.status(503).json({
                 success: false,
-                error: 'SMTP is not configured. In backend/.env set SMTP_USER and SMTP_PASS (Gmail: use an App Password, not your normal password). Optional: SMTP_HOST, SMTP_PORT, SMTP_SECURE. Restart the server after saving.'
+                error:
+                    'Email is not configured. On Railway Free/Hobby, SMTP is often blocked — add RESEND_API_KEY and RESEND_FROM (see .env.example). Alternatively set SMTP_USER + SMTP_PASS for SMTP where outbound 465/587 is allowed.'
             });
         }
-        const ok = await sendEmailWithOptions({
+        const sendResult = await sendEmailWithResult({
             to: to.trim(),
             cc: (cc || '').trim() || undefined,
             bcc: (bcc || '').trim() || undefined,
@@ -324,10 +325,11 @@ router.post('/:id/send-email', async (req, res) => {
             html: htmlBody,
             text: textFallback
         });
-        if (!ok) {
+        if (!sendResult.ok) {
             return res.status(500).json({
                 success: false,
-                error: 'Email could not be sent (SMTP connection or provider rejected the message). Check the backend terminal logs. Common fixes: correct App Password for Gmail, allow “less secure” is not enough—enable 2FA + App Password; or verify SMTP_HOST/port for your provider.'
+                error: sendResult.userMessage || 'Email could not be sent.',
+                detail: process.env.NODE_ENV !== 'production' ? sendResult.raw : undefined
             });
         }
         const now = new Date();
@@ -420,7 +422,7 @@ Smart Warehouse Management`;
         const ccList = (rfq.last_sent_cc || '').trim() || undefined;
         const bccList = (rfq.last_sent_bcc || '').trim() || undefined;
         if (toList) {
-            const ok = await sendEmailWithOptions({
+            const wr = await sendEmailWithResult({
                 to: toList,
                 cc: ccList,
                 bcc: bccList,
@@ -428,8 +430,11 @@ Smart Warehouse Management`;
                 html: withdrawalBody.replace(/\n/g, '<br>'),
                 text: withdrawalBody
             });
-            if (!ok) {
-                return res.status(500).json({ success: false, error: 'Withdrawal email could not be sent. Check SMTP.' });
+            if (!wr.ok) {
+                return res.status(500).json({
+                    success: false,
+                    error: wr.userMessage || 'Withdrawal email could not be sent.'
+                });
             }
         }
         await db.execute(

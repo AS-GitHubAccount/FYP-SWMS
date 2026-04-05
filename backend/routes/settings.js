@@ -14,6 +14,13 @@ const router = express.Router();
 const db = require('../config/database');
 const { requireAdmin } = require('../middleware/auth');
 
+function envEmailConfigured() {
+    return !!(
+        (process.env.RESEND_API_KEY && String(process.env.RESEND_API_KEY).trim()) ||
+        (process.env.SMTP_USER && process.env.SMTP_PASS)
+    );
+}
+
 function validateApprovalTokenFormat(token) {
     const t = String(token || '');
     if (t.length < 8) return 'Approval token must be at least 8 characters.';
@@ -51,7 +58,7 @@ async function loadAllSettings() {
     settings.approvalSafeWordSet = !!(settings.approvalSafeWord && String(settings.approvalSafeWord).trim());
     settings.approvalSafeWord = '';
     // Computed: email configured (read from env, not stored in DB)
-    settings.emailConfigured = !!(process.env.SMTP_USER && process.env.SMTP_PASS);
+    settings.emailConfigured = envEmailConfigured();
     return settings;
 }
 
@@ -139,7 +146,7 @@ router.get('/', async (req, res) => {
         if (e.code === 'ER_NO_SUCH_TABLE') {
             return res.json({
                 success: true,
-                data: { ...DEFAULTS, emailConfigured: !!(process.env.SMTP_USER && process.env.SMTP_PASS) }
+                data: { ...DEFAULTS, emailConfigured: envEmailConfigured() }
             });
         }
         res.status(500).json({ success: false, error: e.message });

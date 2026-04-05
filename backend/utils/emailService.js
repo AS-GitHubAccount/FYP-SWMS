@@ -1,24 +1,64 @@
-// nodemailer wrapper
+// nodemailer wrapper; optional Resend HTTPS API for hosts that block SMTP (e.g. Railway Hobby).
 const nodemailer = require('nodemailer');
+const dns = require('dns');
 
 let transporter = null;
+
+try {
+    if (typeof dns.setDefaultResultOrder === 'function' && process.env.SMTP_PREFER_IPV4 !== 'false') {
+        dns.setDefaultResultOrder('ipv4first');
+    }
+} catch (_) {
+    /* ignore */
+}
+
+function smtpTimeoutMs(envKey, defaultVal) {
+    const n = parseInt(process.env[envKey] || String(defaultVal), 10);
+    return Number.isFinite(n) && n >= 3000 ? n : defaultVal;
+}
+
+function hasResend() {
+    return !!String(process.env.RESEND_API_KEY || '').trim();
+}
+
+function parseEmailList(s) {
+    if (s == null || s === '') return undefined;
+    if (Array.isArray(s)) return s.map((x) => String(x).trim()).filter(Boolean);
+    return String(s)
+        .split(/[,;]/)
+        .map((x) => x.trim())
+        .filter(Boolean);
+}
+
+/**
+ * True if the app can attempt outbound mail (SMTP credentials or Resend API key).
+ */
+function isOutboundEmailConfigured() {
+    if (hasResend()) return true;
+    return !!buildSmtpTransportOptions();
+}
 
 function buildSmtpTransportOptions() {
     const host = (process.env.SMTP_HOST || 'smtp.gmail.com').trim();
     const port = parseInt(process.env.SMTP_PORT || '587', 10);
     const secure = process.env.SMTP_SECURE === 'true' || port === 465;
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
+    const user = process.env.SMTP_USER ? String(process.env.SMTP_USER).trim() : '';
+    const passRaw = process.env.SMTP_PASS != null ? String(process.env.SMTP_PASS) : '';
+    const pass = passRaw.replace(/\s+/g, '');
     if (!user || !pass) return null;
+
+    const connectionTimeout = smtpTimeoutMs('SMTP_CONNECTION_TIMEOUT_MS', 20000);
+    const greetingTimeout = smtpTimeoutMs('SMTP_GREETING_TIMEOUT_MS', 15000);
+    const socketTimeout = smtpTimeoutMs('SMTP_SOCKET_TIMEOUT_MS', 45000);
 
     const opts = {
         host,
         port,
         secure,
         auth: { user, pass },
-        connectionTimeout: 60000,
-        greetingTimeout: 60000,
-        socketTimeout: 120000,
+        connectionTimeout,
+        greetingTimeout,
+        socketTimeout,
         tls: {
             minVersion: 'TLSv1.2',
             servername: host
@@ -44,7 +84,88 @@ function getTransporter() {
     return transporter;
 }
 
+/**
+ * Resend over HTTPS — works on Railway Free/Hobby where outbound SMTP 465/587 is often blocked.
+ * @see https://resend.com/docs/api-reference/emails/send-email
+ */
+async function sendViaResend(options) {
+    const key = String(process.env.RESEND_API_KEY || '').trim();
+    if (!key) return { ok: false, userMessage: 'RESEND_API_KEY is empty.' };
+
+    const fromRaw = (process.env.RESEND_FROM || 'onboarding@resend.dev').trim();
+    const from = fromRaw.includes('<') ? fromRaw : `SWMS <${fromRaw}>`;
+
+    const recipients = parseEmailList(options.to);
+    if (!recipients || !recipients.length) {
+        return { ok: false, userMessage: 'No email recipients.' };
+    }
+
+    const payload = {
+        from,
+        to: recipients,
+        subject: options.subject || '(no subject)',
+        html: options.html || undefined,
+        text:
+            options.text ||
+            (options.html ? String(options.html).replace(/<[^>]+>/g, ' ') : undefined)
+    };
+    const cc = parseEmailList(options.cc);
+    const bcc = parseEmailList(options.bcc);
+    if (cc && cc.length) payload.cc = cc;
+    if (bcc && bcc.length) payload.bcc = bcc;
+    if (options.replyTo && String(options.replyTo).trim()) {
+        payload.reply_to = [String(options.replyTo).trim()];
+    }
+
+    const fetchTimeoutMs = parseInt(process.env.RESEND_FETCH_TIMEOUT_MS || '20000', 10);
+    const safeTimeout = Number.isFinite(fetchTimeoutMs) && fetchTimeoutMs >= 5000 ? fetchTimeoutMs : 20000;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), safeTimeout);
+    try {
+        const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${key}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload),
+            signal: ctrl.signal
+        });
+        clearTimeout(timer);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            const msg = data.message || (data.error && (data.error.message || data.error)) || JSON.stringify(data);
+            const str = typeof msg === 'string' ? msg : JSON.stringify(msg);
+            return {
+                ok: false,
+                userMessage: `Resend: ${str.slice(0, 200)}`,
+                raw: JSON.stringify(data).slice(0, 400)
+            };
+        }
+        return { ok: true };
+    } catch (e) {
+        clearTimeout(timer);
+        const aborted = e && (e.name === 'AbortError' || /aborted|AbortError/i.test(String(e.message || e)));
+        if (aborted) {
+            return {
+                ok: false,
+                userMessage: `Resend API did not respond within ${safeTimeout}ms. Check Railway logs and that outbound HTTPS to api.resend.com is allowed. If the server has no RESEND_API_KEY it may be falling back to SMTP (slow).`,
+                raw: 'timeout'
+            };
+        }
+        return {
+            ok: false,
+            userMessage: e.message || 'Resend request failed',
+            raw: String(e).slice(0, 300)
+        };
+    }
+}
+
 async function sendEmail(to, subject, html, text) {
+    if (hasResend()) {
+        const r = await sendEmailWithResult({ to, subject, html, text });
+        return r.ok;
+    }
     const transport = getTransporter();
     if (!transport) return false;
     try {
@@ -62,12 +183,58 @@ async function sendEmail(to, subject, html, text) {
     }
 }
 
-async function sendEmailWithOptions(options) {
+/**
+ * @returns {{ ok: true } | { ok: false, userMessage: string, raw?: string }}
+ */
+function mapSmtpFailureToUserMessage(err) {
+    if (!err) return { ok: false, userMessage: 'Unknown error' };
+    const msg = String(err.message || err);
+    const lower = msg.toLowerCase();
+    const code = err.code || err.responseCode;
+    console.error('[emailService] sendMail failed:', code || '', msg);
+    if (/etimedout|esockettimedout|timeout|timed out|greeting not received|connection timeout/i.test(lower) || code === 'ETIMEDOUT') {
+        return {
+            ok: false,
+            userMessage:
+                'SMTP connection timed out. Railway Free/Hobby often blocks outbound SMTP ports 465/587 — use Resend instead: set RESEND_API_KEY (HTTPS, no SMTP). Or upgrade Railway to a plan that allows SMTP. Also remove spaces from Gmail App Passwords in SMTP_PASS.',
+            raw: msg.slice(0, 300)
+        };
+    }
+    if (/econnrefused|econnreset|enotfound|getaddrinfo|eai_again/i.test(lower) || code === 'ECONNREFUSED') {
+        return {
+            ok: false,
+            userMessage: 'Cannot reach the SMTP server. Check SMTP_HOST and SMTP_PORT in environment variables.',
+            raw: msg.slice(0, 300)
+        };
+    }
+    if (/invalid login|535|authentication failed|bad credentials|534|5\.7\.0/i.test(lower)) {
+        return {
+            ok: false,
+            userMessage:
+                'SMTP login was rejected. For Gmail/Workspace use an App Password (16 characters, no spaces). Ensure 2FA is on.',
+            raw: msg.slice(0, 300)
+        };
+    }
+    return { ok: false, userMessage: msg.split('\n')[0].slice(0, 220), raw: msg.slice(0, 300) };
+}
+
+async function sendEmailWithResult(options) {
+    if (hasResend()) {
+        return sendViaResend(options);
+    }
+
     const transport = getTransporter();
-    if (!transport) return false;
+    if (!transport) {
+        return {
+            ok: false,
+            userMessage:
+                'No email transport: set RESEND_API_KEY (recommended on Railway) or SMTP_USER + SMTP_PASS for SMTP.'
+        };
+    }
     try {
+        const user = process.env.SMTP_USER ? String(process.env.SMTP_USER).trim() : '';
         await transport.sendMail({
-            from: `"SWMS" <${process.env.SMTP_USER}>`,
+            from: `"SWMS" <${user}>`,
             to: options.to,
             cc: options.cc || undefined,
             bcc: options.bcc || undefined,
@@ -76,11 +243,15 @@ async function sendEmailWithOptions(options) {
             html: options.html || undefined,
             text: options.text || (options.html ? options.html.replace(/<[^>]+>/g, ' ') : undefined)
         });
-        return true;
+        return { ok: true };
     } catch (e) {
-        console.error('[emailService]', e.message);
-        return false;
+        return mapSmtpFailureToUserMessage(e);
     }
+}
+
+async function sendEmailWithOptions(options) {
+    const r = await sendEmailWithResult(options);
+    return r.ok;
 }
 
 async function notifyAdminsByEmail(subject, message) {
@@ -99,8 +270,11 @@ async function notifyAdminsByEmail(subject, message) {
 module.exports = {
     sendEmail,
     sendEmailWithOptions,
+    sendEmailWithResult,
     notifyAdminsByEmail,
     getTransporter,
     createSmtpTransport,
-    buildSmtpTransportOptions
+    buildSmtpTransportOptions,
+    isOutboundEmailConfigured,
+    hasResend
 };

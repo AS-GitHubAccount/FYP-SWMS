@@ -7,6 +7,12 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const db = require('./config/database');
+const {
+    createSmtpTransport,
+    sendEmailWithResult,
+    hasResend,
+    buildSmtpTransportOptions
+} = require('./utils/emailService');
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -152,7 +158,13 @@ app.get('/api-docs.html', (req, res) => {
 });
 
 app.get('/live', (req, res) => {
-    res.status(200).json({ status: 'alive', timestamp: new Date().toISOString() });
+    const email = hasResend() ? 'resend' : buildSmtpTransportOptions() ? 'smtp' : 'none';
+    res.status(200).json({
+        status: 'alive',
+        timestamp: new Date().toISOString(),
+        email,
+        build: 'swms-email-v2'
+    });
 });
 
 app.get('/health', async (req, res) => {
@@ -188,17 +200,36 @@ app.get('/health', async (req, res) => {
     }
 });
 
-const { createSmtpTransport } = require('./utils/emailService');
 const handleTestEmail = async (req, res) => {
     const to = req.body?.to || req.query?.to;
     if (!to) return res.status(400).json({ success: false, error: 'Provide ?to=your@email.com' });
+    console.log('[test-email] transport:', hasResend() ? 'resend' : createSmtpTransport() ? 'smtp' : 'none');
+    if (hasResend()) {
+        const r = await sendEmailWithResult({
+            to,
+            subject: 'SWMS - Test Email',
+            text: 'If you receive this, email (Resend) is working.',
+            html: '<p>If you receive this, email (Resend) is working.</p>'
+        });
+        if (!r.ok) return res.status(500).json({ success: false, error: r.userMessage || 'Resend send failed' });
+        return res.json({ success: true, message: 'Test email sent via Resend.', diagnostics: { via: 'resend' } });
+    }
     const t = createSmtpTransport();
-    if (!t) return res.json({ success: false, error: 'SMTP not configured. Set SMTP_USER and SMTP_PASS in .env' });
+    if (!t) {
+        return res.json({
+            success: false,
+            error: 'Email not configured. Set RESEND_API_KEY or SMTP_USER + SMTP_PASS in .env'
+        });
+    }
     const fromUser = process.env.SMTP_USER;
     try {
         await t.verify();
         const info = await t.sendMail({ from: `"SWMS Test" <${fromUser}>`, to, subject: 'SWMS - Test Email', text: 'If you receive this, SMTP is working.' });
-        return res.json({ success: true, message: 'Test email sent. Check inbox and spam.', diagnostics: { messageId: info.messageId, accepted: info.accepted } });
+        return res.json({
+            success: true,
+            message: 'Test email sent. Check inbox and spam.',
+            diagnostics: { messageId: info.messageId, accepted: info.accepted, via: 'smtp' }
+        });
     } catch (err) {
         return res.status(500).json({ success: false, error: err.message });
     }

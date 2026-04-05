@@ -10,7 +10,7 @@ const {
     defaultInviteExpiry,
     getFrontendBaseUrl
 } = require('../utils/userInviteTokens');
-const { sendEmailWithOptions, createSmtpTransport } = require('../utils/emailService');
+const { sendEmailWithResult, createSmtpTransport, hasResend } = require('../utils/emailService');
 const { requestSelfServicePasswordReset, GENERIC_MESSAGE } = require('../utils/passwordResetRequest');
 
 /** Access JWT lifetime (default 1 day). Override with JWT_EXPIRES_IN (e.g. 12h, 1d) and optional JWT_EXPIRES_IN_SEC for API metadata. */
@@ -305,9 +305,28 @@ router.all('/test-email', async (req, res) => {
     if (!to) {
         return res.status(400).json({ success: false, error: 'Provide ?to=your@email.com or body: { to: "your@email.com" }' });
     }
+    if (hasResend()) {
+        const r = await sendEmailWithResult({
+            to,
+            subject: 'SWMS - Test Email',
+            text: 'If you receive this, email (Resend) is working.',
+            html: '<p>If you receive this, email (Resend) is working.</p>'
+        });
+        if (!r.ok) {
+            return res.status(500).json({ success: false, error: r.userMessage || 'Resend send failed' });
+        }
+        return res.json({
+            success: true,
+            message: 'Test email sent via Resend. Check inbox and spam.',
+            diagnostics: { via: 'resend' }
+        });
+    }
     const transporter = createSmtpTransport();
     if (!transporter) {
-        return res.json({ success: false, error: 'SMTP not configured. Set SMTP_USER and SMTP_PASS in .env' });
+        return res.json({
+            success: false,
+            error: 'Email not configured. Set RESEND_API_KEY (Railway-friendly) or SMTP_USER + SMTP_PASS in .env'
+        });
     }
     try {
         await transporter.verify();
@@ -326,7 +345,8 @@ router.all('/test-email', async (req, res) => {
                 accepted: info.accepted,
                 rejected: info.rejected,
                 host: process.env.SMTP_HOST || 'smtp.gmail.com',
-                port: parseInt(process.env.SMTP_PORT || '587', 10)
+                port: parseInt(process.env.SMTP_PORT || '587', 10),
+                via: 'smtp'
             }
         });
     } catch (err) {
