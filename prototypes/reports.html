@@ -22,7 +22,64 @@
             font-weight: 600;
         }
 
-        /* Only while html2canvas runs — tighter rows, less “air”, readable size in multi-page PDF */
+        /* Report output (screen) — override global tables (large padding, tiny uppercase th) */
+        #reportContent {
+            font-size: 14px;
+            line-height: 1.35;
+        }
+        #reportContent > p,
+        #reportContent p {
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+        #reportContent .report-range-heading {
+            font-size: 1.1rem;
+            font-weight: 600;
+            line-height: 1.3;
+            margin: 0 0 8px 0;
+        }
+        #reportContent .report-section-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            line-height: 1.3;
+            margin: 14px 0 6px 0;
+        }
+        #reportContent .report-section-title:first-of-type {
+            margin-top: 4px;
+        }
+        #reportContent .report-table-scroll {
+            overflow-x: auto;
+            margin-bottom: 12px;
+        }
+        #reportContent .report-table-scroll:last-child {
+            margin-bottom: 0;
+        }
+        #reportContent .table-container {
+            width: 100%;
+        }
+        #reportContent .report-table-scroll .table-container {
+            min-width: 720px;
+        }
+        #reportContent table {
+            font-size: 13px !important;
+            line-height: 1.3 !important;
+        }
+        #reportContent table th,
+        #reportContent table td {
+            padding: 6px 10px !important;
+            font-size: 13px !important;
+            line-height: 1.3 !important;
+            vertical-align: top;
+        }
+        #reportContent table th {
+            font-size: 12px !important;
+            font-weight: 600;
+            text-transform: none !important;
+            letter-spacing: normal !important;
+            color: var(--text) !important;
+        }
+
+        /* Only while html2canvas runs — tighter rows, readable multi-page PDF */
         #reportContent.report-pdf-capture {
             padding: 10px 12px !important;
             font-size: 14px;
@@ -49,13 +106,13 @@
         }
         #reportContent.report-pdf-capture table th,
         #reportContent.report-pdf-capture table td {
-            padding: 4px 8px !important;
-            font-size: 12px !important;
-            line-height: 1.25 !important;
+            padding: 5px 9px !important;
+            font-size: 13px !important;
+            line-height: 1.28 !important;
             vertical-align: top;
         }
         #reportContent.report-pdf-capture table th {
-            font-size: 11px !important;
+            font-size: 12px !important;
             text-transform: none;
             letter-spacing: normal;
         }
@@ -80,7 +137,7 @@
             
             #reportResults {
                 display: block !important;
-                page-break-inside: avoid;
+                page-break-inside: auto;
                 box-shadow: none;
                 border: none;
                 margin: 0;
@@ -89,6 +146,8 @@
             
             #reportContent {
                 padding: 0 !important;
+                font-size: 11pt !important;
+                line-height: 1.35 !important;
             }
             
             /* Report title - show in print */
@@ -105,8 +164,14 @@
             
             /* Summary paragraph */
             #reportContent p {
-                margin-bottom: 15px;
-                font-size: 11pt;
+                margin-bottom: 8px !important;
+                font-size: 11pt !important;
+            }
+            #reportContent .report-range-heading,
+            #reportContent .report-section-title {
+                margin-top: 10px !important;
+                margin-bottom: 6px !important;
+                font-size: 12pt !important;
             }
             
             /* Ensure tables print properly */
@@ -136,6 +201,17 @@
                 padding: 6px 8px !important;
                 text-align: left;
                 font-size: 10pt;
+            }
+
+            #reportContent table th,
+            #reportContent table td {
+                padding: 4px 8px !important;
+                font-size: 10pt !important;
+                line-height: 1.28 !important;
+            }
+            #reportContent table th {
+                text-transform: none !important;
+                letter-spacing: normal !important;
             }
             
             table th {
@@ -825,18 +901,18 @@
                 filteredOut: filteredOut
             };
             
-            let html = `<div class="report-range-heading" style="font-size:1.15rem;font-weight:600;margin-bottom:0.75rem;">Date Range: ${fromDate} to ${toDate}</div>`;
+            let html = `<div class="report-range-heading">Date Range: ${fromDate} to ${toDate}</div>`;
             html += `<p><strong>Stock In: ${filteredIn.length} records, ${filteredIn.reduce((sum, r) => sum + (r.qty || 0), 0)} units</strong></p>`;
             html += `<p><strong>Stock Out: ${filteredOut.length} records, ${filteredOut.reduce((sum, r) => sum + (r.qty || 0), 0)} units</strong></p>`;
 
             const inSorted = sortDetailRecordsAsc(filteredIn);
             const outSorted = sortDetailRecordsAsc(filteredOut);
 
-            html += `<div class="report-section-title" style="font-size:1.1rem;font-weight:600;margin-top:1.5rem;margin-bottom:0.5rem;">Stock In — line items</div>`;
+            html += `<div class="report-section-title">Stock In — line items</div>`;
             if (inSorted.length === 0) {
                 html += `<p style="color:var(--text-muted);">No receiving records in this range.</p>`;
             } else {
-                html += `<div style="overflow-x:auto;margin-bottom:1.5rem;"><table class="table-container" style="width:100%;min-width:720px;"><thead><tr>
+                html += `<div class="report-table-scroll"><table class="table-container"><thead><tr>
                     <th>Record #</th><th>Date</th><th>SKU</th><th>Product</th><th>Batch ID</th><th>Lot</th><th>Expiry</th><th>Qty</th><th>Supplier</th><th>Received by</th><th>Warehouse</th><th>Notes</th>
                 </tr></thead><tbody>`;
                 inSorted.forEach(function (r) {
@@ -858,11 +934,11 @@
                 html += `</tbody></table></div>`;
             }
 
-            html += `<div class="report-section-title" style="font-size:1.1rem;font-weight:600;margin-top:1rem;margin-bottom:0.5rem;">Stock Out — line items</div>`;
+            html += `<div class="report-section-title">Stock Out — line items</div>`;
             if (outSorted.length === 0) {
                 html += `<p style="color:var(--text-muted);">No issuing records in this range.</p>`;
             } else {
-                html += `<div style="overflow-x:auto;"><table class="table-container" style="width:100%;min-width:720px;"><thead><tr>
+                html += `<div class="report-table-scroll"><table class="table-container"><thead><tr>
                     <th>Record #</th><th>Date</th><th>SKU</th><th>Product</th><th>Batch ID</th><th>Lot</th><th>Expiry</th><th>Qty</th><th>Recipient</th><th>Issued by</th><th>Warehouse</th><th>Notes</th>
                 </tr></thead><tbody>`;
                 outSorted.forEach(function (r) {
