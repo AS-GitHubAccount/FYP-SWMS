@@ -102,22 +102,42 @@
         #reportContent.report-pdf-capture > div[style*="overflow-x"] {
             margin-bottom: 8px !important;
         }
-        /* PDF capture: grid only on body cells; summary/headings stay unboxed */
+        /* PDF: borders only on tbody cells (global table th/td still add border-bottom) */
+        #reportContent.report-pdf-capture {
+            border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
+        }
+        #reportContent.report-pdf-capture .report-table-scroll {
+            border: none !important;
+            box-shadow: none !important;
+        }
         #reportContent.report-pdf-capture table {
             line-height: 1.25 !important;
             border-collapse: collapse !important;
             border: none !important;
+            outline: none !important;
+            box-shadow: none !important;
         }
-        #reportContent.report-pdf-capture table thead th {
+        #reportContent.report-pdf-capture table thead {
+            background: transparent !important;
+            position: static !important;
+            box-shadow: none !important;
+        }
+        #reportContent.report-pdf-capture table thead th,
+        #reportContent.report-pdf-capture table thead td {
             padding: 5px 9px !important;
             font-size: 12px !important;
             line-height: 1.3 !important;
             vertical-align: top;
-            text-transform: none;
-            letter-spacing: normal;
+            text-transform: none !important;
+            letter-spacing: normal !important;
+            font-weight: 600 !important;
+            color: #111 !important;
             border: none !important;
-            border-bottom: 1px solid #333 !important;
-            background: #f5f5f5 !important;
+            border-width: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
         }
         #reportContent.report-pdf-capture table tbody td {
             padding: 5px 9px !important;
@@ -125,9 +145,6 @@
             line-height: 1.3 !important;
             vertical-align: top;
             border: 1px solid #333 !important;
-        }
-        #reportContent.report-pdf-capture table tbody tr:first-child td {
-            border-top: none !important;
         }
         
         @media print {
@@ -210,17 +227,19 @@
             
             #reportContent table {
                 border: none !important;
+                outline: none !important;
+                box-shadow: none !important;
             }
-            #reportContent table thead th {
+            #reportContent table thead th,
+            #reportContent table thead td {
                 border: none !important;
-                border-bottom: 1px solid #000 !important;
                 padding: 4px 8px !important;
                 font-size: 10pt !important;
                 line-height: 1.28 !important;
                 text-align: left;
                 text-transform: none !important;
                 letter-spacing: normal !important;
-                background-color: #f0f0f0 !important;
+                background: transparent !important;
                 font-weight: bold;
             }
             #reportContent table tbody td {
@@ -229,9 +248,6 @@
                 text-align: left;
                 font-size: 10pt !important;
                 line-height: 1.28 !important;
-            }
-            #reportContent table tbody tr:first-child td {
-                border-top: none !important;
             }
             
             /* Hide badges and buttons in print */
@@ -1429,13 +1445,13 @@
                         table tr {
                             page-break-inside: avoid;
                         }
-                        table thead th {
+                        table thead th,
+                        table thead td {
                             border: none;
-                            border-bottom: 1px solid #000;
                             padding: 6px 8px;
                             text-align: left;
                             font-size: 10pt;
-                            background-color: #f0f0f0;
+                            background: transparent;
                             font-weight: bold;
                         }
                         table tbody td {
@@ -1443,9 +1459,6 @@
                             padding: 6px 8px;
                             text-align: left;
                             font-size: 10pt;
-                        }
-                        table tbody tr:first-child td {
-                            border-top: none;
                         }
                         @media print {
                             body {
