@@ -7,22 +7,25 @@
     <link rel="stylesheet" href="css/styles.css">
     <style>
         #qrLabelBody #qrCanvas {
-            min-width: 160px; min-height: 160px;
-            width: 160px; height: 160px;
-            display: block !important; visibility: visible;
+            display: block !important;
+            visibility: visible;
             background: #fff;
+            width: 160px !important;
+            height: 160px !important;
+            max-width: 160px;
+            max-height: 160px;
         }
         /*
-         * Portrait QR label: fixed physical size (in/pt). Same look on A4, Letter, or label stock —
-         * only paper/orientation/margins come from the printer dialog; the label block stays centered.
+         * QR label: same composition as reference (QR ~upper 2/3, centered text below).
+         * On print, the block scales with the printable area (paper + print dialog scale) —
+         * uses container query units when supported, else vw/vh + clamp fallbacks.
          */
         #qrLabelPrintArea {
             display: none;
             box-sizing: border-box;
-            width: 2in;
-            min-height: 2.85in;
-            max-width: 2in;
-            padding: 0.18in 0.2in 0.2in;
+            width: 2.5in;
+            max-width: 100%;
+            padding: 12px;
             font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
             background: #fff;
             flex-direction: column;
@@ -34,46 +37,38 @@
             align-items: center;
             justify-content: flex-start;
             width: 100%;
-            gap: 0.08in;
+            gap: 6px;
         }
         #qrLabelPrintArea #qrLabelPrintImg {
-            width: 1.65in;
-            height: 1.65in;
+            width: 180px;
+            height: 180px;
             object-fit: contain;
-            flex-shrink: 0;
             display: block;
         }
-        #qrLabelPrintArea #qrLabelPrintSku {
-            font-size: 12px;
-            font-weight: 700;
-            color: #0f172a;
-            text-align: center;
-            width: 100%;
-            line-height: 1.15;
-            margin: 0.05in 0 0;
-        }
+        #qrLabelPrintArea #qrLabelPrintSku,
         #qrLabelPrintArea #qrLabelPrintLot {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 700;
             color: #0f172a;
             text-align: center;
             width: 100%;
             line-height: 1.15;
+            margin: 0;
         }
         #qrLabelPrintArea #qrLabelPrintName {
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 400;
             color: #64748b;
             text-align: center;
             width: 100%;
             line-height: 1.25;
             word-break: break-word;
+            margin: 0;
         }
         @media print {
-            /* Paper size comes from the print dialog (A4, Letter, …); we only set safe margins */
             @page {
                 size: auto;
-                margin: 12mm;
+                margin: 10mm;
             }
             html, body {
                 width: 100% !important;
@@ -83,44 +78,93 @@
             }
             body * { visibility: hidden; }
             #qrLabelPrintArea, #qrLabelPrintArea * { visibility: visible; }
+
             #qrLabelPrintArea {
-                position: fixed;
-                left: 50%;
-                top: 50%;
-                -webkit-transform: translate(-50%, -50%);
-                transform: translate(-50%, -50%);
-                width: 2in !important;
-                min-height: 2.85in !important;
-                max-width: 2in !important;
+                position: fixed !important;
+                left: 0 !important;
+                top: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                min-height: 100% !important;
+                max-width: none !important;
                 margin: 0 !important;
-                padding: 0.18in 0.2in 0.2in !important;
+                padding: 5mm !important;
                 display: flex !important;
-                flex-direction: column;
-                align-items: center;
-                justify-content: flex-start;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
                 background: #fff !important;
+                box-sizing: border-box !important;
                 box-shadow: none !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
+                container-type: size !important;
+                container-name: swms-print-label !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
+
             #qrLabelPrintArea .qr-label-print-stack {
-                gap: 0.08in !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: flex-start !important;
+                width: 72% !important;
+                max-width: 100% !important;
+                max-height: 96% !important;
+                gap: 0.4rem !important;
             }
+
+            /* Square QR; cap height so text stays below (~upper 2/3 feel) */
             #qrLabelPrintArea #qrLabelPrintImg {
-                width: 1.65in !important;
-                height: 1.65in !important;
+                width: min(72vw, 70vh) !important;
+                height: min(72vw, 70vh) !important;
+                max-width: 100% !important;
+                max-height: 70vh !important;
+                object-fit: contain !important;
             }
-            /* SKU and lot: same size & weight per reference */
+
             #qrLabelPrintArea #qrLabelPrintSku,
             #qrLabelPrintArea #qrLabelPrintLot {
-                font-size: 12pt !important;
                 font-weight: 700 !important;
                 color: #0f172a !important;
+                text-align: center !important;
+                width: 100% !important;
+                line-height: 1.15 !important;
+                margin: 0 !important;
+                font-size: clamp(10pt, 4.5vw, 24pt) !important;
             }
+
             #qrLabelPrintArea #qrLabelPrintName {
-                font-size: 9pt !important;
                 font-weight: 400 !important;
                 color: #64748b !important;
+                text-align: center !important;
+                width: 100% !important;
+                line-height: 1.25 !important;
+                word-break: break-word !important;
+                margin: 0 !important;
+                font-size: clamp(8pt, 3.2vw, 17pt) !important;
+            }
+
+            /* Scale typography & QR from printable box (Chrome/Edge print) */
+            @supports (width: 1cqi) {
+                #qrLabelPrintArea .qr-label-print-stack {
+                    width: 70cqi !important;
+                    max-height: 96cqh !important;
+                    gap: 1.1cqi !important;
+                }
+                #qrLabelPrintArea #qrLabelPrintImg {
+                    width: min(68cqi, 64cqh) !important;
+                    height: min(68cqi, 64cqh) !important;
+                    max-height: 64cqh !important;
+                }
+                #qrLabelPrintArea #qrLabelPrintSku,
+                #qrLabelPrintArea #qrLabelPrintLot {
+                    font-size: 5.4cqi !important;
+                }
+                #qrLabelPrintArea #qrLabelPrintName {
+                    font-size: 3.85cqi !important;
+                }
             }
         }
     </style>
@@ -1296,7 +1340,7 @@
                 <div id="qrLabelLoading" style="padding: 1rem; color: var(--text-muted);">Loading QR...</div>
                 <div id="qrLabelBody" style="display: none;">
                     <div style="display: flex; justify-content: center; margin-bottom: 0.75rem;">
-                        <canvas id="qrCanvas" width="160" height="160" style="display: block;"></canvas>
+                        <canvas id="qrCanvas" width="320" height="320" style="display: block; max-width: 160px; max-height: 160px; width: 160px; height: 160px;"></canvas>
                     </div>
                     <div id="qrLabelSku" style="font-weight: 600; font-size: 0.9rem;"></div>
                     <div id="qrLabelLot" style="font-size: 0.85rem; font-weight: 600; color: var(--text); margin-top: 0.15rem;"></div>
@@ -6418,19 +6462,19 @@
                 const payloadStr = 'BATCH:' + lotStr + (batchIdStr ? ':' + batchIdStr : '') + '\n' + skuStr + '\n' + lotStr + '\n' + nameStr;
                 // qrcode (npm): QRCode.toCanvas; qrcodejs (cdnjs): new QRCode(div, {text})
                 if (typeof QRCode !== 'undefined' && QRCode.toCanvas) {
-                    QRCode.toCanvas(canvas, payloadStr, { width: 160, margin: 1 }, function(err) {
+                    QRCode.toCanvas(canvas, payloadStr, { width: 320, margin: 1 }, function(err) {
                         if (err) { reject(err); return; }
                         try { resolve(canvas.toDataURL('image/png')); } catch (e) { reject(e); }
                     });
                 } else if (typeof QRCode === 'function') {
                     var qrDiv = document.createElement('div');
-                    qrDiv.style.cssText = 'position:absolute;left:-9999px;width:160px;height:160px;';
+                    qrDiv.style.cssText = 'position:absolute;left:-9999px;width:320px;height:320px;';
                     try {
                         document.body.appendChild(qrDiv);
-                        new QRCode(qrDiv, { text: payloadStr, width: 160, height: 160 });
+                        new QRCode(qrDiv, { text: payloadStr, width: 320, height: 320 });
                         var srcCanvas = qrDiv.querySelector('canvas');
                         if (srcCanvas && srcCanvas.toDataURL) {
-                            ctx.drawImage(srcCanvas, 0, 0, 160, 160);
+                            ctx.drawImage(srcCanvas, 0, 0, 320, 320);
                             resolve(canvas.toDataURL('image/png'));
                         } else {
                             reject(new Error('QR generation failed'));
