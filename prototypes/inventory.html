@@ -307,6 +307,38 @@
                 <div class="card-header">
                     <h2 class="card-title">2. Purchase Requests</h2>
                 </div>
+                <div class="purchasing-table-filters" style="display:flex;flex-wrap:wrap;gap:0.75rem 1rem;align-items:flex-end;padding:0.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);background:#f9fafb;">
+                    <div class="form-group" style="margin:0;min-width:11rem;flex:1 1 10rem;">
+                        <label class="form-label" for="prFilterSearch" style="font-size:0.75rem;margin-bottom:0.2rem;">Search</label>
+                        <input type="search" id="prFilterSearch" class="form-input" placeholder="ID, #, product, location…" autocomplete="off" oninput="applyPurchaseRequestsSort()">
+                    </div>
+                    <div class="form-group" style="margin:0;min-width:9rem;">
+                        <label class="form-label" for="prFilterStatus" style="font-size:0.75rem;margin-bottom:0.2rem;">PR status</label>
+                        <select id="prFilterStatus" class="form-select" onchange="applyPurchaseRequestsSort()">
+                            <option value="all">All</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="APPROVED">Approved</option>
+                            <option value="REJECTED">Rejected</option>
+                            <option value="FULFILLED">Fulfilled</option>
+                            <option value="CANCELLED">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin:0;min-width:11rem;">
+                        <label class="form-label" for="prFilterRfqStatus" style="font-size:0.75rem;margin-bottom:0.2rem;">RFQ status</label>
+                        <select id="prFilterRfqStatus" class="form-select" onchange="applyPurchaseRequestsSort()">
+                            <option value="all">All</option>
+                            <option value="none">No RFQ yet</option>
+                            <option value="DRAFT">Draft</option>
+                            <option value="SENT">Sent</option>
+                            <option value="QUOTES_RECEIVED">Quotes received</option>
+                            <option value="AWARDED">Awarded</option>
+                            <option value="CLOSED">Closed</option>
+                            <option value="WITHDRAW_PENDING">Withdraw pending</option>
+                            <option value="WITHDRAWN">Withdrawn</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="resetPrFilters()" style="margin-bottom:2px;">Clear filters</button>
+                </div>
                 <div class="table-container">
                     <table id="purchaseRequestsTable">
                         <thead>
@@ -335,6 +367,25 @@
                     <h2 class="card-title" style="margin: 0;">3. RFQs & Quotations</h2>
                     <p style="margin: 0; font-size: 0.8125rem; color: var(--text-secondary, #6b7280); font-weight: 400;">Shows RFQs <strong>after</strong> the supplier email has been sent. Draft RFQs (Preview &amp; Send not completed) stay in <strong>2. Purchase Requests</strong> only.</p>
                 </div>
+                <div class="purchasing-table-filters" style="display:flex;flex-wrap:wrap;gap:0.75rem 1rem;align-items:flex-end;padding:0.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);background:#f9fafb;">
+                    <div class="form-group" style="margin:0;min-width:11rem;flex:1 1 10rem;">
+                        <label class="form-label" for="rfqFilterSearch" style="font-size:0.75rem;margin-bottom:0.2rem;">Search</label>
+                        <input type="search" id="rfqFilterSearch" class="form-input" placeholder="ID, RFQ #, product…" autocomplete="off" oninput="applyRfqsSort()">
+                    </div>
+                    <div class="form-group" style="margin:0;min-width:10rem;">
+                        <label class="form-label" for="rfqFilterStatus" style="font-size:0.75rem;margin-bottom:0.2rem;">Status</label>
+                        <select id="rfqFilterStatus" class="form-select" onchange="applyRfqsSort()">
+                            <option value="all">All</option>
+                            <option value="SENT">Sent</option>
+                            <option value="QUOTES_RECEIVED">Quotes received</option>
+                            <option value="AWARDED">Awarded</option>
+                            <option value="CLOSED">Closed</option>
+                            <option value="WITHDRAW_PENDING">Withdraw pending</option>
+                            <option value="WITHDRAWN">Withdrawn</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="resetRfqFilters()" style="margin-bottom:2px;">Clear filters</button>
+                </div>
                 <div class="table-container">
                     <table id="rfqsTable">
                         <thead>
@@ -360,6 +411,23 @@
             <div id="purchasing-orders" class="card">
                 <div class="card-header">
                     <h2 class="card-title">4. Purchase Orders</h2>
+                </div>
+                <div class="purchasing-table-filters" style="display:flex;flex-wrap:wrap;gap:0.75rem 1rem;align-items:flex-end;padding:0.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);background:#f9fafb;">
+                    <div class="form-group" style="margin:0;min-width:11rem;flex:1 1 10rem;">
+                        <label class="form-label" for="poFilterSearch" style="font-size:0.75rem;margin-bottom:0.2rem;">Search</label>
+                        <input type="search" id="poFilterSearch" class="form-input" placeholder="ID, PO #, product, supplier…" autocomplete="off" oninput="applyPurchaseOrdersSort()">
+                    </div>
+                    <div class="form-group" style="margin:0;min-width:9rem;">
+                        <label class="form-label" for="poFilterStatus" style="font-size:0.75rem;margin-bottom:0.2rem;">Status</label>
+                        <select id="poFilterStatus" class="form-select" onchange="applyPurchaseOrdersSort()">
+                            <option value="all">All</option>
+                            <option value="SENT">Sent</option>
+                            <option value="CONFIRMED">Confirmed</option>
+                            <option value="RECEIVED">Received</option>
+                            <option value="CANCELLED">Cancelled</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="resetPoFilters()" style="margin-bottom:2px;">Clear filters</button>
                 </div>
                 <div class="table-container">
                     <table id="purchaseOrdersTable">
@@ -2268,6 +2336,61 @@
             }
         }
 
+        function comparePurchaseRequestsRow(a, b) {
+            const col = purchaseRequestSortColumn;
+            const dir = purchaseRequestSortDirection === 'asc' ? 1 : -1;
+            const str = (v) => String(v || '').toLowerCase();
+            const num = (v) => (v === null || v === undefined || v === '') ? 0 : (typeof v === 'number' ? v : parseInt(v, 10) || 0);
+            let cmp = 0;
+            if (col === 'requestId' || col === 'quantity') {
+                cmp = num(a[col] || a.requestId) - num(b[col] || b.requestId);
+            } else if (col === 'neededBy' || col === 'quoteDueDate') {
+                const da = a[col] ? new Date(a[col]).getTime() : 0;
+                const db = b[col] ? new Date(b[col]).getTime() : 0;
+                cmp = da - db;
+            } else if (col === 'priority') {
+                const order = { low: 1, medium: 2, high: 3, urgent: 4 };
+                cmp = (order[(a.priority || '').toLowerCase()] || 0) - (order[(b.priority || '').toLowerCase()] || 0);
+            } else if (col === 'sendingLocation') {
+                cmp = str(a.sendingLocation).localeCompare(str(b.sendingLocation), undefined, { sensitivity: 'base' });
+            } else {
+                cmp = str(a[col] || a.requestNumber || a.productName || a.productSku).localeCompare(str(b[col] || b.requestNumber || b.productName || b.productSku), undefined, { sensitivity: 'base' });
+            }
+            return cmp * dir;
+        }
+        function getFilteredPurchaseRequests(list) {
+            if (!Array.isArray(list) || !list.length) return [];
+            const elS = document.getElementById('prFilterSearch');
+            const elSt = document.getElementById('prFilterStatus');
+            const elRfq = document.getElementById('prFilterRfqStatus');
+            const q = elS ? String(elS.value || '').trim().toLowerCase() : '';
+            const st = elSt ? String(elSt.value || 'all').toUpperCase() : 'ALL';
+            const rfqSt = elRfq ? String(elRfq.value || 'all').toUpperCase() : 'ALL';
+            return list.filter(function (r) {
+                if (st !== 'ALL' && String(r.status || '').toUpperCase() !== st) return false;
+                const hasRfq = r.rfqId != null && r.rfqId !== '';
+                const rs = String(r.rfqStatus || '').toUpperCase();
+                if (rfqSt === 'NONE') {
+                    if (hasRfq) return false;
+                } else if (rfqSt !== 'ALL') {
+                    if (!hasRfq || rs !== rfqSt) return false;
+                }
+                if (q) {
+                    const fields = [r.requestId, r.requestNumber, r.productName, r.productSku, r.sendingLocation, r.priority];
+                    if (!fields.some(function (v) { return String(v != null ? v : '').toLowerCase().includes(q); })) return false;
+                }
+                return true;
+            });
+        }
+        function resetPrFilters() {
+            const s = document.getElementById('prFilterSearch');
+            if (s) s.value = '';
+            const st = document.getElementById('prFilterStatus');
+            if (st) st.value = 'all';
+            const r = document.getElementById('prFilterRfqStatus');
+            if (r) r.value = 'all';
+            applyPurchaseRequestsSort();
+        }
         function sortPurchaseRequestsBy(column) {
             if (purchaseRequestSortColumn === column) {
                 purchaseRequestSortDirection = purchaseRequestSortDirection === 'asc' ? 'desc' : 'asc';
@@ -2278,31 +2401,12 @@
             applyPurchaseRequestsSort();
         }
         function applyPurchaseRequestsSort() {
-            const sorted = [...allPurchaseRequests].sort((a, b) => {
-                const col = purchaseRequestSortColumn;
-                const dir = purchaseRequestSortDirection === 'asc' ? 1 : -1;
-                const str = (v) => String(v || '').toLowerCase();
-                const num = (v) => (v === null || v === undefined || v === '') ? 0 : (typeof v === 'number' ? v : parseInt(v, 10) || 0);
-                let cmp = 0;
-                if (col === 'requestId' || col === 'quantity') {
-                    cmp = num(a[col] || a.requestId) - num(b[col] || b.requestId);
-                } else if (col === 'neededBy' || col === 'quoteDueDate') {
-                    const da = a[col] ? new Date(a[col]).getTime() : 0;
-                    const db = b[col] ? new Date(b[col]).getTime() : 0;
-                    cmp = da - db;
-                } else if (col === 'priority') {
-                    const order = { low: 1, medium: 2, high: 3, urgent: 4 };
-                    cmp = (order[(a.priority || '').toLowerCase()] || 0) - (order[(b.priority || '').toLowerCase()] || 0);
-                } else if (col === 'sendingLocation') {
-                    cmp = str(a.sendingLocation) .localeCompare(str(b.sendingLocation), undefined, { sensitivity: 'base' });
-                } else {
-                    cmp = str(a[col] || a.requestNumber || a.productName || a.productSku).localeCompare(str(b[col] || b.requestNumber || b.productName || b.productSku), undefined, { sensitivity: 'base' });
-                }
-                return cmp * dir;
-            });
+            const filtered = getFilteredPurchaseRequests(allPurchaseRequests);
+            const sorted = [...filtered].sort(comparePurchaseRequestsRow);
             renderPurchaseRequests(sorted);
             const overviewTbody = document.getElementById('purchasingOverviewTableBody');
-            if (overviewTbody) renderPurchasingOverviewTable(sorted.slice(0, 10));
+            const overviewSorted = [...allPurchaseRequests].sort(comparePurchaseRequestsRow);
+            if (overviewTbody) renderPurchasingOverviewTable(overviewSorted.slice(0, 10));
             updateSortIcons('#purchaseRequestsTable', 'pr-sort-', ['requestId','requestNumber','productName','quantity','priority','neededBy','sendingLocation','status'], purchaseRequestSortColumn, purchaseRequestSortDirection);
             updateSortIcons('#purchasingOverviewTable', 'pro-sort-', ['requestNumber','productName','quantity','priority','neededBy','sendingLocation','status'], purchaseRequestSortColumn, purchaseRequestSortDirection);
         }
@@ -2412,10 +2516,14 @@
             if (!tbody) return;
             const list = (requests || []);
             if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                const noData = !allPurchaseRequests || allPurchaseRequests.length === 0;
+                const sub = noData
+                    ? 'Submit a purchase request using the form above.'
+                    : 'Try clearing filters or changing search / status.';
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
                     <i data-lucide="shopping-cart" style="width: 32px; height: 32px; margin: 0 auto 0.75rem; display: block; color: var(--text-muted);"></i>
-                    <div style="font-weight: 500; margin-bottom: 0.5rem;">No purchase requests yet</div>
-                    <div style="font-size: 0.875rem;">Submit a purchase request using the form above.</div>
+                    <div style="font-weight: 500; margin-bottom: 0.5rem;">${noData ? 'No purchase requests yet' : 'No matching purchase requests'}</div>
+                    <div style="font-size: 0.875rem;">${sub}</div>
                 </td></tr>`;
                 if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
                 return;
@@ -3220,6 +3328,45 @@
             }
         }
 
+        function compareRfqsRow(a, b) {
+            const col = rfqSortColumn;
+            const dir = rfqSortDirection === 'asc' ? 1 : -1;
+            const str = (v) => String(v || '').toLowerCase();
+            const num = (v) => (v === null || v === undefined || v === '') ? 0 : (typeof v === 'number' ? v : parseInt(v, 10) || 0);
+            let cmp = 0;
+            if (col === 'rfqId' || col === 'quantity') {
+                cmp = num(a[col]) - num(b[col]);
+            } else if (col === 'quoteDueDate') {
+                const da = a.quoteDueDate ? new Date(a.quoteDueDate).getTime() : 0;
+                const db = b.quoteDueDate ? new Date(b.quoteDueDate).getTime() : 0;
+                cmp = da - db;
+            } else {
+                cmp = str(a[col] || a.rfqNumber || a.productName || a.productSku).localeCompare(str(b[col] || b.rfqNumber || b.productName || b.productSku), undefined, { sensitivity: 'base' });
+            }
+            return cmp * dir;
+        }
+        function getFilteredRfqs(list) {
+            if (!Array.isArray(list) || !list.length) return [];
+            const elS = document.getElementById('rfqFilterSearch');
+            const elSt = document.getElementById('rfqFilterStatus');
+            const q = elS ? String(elS.value || '').trim().toLowerCase() : '';
+            const st = elSt ? String(elSt.value || 'all').toUpperCase() : 'ALL';
+            return list.filter(function (r) {
+                if (st !== 'ALL' && String(r.status || '').toUpperCase() !== st) return false;
+                if (q) {
+                    const fields = [r.rfqId, r.rfqNumber, r.productName, r.productSku, r.status];
+                    if (!fields.some(function (v) { return String(v != null ? v : '').toLowerCase().includes(q); })) return false;
+                }
+                return true;
+            });
+        }
+        function resetRfqFilters() {
+            const s = document.getElementById('rfqFilterSearch');
+            if (s) s.value = '';
+            const st = document.getElementById('rfqFilterStatus');
+            if (st) st.value = 'all';
+            applyRfqsSort();
+        }
         function sortRfqsBy(column) {
             if (rfqSortColumn === column) {
                 rfqSortDirection = rfqSortDirection === 'asc' ? 'desc' : 'asc';
@@ -3230,23 +3377,8 @@
             applyRfqsSort();
         }
         function applyRfqsSort() {
-            const sorted = [...allRfqs].sort((a, b) => {
-                const col = rfqSortColumn;
-                const dir = rfqSortDirection === 'asc' ? 1 : -1;
-                const str = (v) => String(v || '').toLowerCase();
-                const num = (v) => (v === null || v === undefined || v === '') ? 0 : (typeof v === 'number' ? v : parseInt(v, 10) || 0);
-                let cmp = 0;
-                if (col === 'rfqId' || col === 'quantity') {
-                    cmp = num(a[col]) - num(b[col]);
-                } else if (col === 'quoteDueDate') {
-                    const da = a.quoteDueDate ? new Date(a.quoteDueDate).getTime() : 0;
-                    const db = b.quoteDueDate ? new Date(b.quoteDueDate).getTime() : 0;
-                    cmp = da - db;
-                } else {
-                    cmp = str(a[col] || a.rfqNumber || a.productName || a.productSku).localeCompare(str(b[col] || b.rfqNumber || b.productName || b.productSku), undefined, { sensitivity: 'base' });
-                }
-                return cmp * dir;
-            });
+            const filtered = getFilteredRfqs(allRfqs);
+            const sorted = [...filtered].sort(compareRfqsRow);
             renderRfqsTable(sorted);
             updateSortIcons('#rfqsTable', 'rfq-sort-', ['rfqId','rfqNumber','productName','quantity','quoteDueDate','status'], rfqSortColumn, rfqSortDirection);
         }
@@ -3277,10 +3409,14 @@
             const tbody = document.getElementById('rfqsTableBody');
             if (!tbody) return;
             if (!rfqs || rfqs.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                const noData = !allRfqs || allRfqs.length === 0;
+                const sub = noData
+                    ? 'Use <strong>2. Purchase Requests</strong> to create an RFQ and <strong>Preview &amp; Send</strong>. After the email is sent, the RFQ appears here for quotes and compare.'
+                    : 'Try clearing filters or changing search / status.';
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
                     <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📋</div>
-                    <div style="font-weight: 500; margin-bottom: 0.5rem;">No sent RFQs yet</div>
-                    <div style="font-size: 0.875rem;">Use <strong>2. Purchase Requests</strong> to create an RFQ and <strong>Preview &amp; Send</strong>. After the email is sent, the RFQ appears here for quotes and compare.</div>
+                    <div style="font-weight: 500; margin-bottom: 0.5rem;">${noData ? 'No sent RFQs yet' : 'No matching RFQs'}</div>
+                    <div style="font-size: 0.875rem;">${sub}</div>
                 </td></tr>`;
                     return;
                 }
@@ -3319,6 +3455,45 @@
             if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
         }
 
+        function comparePurchaseOrdersRow(a, b) {
+            const col = purchaseOrderSortColumn;
+            const dir = purchaseOrderSortDirection === 'asc' ? 1 : -1;
+            const str = (v) => String(v || '').toLowerCase();
+            const num = (v) => (v === null || v === undefined || v === '') ? 0 : (typeof v === 'number' ? v : parseFloat(v) || 0);
+            let cmp = 0;
+            if (col === 'poId' || col === 'quantity' || col === 'totalAmount') {
+                cmp = num(a[col] || a.poId) - num(b[col] || b.poId);
+            } else if (col === 'expectedDelivery') {
+                const da = a.expectedDelivery ? new Date(a.expectedDelivery).getTime() : 0;
+                const db = b.expectedDelivery ? new Date(b.expectedDelivery).getTime() : 0;
+                cmp = da - db;
+            } else {
+                cmp = str(a[col] || a.poNumber || a.productName || a.supplierName).localeCompare(str(b[col] || b.poNumber || b.productName || b.supplierName), undefined, { sensitivity: 'base' });
+            }
+            return cmp * dir;
+        }
+        function getFilteredPurchaseOrders(list) {
+            if (!Array.isArray(list) || !list.length) return [];
+            const elS = document.getElementById('poFilterSearch');
+            const elSt = document.getElementById('poFilterStatus');
+            const q = elS ? String(elS.value || '').trim().toLowerCase() : '';
+            const st = elSt ? String(elSt.value || 'all').toUpperCase() : 'ALL';
+            return list.filter(function (po) {
+                if (st !== 'ALL' && String(po.status || '').toUpperCase() !== st) return false;
+                if (q) {
+                    const fields = [po.poId, po.poNumber, po.productName, po.productSku, po.supplierName, po.status];
+                    if (!fields.some(function (v) { return String(v != null ? v : '').toLowerCase().includes(q); })) return false;
+                }
+                return true;
+            });
+        }
+        function resetPoFilters() {
+            const s = document.getElementById('poFilterSearch');
+            if (s) s.value = '';
+            const st = document.getElementById('poFilterStatus');
+            if (st) st.value = 'all';
+            applyPurchaseOrdersSort();
+        }
         function sortPurchaseOrdersBy(column) {
             if (purchaseOrderSortColumn === column) {
                 purchaseOrderSortDirection = purchaseOrderSortDirection === 'asc' ? 'desc' : 'asc';
@@ -3329,23 +3504,8 @@
             applyPurchaseOrdersSort();
         }
         function applyPurchaseOrdersSort() {
-            const sorted = [...allPurchaseOrders].sort((a, b) => {
-                const col = purchaseOrderSortColumn;
-                const dir = purchaseOrderSortDirection === 'asc' ? 1 : -1;
-                const str = (v) => String(v || '').toLowerCase();
-                const num = (v) => (v === null || v === undefined || v === '') ? 0 : (typeof v === 'number' ? v : parseFloat(v) || 0);
-                let cmp = 0;
-                if (col === 'poId' || col === 'quantity' || col === 'totalAmount') {
-                    cmp = num(a[col] || a.poId) - num(b[col] || b.poId);
-                } else if (col === 'expectedDelivery') {
-                    const da = a.expectedDelivery ? new Date(a.expectedDelivery).getTime() : 0;
-                    const db = b.expectedDelivery ? new Date(b.expectedDelivery).getTime() : 0;
-                    cmp = da - db;
-                } else {
-                    cmp = str(a[col] || a.poNumber || a.productName || a.supplierName).localeCompare(str(b[col] || b.poNumber || b.productName || b.supplierName), undefined, { sensitivity: 'base' });
-                }
-                return cmp * dir;
-            });
+            const filtered = getFilteredPurchaseOrders(allPurchaseOrders);
+            const sorted = [...filtered].sort(comparePurchaseOrdersRow);
             renderPurchaseOrdersTable(sorted);
             updateSortIcons('#purchaseOrdersTable', 'po-sort-', ['poId','poNumber','productName','supplierName','quantity','totalAmount','expectedDelivery','status'], purchaseOrderSortColumn, purchaseOrderSortDirection);
         }
@@ -3372,9 +3532,13 @@
             const tbody = document.getElementById('purchaseOrdersTableBody');
             if (!tbody) return;
             if (!pos || pos.length === 0) {
+                const noData = !allPurchaseOrders || allPurchaseOrders.length === 0;
+                const sub = noData
+                    ? 'Award a quotation in 3. RFQs &amp; Quotations (Compare) to create a PO.'
+                    : 'Try clearing filters or changing search / status.';
                 tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
-                    <div style="font-weight: 500; margin-bottom: 0.5rem;">No purchase orders yet</div>
-                    <div style="font-size: 0.875rem;">Award a quotation in 3. RFQs &amp; Quotations (Compare) to create a PO.</div>
+                    <div style="font-weight: 500; margin-bottom: 0.5rem;">${noData ? 'No purchase orders yet' : 'No matching purchase orders'}</div>
+                    <div style="font-size: 0.875rem;">${sub}</div>
                 </td></tr>`;
                     return;
                 }
