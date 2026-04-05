@@ -226,14 +226,21 @@
                 productDistributionChart.destroy();
                 productDistributionChart = null;
             }
-            const labels = (apiResponse && apiResponse.data && apiResponse.data.labels) ? apiResponse.data.labels : [];
-            const values = (apiResponse && apiResponse.data && apiResponse.data.values) ? apiResponse.data.values : [];
-            const hasData = labels.length > 0 && values.some(v => v > 0);
+            const rawLabels = (apiResponse && apiResponse.data && apiResponse.data.labels) ? apiResponse.data.labels : [];
+            const rawValues = (apiResponse && apiResponse.data && apiResponse.data.values) ? apiResponse.data.values : [];
+            const paired = rawLabels.map(function (l, i) {
+                return { label: l, value: Number(rawValues[i]) || 0 };
+            }).filter(function (x) {
+                return x.value > 0;
+            });
+            const labels = paired.map(function (x) { return x.label; });
+            const values = paired.map(function (x) { return x.value; });
+            const hasData = labels.length > 0 && values.some(function (v) { return v > 0; });
             if (noDataEl) {
                 noDataEl.style.display = hasData ? 'none' : 'flex';
             }
             if (!hasData) return;
-            const total = values.reduce((a, b) => a + b, 0);
+            const total = values.reduce(function (a, b) { return a + b; }, 0);
             productDistributionChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
@@ -241,51 +248,55 @@
                     datasets: [{
                         data: values,
                         backgroundColor: CHART_COLORS.palette.slice(0, labels.length),
-                        borderWidth: 2,
-                        borderColor: '#fff'
+                        borderWidth: 1,
+                        borderColor: '#ffffff',
+                        hoverBorderWidth: 2,
+                        hoverBorderColor: '#ffffff'
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    cutout: '52%',
                     plugins: {
                         legend: {
                             position: 'bottom',
-                            labels: { boxWidth: 12, padding: 8, font: { size: 10 } }
+                            labels: {
+                                boxWidth: 10,
+                                padding: 10,
+                                font: { size: 11 },
+                                generateLabels: function (chart) {
+                                    const ds = chart.data.datasets[0];
+                                    const data = ds.data;
+                                    const lbls = chart.data.labels;
+                                    const tot = data.reduce(function (a, b) { return a + b; }, 0);
+                                    return lbls.map(function (label, i) {
+                                        const val = data[i];
+                                        const pct = tot ? ((val / tot) * 100).toFixed(1) : '0.0';
+                                        return {
+                                            text: label + ' — ' + pct + '%',
+                                            fillStyle: Array.isArray(ds.backgroundColor) ? ds.backgroundColor[i] : ds.backgroundColor,
+                                            strokeStyle: typeof ds.borderColor === 'string' ? ds.borderColor : '#fff',
+                                            lineWidth: typeof ds.borderWidth === 'number' ? ds.borderWidth : 1,
+                                            hidden: chart.getDataVisibility(i) === false,
+                                            index: i,
+                                            datasetIndex: 0
+                                        };
+                                    });
+                                }
+                            }
                         },
                         tooltip: {
                             callbacks: {
-                                label: function(context) {
+                                label: function (context) {
                                     const value = context.parsed || 0;
-                                    const pct = total ? ((value / total) * 100).toFixed(1) : 0;
-                                    return `${context.label}: ${value.toLocaleString()} units (${pct}%)`;
+                                    const pct = total ? ((value / total) * 100).toFixed(1) : '0.0';
+                                    return context.label + ': ' + value.toLocaleString() + ' units (' + pct + '%)';
                                 }
                             }
                         }
                     }
-                },
-                plugins: [{
-                    id: 'datalabels',
-                    afterDatasetsDraw: function(chart) {
-                        const c = chart.ctx;
-                        const tot = chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                        chart.data.datasets.forEach((dataset, i) => {
-                            const meta = chart.getDatasetMeta(i);
-                            meta.data.forEach((element, index) => {
-                                const value = dataset.data[index];
-                                const pct = tot ? ((value / tot) * 100).toFixed(1) : 0;
-                                const pos = element.tooltipPosition();
-                                c.save();
-                                c.fillStyle = '#333';
-                                c.font = 'bold 12px Arial';
-                                c.textAlign = 'center';
-                                c.textBaseline = 'middle';
-                                c.fillText(pct + '%', pos.x, pos.y);
-                                c.restore();
-                            });
-                        });
-                    }
-                }]
+                }
             });
         }
 
