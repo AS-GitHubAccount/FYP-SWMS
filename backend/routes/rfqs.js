@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { generateRfqNumber } = require('../utils/idGenerator');
-const { sendEmailWithResult, isOutboundEmailConfigured } = require('../utils/emailService');
+const { sendEmailWithResult, isOutboundEmailConfigured, mergeReplyToParts } = require('../utils/emailService');
 const { requireCriticalApproval } = require('../utils/criticalApproval');
 const { notifyAdmins } = require('../utils/notificationHelper');
 const { getProductPriceBenchmark } = require('../utils/priceHistoryQueries');
@@ -316,11 +316,15 @@ router.post('/:id/send-email', async (req, res) => {
                     'Email is not configured. On Railway Free/Hobby, SMTP is often blocked — add RESEND_API_KEY and RESEND_FROM (see .env.example). Alternatively set SMTP_USER + SMTP_PASS for SMTP where outbound 465/587 is allowed.'
             });
         }
+        const mergedReplyTo = mergeReplyToParts(
+            (replyTo && String(replyTo).trim()) || undefined,
+            process.env.MAIL_REPLY_TO_EXTRA
+        );
         const sendResult = await sendEmailWithResult({
             to: to.trim(),
             cc: (cc || '').trim() || undefined,
             bcc: (bcc || '').trim() || undefined,
-            replyTo: (replyTo && String(replyTo).trim()) || undefined,
+            replyTo: mergedReplyTo,
             subject: subject.trim(),
             html: htmlBody,
             text: textFallback
@@ -426,6 +430,7 @@ Smart Warehouse Management`;
                 to: toList,
                 cc: ccList,
                 bcc: bccList,
+                replyTo: mergeReplyToParts(process.env.MAIL_REPLY_TO_EXTRA),
                 subject: `Withdrawal of RFQ - ${rfq.productName || rfq.productSku || 'Request'}`,
                 html: withdrawalBody.replace(/\n/g, '<br>'),
                 text: withdrawalBody

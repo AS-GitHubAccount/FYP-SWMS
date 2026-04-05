@@ -21,6 +21,27 @@ function hasResend() {
     return !!String(process.env.RESEND_API_KEY || '').trim();
 }
 
+/** True when using Resend's unverified test From — API only delivers to the account owner's email. */
+function isResendRestrictedTestSender() {
+    if (!hasResend()) return false;
+    const raw = String(process.env.RESEND_FROM || 'onboarding@resend.dev').trim();
+    const lower = raw.toLowerCase();
+    const angle = lower.match(/<([^>]+)>/);
+    const addr = (angle ? angle[1] : lower).trim();
+    return addr === 'onboarding@resend.dev';
+}
+
+function augmentResendApiErrorMessage(apiMessage) {
+    const base = typeof apiMessage === 'string' ? apiMessage : String(apiMessage || '');
+    if (!base.trim()) return base;
+    if (!/only send testing emails|verify a domain/i.test(base)) return base;
+    return (
+        `${base.trim()} ` +
+        'Hint: with sender onboarding@resend.dev, Resend allows only your Resend signup email in To, CC, and BCC. ' +
+        'For real recipients, verify a domain at https://resend.com/domains and set RESEND_FROM to an address on that domain (e.g. on Railway Variables).'
+    );
+}
+
 function parseEmailList(s) {
     if (s == null || s === '') return undefined;
     if (Array.isArray(s)) return s.map((x) => String(x).trim()).filter(Boolean);
@@ -28,6 +49,28 @@ function parseEmailList(s) {
         .split(/[,;]/)
         .map((x) => x.trim())
         .filter(Boolean);
+}
+
+/**
+ * Merge comma/semicolon-separated reply-to fragments into one de-duplicated list (preserves first-seen casing).
+ * @param {...(string|undefined|null)} parts e.g. client header + MAIL_REPLY_TO_EXTRA
+ * @returns {string|undefined} comma-separated for nodemailer, or undefined if empty
+ */
+function mergeReplyToParts(...parts) {
+    const seen = new Set();
+    const out = [];
+    for (const p of parts) {
+        const list = parseEmailList(p);
+        if (!list) continue;
+        for (const e of list) {
+            const k = e.toLowerCase();
+            if (!seen.has(k)) {
+                seen.add(k);
+                out.push(e);
+            }
+        }
+    }
+    return out.length ? out.join(', ') : undefined;
 }
 
 /**
@@ -113,8 +156,9 @@ async function sendViaResend(options) {
     const bcc = parseEmailList(options.bcc);
     if (cc && cc.length) payload.cc = cc;
     if (bcc && bcc.length) payload.bcc = bcc;
-    if (options.replyTo && String(options.replyTo).trim()) {
-        payload.reply_to = [String(options.replyTo).trim()];
+    const replyList = parseEmailList(options.replyTo);
+    if (replyList && replyList.length) {
+        payload.reply_to = replyList;
     }
 
     const fetchTimeoutMs = parseInt(process.env.RESEND_FETCH_TIMEOUT_MS || '20000', 10);
@@ -136,9 +180,10 @@ async function sendViaResend(options) {
         if (!res.ok) {
             const msg = data.message || (data.error && (data.error.message || data.error)) || JSON.stringify(data);
             const str = typeof msg === 'string' ? msg : JSON.stringify(msg);
+            const augmented = augmentResendApiErrorMessage(str);
             return {
                 ok: false,
-                userMessage: `Resend: ${str.slice(0, 200)}`,
+                userMessage: `Resend: ${augmented.slice(0, 600)}`,
                 raw: JSON.stringify(data).slice(0, 400)
             };
         }
@@ -233,12 +278,19 @@ async function sendEmailWithResult(options) {
     }
     try {
         const user = process.env.SMTP_USER ? String(process.env.SMTP_USER).trim() : '';
+        const replyListSmtp = parseEmailList(options.replyTo);
+        const replyToSmtp =
+            replyListSmtp && replyListSmtp.length === 1
+                ? replyListSmtp[0]
+                : replyListSmtp && replyListSmtp.length > 1
+                  ? replyListSmtp
+                  : undefined;
         await transport.sendMail({
             from: `"SWMS" <${user}>`,
             to: options.to,
             cc: options.cc || undefined,
             bcc: options.bcc || undefined,
-            replyTo: options.replyTo || undefined,
+            replyTo: replyToSmtp,
             subject: options.subject,
             html: options.html || undefined,
             text: options.text || (options.html ? options.html.replace(/<[^>]+>/g, ' ') : undefined)
@@ -276,5 +328,7 @@ module.exports = {
     createSmtpTransport,
     buildSmtpTransportOptions,
     isOutboundEmailConfigured,
-    hasResend
+    hasResend,
+    isResendRestrictedTestSender,
+    mergeReplyToParts
 };

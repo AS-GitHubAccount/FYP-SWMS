@@ -13,6 +13,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { requireAdmin } = require('../middleware/auth');
+const { isResendRestrictedTestSender } = require('../utils/emailService');
 
 function envEmailConfigured() {
     return !!(
@@ -59,6 +60,8 @@ async function loadAllSettings() {
     settings.approvalSafeWord = '';
     // Computed: email configured (read from env, not stored in DB)
     settings.emailConfigured = envEmailConfigured();
+    // Resend test sender: all To/CC/BCC must be Resend account email until domain verified
+    settings.resendSandboxMode = !!isResendRestrictedTestSender();
     return settings;
 }
 
@@ -146,7 +149,11 @@ router.get('/', async (req, res) => {
         if (e.code === 'ER_NO_SUCH_TABLE') {
             return res.json({
                 success: true,
-                data: { ...DEFAULTS, emailConfigured: envEmailConfigured() }
+                data: {
+                    ...DEFAULTS,
+                    emailConfigured: envEmailConfigured(),
+                    resendSandboxMode: !!isResendRestrictedTestSender()
+                }
             });
         }
         res.status(500).json({ success: false, error: e.message });

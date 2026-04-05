@@ -537,6 +537,9 @@
                 </div>
                 <button type="button" onclick="closeReviewRfqEmailModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #6b7280; line-height: 1;">&times;</button>
             </div>
+            <div id="reviewRfqEmailResendSandboxNote" style="display: none; margin: 0 1rem 0.5rem; padding: 0.5rem 0.75rem; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 4px; font-size: 0.8125rem; color: #92400e; line-height: 1.45;">
+                <strong>Resend test sender</strong> (<code style="font-size: 0.75rem;">onboarding@resend.dev</code>): Resend only delivers to <strong>your Resend signup email</strong>. Put that address in <strong>To</strong> and remove other recipients from To/CC/BCC for a test send. For production, verify a domain at <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer">resend.com/domains</a> and set server variable <code style="font-size: 0.75rem;">RESEND_FROM</code> to an address on that domain.
+            </div>
             <div style="padding: 0; font-family: 'Segoe UI', Calibri, Arial, sans-serif; background: #fff; border: 1px solid #e5e7eb; margin: 1rem; border-radius: 4px; overflow: hidden;">
                 <!-- Outlook-style email header (To, CC, BCC editable before send) -->
                 <div class="rfq-email-header" style="border-bottom: 1px solid #e5e7eb;">
@@ -2363,8 +2366,7 @@
                     return {
                         statusLabel: 'RFQ Sent',
                         statusBadge: 'info',
-                        actions: `<button type="button" class="btn btn-view-sent btn-sm" onclick="openViewSentRfqModal(${rfqId})" style="margin-right: 0.25rem;"><i data-lucide="mail" style="width:12px;height:12px;vertical-align:middle;"></i> View Sent</button>
-                            <button type="button" class="btn btn-primary-green btn-sm" onclick="openCompareModal(${rfqId})"><i data-lucide="git-compare" style="width:12px;height:12px;vertical-align:middle;"></i> Compare Quotes</button>`
+                        actions: `<button type="button" class="btn btn-view-sent btn-sm" onclick="openViewSentRfqModal(${rfqId})"><i data-lucide="mail" style="width:12px;height:12px;vertical-align:middle;"></i> View Sent</button>`
                     };
                 }
                 if (rfqStatus === 'WITHDRAWN') {
@@ -2378,7 +2380,7 @@
                     return {
                         statusLabel: 'Reviewing',
                         statusBadge: 'warning',
-                        actions: `<button type="button" class="btn btn-primary-green btn-sm" onclick="openCompareModal(${rfqId})"><i data-lucide="git-compare" style="width:12px;height:12px;vertical-align:middle;"></i> Compare Quotes</button>`
+                        actions: `<button type="button" class="btn btn-outline btn-sm" onclick="showPurchasingSection('rfqs')"><i data-lucide="arrow-right" style="width:12px;height:12px;vertical-align:middle;"></i> RFQs &amp; Quotations</button>`
                     };
                 }
                 if (rfqStatus === 'AWARDED' || rfqStatus === 'CLOSED') {
@@ -2776,7 +2778,7 @@
                         return;
                     }
                     if (typeof showNotification === 'function') {
-                        showNotification('Notice', 'This purchase request already has an RFQ in progress. Use Preview & Send or Compare from the lists below.', 'info');
+                        showNotification('Notice', 'This purchase request already has an RFQ in progress. Use Preview & Send below, or open 3. RFQs & Quotations to compare quotes.', 'info');
                     }
                     closeCreateRfqModal();
                     loadRfqs();
@@ -2808,6 +2810,16 @@
                 document.getElementById('createRfqModalBackdrop').style.display = 'block';
                 document.getElementById('createRfqModal').style.display = 'block';
             }
+        }
+        async function updateReviewRfqResendSandboxNote() {
+            const el = document.getElementById('reviewRfqEmailResendSandboxNote');
+            if (!el) return;
+            el.style.display = 'none';
+            try {
+                const res = await fetch(`${API_BASE_URL}/settings`, { headers: getAuthHeaders() });
+                const data = await res.json().catch(() => ({}));
+                if (data.success && data.data && data.data.resendSandboxMode) el.style.display = 'block';
+            } catch (_) { /* ignore */ }
         }
         /** Opens the email preview from "Create RFQ" (no RFQ record yet). BCC = Step 1 supplier emails. */
         async function openReviewRfqEmailModalWithPending(pending) {
@@ -2868,6 +2880,7 @@
             if (backBtn) backBtn.style.display = '';
             document.getElementById('reviewRfqEmailModalBackdrop').style.display = 'block';
             document.getElementById('reviewRfqEmailModal').style.display = 'block';
+            updateReviewRfqResendSandboxNote();
             if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
         }
         async function openReviewRfqEmailModal(rfqId, recipientEmails) {
@@ -2945,12 +2958,15 @@
             if (backBtn2) backBtn2.style.display = 'none';
             document.getElementById('reviewRfqEmailModalBackdrop').style.display = 'block';
             document.getElementById('reviewRfqEmailModal').style.display = 'block';
+            updateReviewRfqResendSandboxNote();
             if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
         }
         function closeReviewRfqEmailModal() {
             createRfqPendingRequestId = null;
             reviewRfqEmailRfqId = null;
             reviewRfqEmailPending = null;
+            const rsNote = document.getElementById('reviewRfqEmailResendSandboxNote');
+            if (rsNote) rsNote.style.display = 'none';
             document.getElementById('reviewRfqEmailModalBackdrop').style.display = 'none';
             document.getElementById('reviewRfqEmailModal').style.display = 'none';
             loadPurchaseRequests();
@@ -3354,7 +3370,7 @@
             if (!pos || pos.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
                     <div style="font-weight: 500; margin-bottom: 0.5rem;">No purchase orders yet</div>
-                    <div style="font-size: 0.875rem;">Award a quotation from Compare Quotes to create a PO.</div>
+                    <div style="font-size: 0.875rem;">Award a quotation in 3. RFQs &amp; Quotations (Compare) to create a PO.</div>
                 </td></tr>`;
                     return;
                 }
