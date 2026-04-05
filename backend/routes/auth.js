@@ -11,7 +11,7 @@ const {
     getFrontendBaseUrl
 } = require('../utils/userInviteTokens');
 const { sendEmailWithResult, createSmtpTransport, hasResend } = require('../utils/emailService');
-const { requestSelfServicePasswordReset, GENERIC_MESSAGE } = require('../utils/passwordResetRequest');
+const { requestSelfServicePasswordReset } = require('../utils/passwordResetRequest');
 
 /** Access JWT lifetime (default 1 day). Override with JWT_EXPIRES_IN (e.g. 12h, 1d) and optional JWT_EXPIRES_IN_SEC for API metadata. */
 function getAccessTokenExpiry() {
@@ -296,7 +296,10 @@ router.post('/forgot-password', async (req, res) => {
         res.json({ success: true, message: result.message });
     } catch (error) {
         console.error('POST /auth/forgot-password', error);
-        res.json({ success: true, message: GENERIC_MESSAGE });
+        res.status(500).json({
+            success: false,
+            error: 'Something went wrong. Please try again later.'
+        });
     }
 });
 

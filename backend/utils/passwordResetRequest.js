@@ -7,8 +7,13 @@ const bcrypt = require('bcryptjs');
 const db = require('../config/database');
 const { sendEmailWithOptions } = require('./emailService');
 
-const GENERIC_MESSAGE =
-    'If your details match our records, you will receive an email with a new password shortly. Check your inbox and spam folder.';
+/** Shown when no user matches or email/name/position do not match (same wording to avoid account enumeration). */
+const NOT_FOUND_MESSAGE =
+    'No matching record was found in the system. Please check your input.';
+
+/** Shown only after a matching account was found and the reset email was sent successfully. */
+const RESET_EMAIL_SENT_MESSAGE =
+    'A password reset link has been sent to your email address. Please check your inbox and reset your password.';
 
 function escapeHtml(s) {
     if (s == null) return '';
@@ -106,7 +111,7 @@ async function requestSelfServicePasswordReset(emailRaw, options = {}) {
             [emailNorm]
         );
         if (!rows || rows.length === 0) {
-            return { success: true, message: GENERIC_MESSAGE };
+            return { success: false, error: NOT_FOUND_MESSAGE };
         }
 
         const u = rows[0];
@@ -131,10 +136,7 @@ async function requestSelfServicePasswordReset(emailRaw, options = {}) {
                 .trim()
                 .toUpperCase();
             if (dbName !== nameOpt.toLowerCase() || dbRole !== roleNorm) {
-                return {
-                    success: false,
-                    error: 'The email, name, and position you entered do not match our records.'
-                };
+                return { success: false, error: NOT_FOUND_MESSAGE };
             }
         }
 
@@ -152,7 +154,10 @@ async function requestSelfServicePasswordReset(emailRaw, options = {}) {
                 '[forgot-password] SMTP not sending; password left unchanged for userId',
                 u.userId
             );
-            return { success: true, message: GENERIC_MESSAGE };
+            return {
+                success: false,
+                error: 'We could not send the reset email. Please try again later or contact your administrator.'
+            };
         }
 
         try {
@@ -165,20 +170,20 @@ async function requestSelfServicePasswordReset(emailRaw, options = {}) {
             };
         }
 
-        return {
-            success: true,
-            message:
-                'A new password has been sent to your email. Please check your email inbox and use the new password to login.'
-        };
+        return { success: true, message: RESET_EMAIL_SENT_MESSAGE };
     } catch (err) {
         console.error('[forgot-password]', err.message || err);
-        return { success: true, message: GENERIC_MESSAGE };
+        return {
+            success: false,
+            error: 'Something went wrong. Please try again later.'
+        };
     }
 }
 
 module.exports = {
     requestSelfServicePasswordReset,
-    GENERIC_MESSAGE,
+    NOT_FOUND_MESSAGE,
+    RESET_EMAIL_SENT_MESSAGE,
     sendPasswordResetEmail,
     generateTempPassword,
     displayFirstName,
