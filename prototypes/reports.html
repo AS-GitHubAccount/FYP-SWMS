@@ -102,23 +102,32 @@
         #reportContent.report-pdf-capture > div[style*="overflow-x"] {
             margin-bottom: 8px !important;
         }
+        /* PDF capture: grid only on body cells; summary/headings stay unboxed */
         #reportContent.report-pdf-capture table {
             line-height: 1.25 !important;
             border-collapse: collapse !important;
-            border: 1px solid #1a1a1a !important;
+            border: none !important;
         }
-        #reportContent.report-pdf-capture table th,
-        #reportContent.report-pdf-capture table td {
+        #reportContent.report-pdf-capture table thead th {
+            padding: 5px 9px !important;
+            font-size: 12px !important;
+            line-height: 1.3 !important;
+            vertical-align: top;
+            text-transform: none;
+            letter-spacing: normal;
+            border: none !important;
+            border-bottom: 1px solid #333 !important;
+            background: #f5f5f5 !important;
+        }
+        #reportContent.report-pdf-capture table tbody td {
             padding: 5px 9px !important;
             font-size: 13px !important;
             line-height: 1.3 !important;
             vertical-align: top;
             border: 1px solid #333 !important;
         }
-        #reportContent.report-pdf-capture table th {
-            font-size: 12px !important;
-            text-transform: none;
-            letter-spacing: normal;
+        #reportContent.report-pdf-capture table tbody tr:first-child td {
+            border-top: none !important;
         }
         
         @media print {
@@ -199,28 +208,30 @@
                 page-break-after: auto;
             }
             
-            table th,
-            table td {
-                border: 1px solid #000 !important;
-                padding: 6px 8px !important;
-                text-align: left;
-                font-size: 10pt;
+            #reportContent table {
+                border: none !important;
             }
-
-            #reportContent table th,
-            #reportContent table td {
+            #reportContent table thead th {
+                border: none !important;
+                border-bottom: 1px solid #000 !important;
                 padding: 4px 8px !important;
                 font-size: 10pt !important;
                 line-height: 1.28 !important;
-            }
-            #reportContent table th {
+                text-align: left;
                 text-transform: none !important;
                 letter-spacing: normal !important;
-            }
-            
-            table th {
                 background-color: #f0f0f0 !important;
                 font-weight: bold;
+            }
+            #reportContent table tbody td {
+                border: 1px solid #000 !important;
+                padding: 4px 8px !important;
+                text-align: left;
+                font-size: 10pt !important;
+                line-height: 1.28 !important;
+            }
+            #reportContent table tbody tr:first-child td {
+                border-top: none !important;
             }
             
             /* Hide badges and buttons in print */
@@ -1407,6 +1418,7 @@
                             width: 100%;
                             border-collapse: collapse;
                             margin-top: 10px;
+                            border: none;
                         }
                         table thead {
                             display: table-header-group;
@@ -1417,16 +1429,23 @@
                         table tr {
                             page-break-inside: avoid;
                         }
-                        table th,
-                        table td {
+                        table thead th {
+                            border: none;
+                            border-bottom: 1px solid #000;
+                            padding: 6px 8px;
+                            text-align: left;
+                            font-size: 10pt;
+                            background-color: #f0f0f0;
+                            font-weight: bold;
+                        }
+                        table tbody td {
                             border: 1px solid #000;
                             padding: 6px 8px;
                             text-align: left;
                             font-size: 10pt;
                         }
-                        table th {
-                            background-color: #f0f0f0;
-                            font-weight: bold;
+                        table tbody tr:first-child td {
+                            border-top: none;
                         }
                         @media print {
                             body {
