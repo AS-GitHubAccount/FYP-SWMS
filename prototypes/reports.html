@@ -235,10 +235,7 @@
             if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
         });
 
-        const userRole = sessionStorage.getItem('userRole') || 'Admin';
-        if (userRole === 'Admin' || userRole === 'ADMIN') {
-            document.getElementById('usersLink').style.display = 'block';
-        }
+        // Admin "Users" link is injected by js/shell-nav.js — do not reference legacy #usersLink (missing → script error breaks all report buttons).
 
         // Ensure storage is available
         if (typeof window.storage === 'undefined') {
