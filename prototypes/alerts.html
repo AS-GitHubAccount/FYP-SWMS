@@ -6,6 +6,27 @@
     <title>Alert Management - Smart Warehouse Management System</title>
     <link rel="stylesheet" href="css/styles.css">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <style>
+        /* Run Alert Check only: tight icon + label (Lucide SVG can read wide without flex gap) */
+        #runCheckBtn {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            gap: 0.3rem;
+        }
+        #runCheckBtn > svg {
+            width: 14px !important;
+            height: 14px !important;
+            min-width: 14px;
+            flex-shrink: 0;
+            margin: 0 !important;
+            display: block;
+        }
+        #runCheckBtn .run-alert-check-label {
+            margin: 0;
+            line-height: 1.2;
+        }
+    </style>
 </head>
 <body>
     <div class="app-layout">
@@ -44,7 +65,7 @@
             </div>
             <div style="display: flex; gap: 0.5rem;">
                 <button class="btn btn-secondary" onclick="loadAlerts()" title="Refresh alerts"><i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Refresh</button>
-                <button class="btn btn-secondary" id="runCheckBtn" onclick="runAlertCheck()" title="Scan inventory and create new alerts"><i data-lucide="radar" style="width:14px;height:14px;vertical-align:middle;margin-right:0.25rem;"></i> Run Alert Check</button>
+                <button class="btn btn-secondary" id="runCheckBtn" onclick="runAlertCheck()" title="Scan inventory and create new alerts"><i data-lucide="radar" style="width:14px;height:14px;"></i><span class="run-alert-check-label">Run Alert Check</span></button>
             </div>
         </div>
 
@@ -217,7 +238,7 @@
         // (which doesn't exist in this repo). That can silently lead to empty results.
         const ALERTS_API = window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api';
 
-        const RUN_ALERT_CHECK_BTN_HTML = '<i data-lucide="radar" style="width:14px;height:14px;vertical-align:middle;margin-right:0.25rem;"></i> Run Alert Check';
+        const RUN_ALERT_CHECK_BTN_HTML = '<i data-lucide="radar" style="width:14px;height:14px;"></i><span class="run-alert-check-label">Run Alert Check</span>';
 
         async function runAlertCheck() {
             const btn = document.getElementById('runCheckBtn');
