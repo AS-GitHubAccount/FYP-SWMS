@@ -79,11 +79,11 @@
             color: var(--text) !important;
         }
 
-        /* Only while html2canvas runs — tighter rows, readable multi-page PDF */
+        /* Only while html2canvas runs — slightly larger type for legible PDF */
         #reportContent.report-pdf-capture {
-            padding: 10px 12px !important;
-            font-size: 14px;
-            line-height: 1.35;
+            padding: 12px 14px !important;
+            font-size: 16px;
+            line-height: 1.38;
             max-width: 100%;
         }
         #reportContent.report-pdf-capture p {
@@ -106,13 +106,13 @@
         }
         #reportContent.report-pdf-capture table th,
         #reportContent.report-pdf-capture table td {
-            padding: 5px 9px !important;
-            font-size: 13px !important;
-            line-height: 1.28 !important;
+            padding: 7px 11px !important;
+            font-size: 15px !important;
+            line-height: 1.32 !important;
             vertical-align: top;
         }
         #reportContent.report-pdf-capture table th {
-            font-size: 12px !important;
+            font-size: 14px !important;
             text-transform: none;
             letter-spacing: normal;
         }
@@ -1000,7 +1000,7 @@
             requestAnimationFrame(function () {
                 requestAnimationFrame(function () {
                     html2canvas(el, {
-                        scale: Math.min(2, Math.max(1.5, window.devicePixelRatio || 1.5)),
+                        scale: Math.min(2.5, Math.max(2, window.devicePixelRatio || 2)),
                         useCORS: true,
                         logging: false,
                         backgroundColor: '#ffffff',
@@ -1030,7 +1030,7 @@
                                 pdf.addPage();
                             }
                             if (pageIndex === 0) {
-                                pdf.setFontSize(13);
+                                pdf.setFontSize(15);
                                 pdf.setFont('helvetica', 'bold');
                                 pdf.text(title, pdfPageW / 2, titleY, { align: 'center' });
                                 pdf.setFont('helvetica', 'normal');
@@ -1067,6 +1067,23 @@
                                 break;
                             }
                         }
+
+                        var printedAt = new Date();
+                        var printedStr =
+                            'Printed: ' +
+                            printedAt.toLocaleString(undefined, {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                        pdf.addPage();
+                        pdf.setFont('helvetica', 'normal');
+                        pdf.setFontSize(11);
+                        pdf.setTextColor(72, 72, 72);
+                        pdf.text(printedStr, pdfPageW / 2, pdfPageH - 22, { align: 'center' });
+                        pdf.setTextColor(0, 0, 0);
                         
                         var fileName = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_' + new Date().toISOString().split('T')[0] + '.pdf';
                         pdf.save(fileName);
