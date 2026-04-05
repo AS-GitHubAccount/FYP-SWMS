@@ -102,42 +102,22 @@
         #reportContent.report-pdf-capture > div[style*="overflow-x"] {
             margin-bottom: 8px !important;
         }
-        /* PDF: borders only on tbody cells (global table th/td still add border-bottom) */
-        #reportContent.report-pdf-capture {
-            border: none !important;
-            outline: none !important;
-            box-shadow: none !important;
-        }
-        #reportContent.report-pdf-capture .report-table-scroll {
-            border: none !important;
-            box-shadow: none !important;
-        }
+        /* PDF capture: grid only on body cells; summary/headings stay unboxed */
         #reportContent.report-pdf-capture table {
             line-height: 1.25 !important;
             border-collapse: collapse !important;
             border: none !important;
-            outline: none !important;
-            box-shadow: none !important;
         }
-        #reportContent.report-pdf-capture table thead {
-            background: transparent !important;
-            position: static !important;
-            box-shadow: none !important;
-        }
-        #reportContent.report-pdf-capture table thead th,
-        #reportContent.report-pdf-capture table thead td {
+        #reportContent.report-pdf-capture table thead th {
             padding: 5px 9px !important;
             font-size: 12px !important;
             line-height: 1.3 !important;
             vertical-align: top;
-            text-transform: none !important;
-            letter-spacing: normal !important;
-            font-weight: 600 !important;
-            color: #111 !important;
+            text-transform: none;
+            letter-spacing: normal;
             border: none !important;
-            border-width: 0 !important;
-            background: transparent !important;
-            box-shadow: none !important;
+            border-bottom: 1px solid #333 !important;
+            background: #f5f5f5 !important;
         }
         #reportContent.report-pdf-capture table tbody td {
             padding: 5px 9px !important;
@@ -148,15 +128,6 @@
         }
         #reportContent.report-pdf-capture table tbody tr:first-child td {
             border-top: none !important;
-        }
-        #reportContent.report-pdf-capture table tbody tr:last-child td {
-            border-bottom: none !important;
-        }
-        #reportContent.report-pdf-capture table tbody td:first-child {
-            border-left: none !important;
-        }
-        #reportContent.report-pdf-capture table tbody td:last-child {
-            border-right: none !important;
         }
         
         @media print {
@@ -239,19 +210,17 @@
             
             #reportContent table {
                 border: none !important;
-                outline: none !important;
-                box-shadow: none !important;
             }
-            #reportContent table thead th,
-            #reportContent table thead td {
+            #reportContent table thead th {
                 border: none !important;
+                border-bottom: 1px solid #000 !important;
                 padding: 4px 8px !important;
                 font-size: 10pt !important;
                 line-height: 1.28 !important;
                 text-align: left;
                 text-transform: none !important;
                 letter-spacing: normal !important;
-                background: transparent !important;
+                background-color: #f0f0f0 !important;
                 font-weight: bold;
             }
             #reportContent table tbody td {
@@ -263,15 +232,6 @@
             }
             #reportContent table tbody tr:first-child td {
                 border-top: none !important;
-            }
-            #reportContent table tbody tr:last-child td {
-                border-bottom: none !important;
-            }
-            #reportContent table tbody td:first-child {
-                border-left: none !important;
-            }
-            #reportContent table tbody td:last-child {
-                border-right: none !important;
             }
             
             /* Hide badges and buttons in print */
@@ -1469,13 +1429,13 @@
                         table tr {
                             page-break-inside: avoid;
                         }
-                        table thead th,
-                        table thead td {
+                        table thead th {
                             border: none;
+                            border-bottom: 1px solid #000;
                             padding: 6px 8px;
                             text-align: left;
                             font-size: 10pt;
-                            background: transparent;
+                            background-color: #f0f0f0;
                             font-weight: bold;
                         }
                         table tbody td {
@@ -1486,15 +1446,6 @@
                         }
                         table tbody tr:first-child td {
                             border-top: none;
-                        }
-                        table tbody tr:last-child td {
-                            border-bottom: none;
-                        }
-                        table tbody td:first-child {
-                            border-left: none;
-                        }
-                        table tbody td:last-child {
-                            border-right: none;
                         }
                         @media print {
                             body {
