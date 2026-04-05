@@ -12,13 +12,103 @@
             display: block !important; visibility: visible;
             background: #fff;
         }
+        /* Portrait shelf label: QR top ~half, then SKU / lot / name (centered) — matches print preview */
+        #qrLabelPrintArea {
+            display: none;
+            box-sizing: border-box;
+            width: 2in;
+            min-height: 2.65in;
+            padding: 0.22in 0.2in 0.2in;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: #fff;
+            flex-direction: column;
+            align-items: center;
+        }
+        #qrLabelPrintArea .qr-label-print-stack {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            width: 100%;
+            gap: 0.1in;
+        }
+        #qrLabelPrintArea #qrLabelPrintImg {
+            width: 1.38in;
+            height: 1.38in;
+            object-fit: contain;
+            flex-shrink: 0;
+            display: block;
+        }
+        #qrLabelPrintArea #qrLabelPrintSku {
+            font-size: 13px;
+            font-weight: 700;
+            color: #0f172a;
+            text-align: center;
+            width: 100%;
+            line-height: 1.2;
+            margin: 0.06in 0 0;
+        }
+        #qrLabelPrintArea #qrLabelPrintLot {
+            font-size: 11px;
+            font-weight: 700;
+            color: #0f172a;
+            text-align: center;
+            width: 100%;
+            line-height: 1.2;
+        }
+        #qrLabelPrintArea #qrLabelPrintName {
+            font-size: 9.5px;
+            font-weight: 400;
+            color: #64748b;
+            text-align: center;
+            width: 100%;
+            line-height: 1.3;
+            word-break: break-word;
+        }
         @media print {
+            @page {
+                margin: 0.25in;
+            }
             body * { visibility: hidden; }
             #qrLabelPrintArea, #qrLabelPrintArea * { visibility: visible; }
             #qrLabelPrintArea {
-                position: fixed; left: 0; top: 0;
-                width: 2in; height: 1in; margin: 0; padding: 0.1in;
-                display: block !important; background: #fff;
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 2in !important;
+                min-height: 2.65in !important;
+                max-width: 2in;
+                margin: 0;
+                padding: 0.22in 0.2in 0.2in !important;
+                display: flex !important;
+                flex-direction: column;
+                align-items: center;
+                justify-content: flex-start;
+                background: #fff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            #qrLabelPrintArea .qr-label-print-stack {
+                gap: 0.1in !important;
+            }
+            #qrLabelPrintArea #qrLabelPrintImg {
+                width: 1.38in !important;
+                height: 1.38in !important;
+            }
+            #qrLabelPrintArea #qrLabelPrintSku {
+                font-size: 14pt !important;
+                font-weight: 700 !important;
+                color: #0f172a !important;
+            }
+            #qrLabelPrintArea #qrLabelPrintLot {
+                font-size: 11.5pt !important;
+                font-weight: 700 !important;
+                color: #0f172a !important;
+            }
+            #qrLabelPrintArea #qrLabelPrintName {
+                font-size: 9.5pt !important;
+                font-weight: 400 !important;
+                color: #64748b !important;
             }
         }
     </style>
@@ -1210,14 +1300,12 @@
             </div>
         </div>
     </div>
-    <div id="qrLabelPrintArea" style="display: none; width: 2in; height: 1in; padding: 0.1in; box-sizing: border-box; font-family: sans-serif; font-size: 10px;">
-        <div style="display: flex; align-items: center; gap: 0.15in; height: 100%;">
-            <img id="qrLabelPrintImg" src="" alt="" style="width: 0.75in; height: 0.75in; flex-shrink: 0;">
-            <div style="flex: 1; min-width: 0;">
-                <div id="qrLabelPrintSku" style="font-weight: 700; font-size: 11px;"></div>
-                <div id="qrLabelPrintLot" style="font-size: 9px; font-weight: 600; color: #374151;"></div>
-                <div id="qrLabelPrintName" style="font-size: 9px; word-break: break-word; line-height: 1.2;"></div>
-            </div>
+    <div id="qrLabelPrintArea" aria-hidden="true">
+        <div class="qr-label-print-stack">
+            <img id="qrLabelPrintImg" src="" alt="Batch QR code">
+            <div id="qrLabelPrintSku"></div>
+            <div id="qrLabelPrintLot"></div>
+            <div id="qrLabelPrintName"></div>
         </div>
     </div>
 
@@ -6493,7 +6581,9 @@
             if (nameEl) nameEl.textContent = product ? (product.name || '') : '';
             if (printImg) printImg.src = qrLabelDataUrl;
             if (!printArea) return;
-            printArea.style.display = 'block';
+            printArea.style.display = 'flex';
+            printArea.style.flexDirection = 'column';
+            printArea.style.alignItems = 'center';
             printArea.style.position = 'absolute';
             printArea.style.left = '-9999px';
             printArea.style.top = '0';
