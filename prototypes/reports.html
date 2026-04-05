@@ -79,6 +79,7 @@
             color: var(--text) !important;
         }
 
+        /* PDF capture tuned to approved export sample inventory_summary_report_2026-04-05 (5).pdf */
         /* Only while html2canvas runs — balanced size for PDF (between tiny and oversized) */
         #reportContent.report-pdf-capture {
             padding: 11px 12px !important;
@@ -1002,6 +1003,7 @@
             updateSelectedButton('dateRange');
         }
 
+        // PDF layout baseline: inventory_summary_report_2026-04-05 (5).pdf (centered 13pt title, no frame, footer line).
         function exportToPDF() {
             const reportTitle = document.getElementById('reportTitle');
             const reportContent = document.getElementById('reportContent');
