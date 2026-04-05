@@ -504,16 +504,22 @@
             <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
                     <h2 class="card-title" style="margin: 0;"><i data-lucide="calendar" style="width:18px;height:18px;vertical-align:middle;margin-right:0.35rem;color:#4D7C0F;"></i>Create RFQ</h2>
-                    <p style="margin: 0.35rem 0 0; font-size: 0.8125rem; color: var(--text-muted); font-weight: 500;">Step 1 of 2 — Quotation date</p>
+                    <p style="margin: 0.35rem 0 0; font-size: 0.8125rem; color: var(--text-muted); font-weight: 500;">Step 1 of 2 — Quotation deadline (date &amp; time)</p>
                 </div>
                 <button type="button" onclick="closeCreateRfqModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
             </div>
             <div style="padding: 1.5rem;">
-                <div class="form-group">
-                    <label class="form-label" for="createRfqQuoteDue">Quotation due date *</label>
-                    <input type="date" id="createRfqQuoteDue" class="form-input" required aria-required="true">
-                    <p class="form-hint" style="margin-top: 0.35rem; font-size: 0.8125rem; color: var(--text-muted);">Suppliers must submit quotes by this date. Next, you will open a second window to preview and edit the RFQ email before sending.</p>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end;">
+                    <div class="form-group" style="flex: 1; min-width: 150px; margin-bottom: 0;">
+                        <label class="form-label" for="createRfqQuoteDue">Quotation due date *</label>
+                        <input type="date" id="createRfqQuoteDue" class="form-input" required aria-required="true">
+                    </div>
+                    <div class="form-group" style="flex: 0 0 auto; min-width: 130px; margin-bottom: 0;">
+                        <label class="form-label" for="createRfqQuoteDueTime">Due time *</label>
+                        <input type="time" id="createRfqQuoteDueTime" class="form-input" value="17:00" required aria-required="true" title="Time of day quotes are due (your local time)">
+                    </div>
                 </div>
+                <p class="form-hint" style="margin-top: 0.5rem; font-size: 0.8125rem; color: var(--text-muted);">Suppliers must submit quotes by this date and time. Next, preview and edit the RFQ email (To, CC, BCC, subject, message), then send.</p>
                 <div style="display: flex; gap: 0.75rem; justify-content: flex-end; flex-wrap: wrap;">
                     <button type="button" class="btn btn-outline" onclick="closeCreateRfqModal()">Cancel</button>
                     <button type="button" class="btn btn-primary-green" onclick="confirmCreateRfq()" style="background: #4D7C0F; border-color: #4D7C0F;"><i data-lucide="arrow-right" style="width:14px;height:14px;vertical-align:middle;margin-right:0.25rem;"></i>Next: preview email</button>
@@ -532,11 +538,11 @@
                 <button type="button" onclick="closeReviewRfqEmailModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #6b7280; line-height: 1;">&times;</button>
             </div>
             <div style="padding: 0; font-family: 'Segoe UI', Calibri, Arial, sans-serif; background: #fff; border: 1px solid #e5e7eb; margin: 1rem; border-radius: 4px; overflow: hidden;">
-                <!-- Outlook-style email header (To, BCC read-only to prevent accidental modification) -->
+                <!-- Outlook-style email header (To, CC, BCC editable before send) -->
                 <div class="rfq-email-header" style="border-bottom: 1px solid #e5e7eb;">
                     <div style="display: flex; align-items: center; min-height: 36px; border-bottom: 1px solid #e5e7eb;">
                         <div style="width: 72px; flex-shrink: 0; padding: 6px 12px; font-size: 12px; font-weight: 600; color: #6b7280; background: #f9fafb;">To</div>
-                        <input type="text" id="rfqEmailTo" readonly tabindex="-1" style="flex: 1; border: none; border-radius: 0; padding: 6px 12px; font-size: 13px; background: #fafafa; color: #111827; cursor: default;">
+                        <input type="text" id="rfqEmailTo" class="form-input" placeholder="Comma-separated addresses" style="flex: 1; border: none; border-radius: 0; padding: 6px 12px; font-size: 13px; background: #fff; min-height: 36px;">
                     </div>
                     <div style="display: flex; align-items: center; min-height: 36px; border-bottom: 1px solid #e5e7eb;">
                         <div style="width: 72px; flex-shrink: 0; padding: 6px 12px; font-size: 12px; font-weight: 600; color: #6b7280; background: #f9fafb;">CC</div>
@@ -544,7 +550,7 @@
                     </div>
                     <div style="display: flex; align-items: center; min-height: 36px; border-bottom: 1px solid #e5e7eb;">
                         <div style="width: 72px; flex-shrink: 0; padding: 6px 12px; font-size: 12px; font-weight: 600; color: #6b7280; background: #f9fafb;">BCC</div>
-                        <input type="text" id="rfqEmailBcc" readonly tabindex="-1" style="flex: 1; border: none; border-radius: 0; padding: 6px 12px; font-size: 13px; background: #fafafa; color: #111827; cursor: default;">
+                        <input type="text" id="rfqEmailBcc" class="form-input" placeholder="Suppliers (comma-separated); edit if needed" style="flex: 1; border: none; border-radius: 0; padding: 6px 12px; font-size: 13px; background: #fff; min-height: 36px;">
                     </div>
                     <div style="display: flex; align-items: center; min-height: 36px;">
                         <div style="width: 72px; flex-shrink: 0; padding: 6px 12px; font-size: 12px; font-weight: 600; color: #6b7280; background: #f9fafb;">Subject</div>
@@ -1483,6 +1489,40 @@
                 const s = d.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 return s.replace(', ', ' ');
             } catch (e) { return String(dateStr); }
+        }
+        /** Combine Step 1 date + time for MySQL DATETIME (YYYY-MM-DD HH:mm:ss). */
+        function buildQuoteDueForApi(dateStr, timeStr) {
+            const d = (dateStr || '').trim();
+            if (!d) return '';
+            const t = (timeStr || '17:00').trim();
+            const tp = t.split(':');
+            let hh = parseInt(tp[0], 10);
+            let mm = parseInt(tp[1] != null ? tp[1] : '0', 10);
+            if (isNaN(hh)) hh = 17;
+            if (isNaN(mm)) mm = 0;
+            hh = Math.min(23, Math.max(0, hh));
+            mm = Math.min(59, Math.max(0, mm));
+            return d + ' ' + String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0') + ':00';
+        }
+        /** Split stored quoteDueDate (DATE or DATETIME) into date + time inputs for Step 1. */
+        function parseQuoteDueForStep1Inputs(stored) {
+            if (!stored) return { date: '', time: '17:00' };
+            const s = String(stored).trim();
+            const m = s.match(/^(\d{4}-\d{2}-\d{2})(?:[T ])?(\d{2}):(\d{2})/);
+            if (m) return { date: m[1], time: m[2] + ':' + m[3] };
+            if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return { date: s, time: '17:00' };
+            try {
+                const dt = new Date(s);
+                if (!isNaN(dt.getTime())) {
+                    const y = dt.getFullYear();
+                    const mo = String(dt.getMonth() + 1).padStart(2, '0');
+                    const da = String(dt.getDate()).padStart(2, '0');
+                    const hh = String(dt.getHours()).padStart(2, '0');
+                    const mi = String(dt.getMinutes()).padStart(2, '0');
+                    return { date: y + '-' + mo + '-' + da, time: hh + ':' + mi };
+                }
+            } catch (e) { /* ignore */ }
+            return { date: s.slice(0, 10), time: '17:00' };
         }
         /** Returns true if value should be hidden in email (N/A, null, empty). */
         function isBlankForEmail(v) {
@@ -2661,6 +2701,8 @@
                 }
             } catch (_) {}
             document.getElementById('createRfqQuoteDue').value = defaultDate;
+            const timeEl = document.getElementById('createRfqQuoteDueTime');
+            if (timeEl) timeEl.value = '17:00';
             document.getElementById('createRfqModalBackdrop').style.display = 'block';
             document.getElementById('createRfqModal').style.display = 'block';
             if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
@@ -2683,7 +2725,10 @@
             reviewRfqEmailRfqId = null;
             createRfqPendingRequestId = rid;
             const dueEl = document.getElementById('createRfqQuoteDue');
-            if (dueEl) dueEl.value = qd;
+            const timeEl = document.getElementById('createRfqQuoteDueTime');
+            const parsed = parseQuoteDueForStep1Inputs(qd);
+            if (dueEl) dueEl.value = parsed.date;
+            if (timeEl) timeEl.value = parsed.time || '17:00';
             document.getElementById('createRfqModalBackdrop').style.display = 'block';
             document.getElementById('createRfqModal').style.display = 'block';
             if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
@@ -2695,16 +2740,20 @@
                 return;
             }
             console.log('Fetching PR for Create RFQ, requestId:', requestId);
-            const quoteDue = (document.getElementById('createRfqQuoteDue') && document.getElementById('createRfqQuoteDue').value) || '';
-            if (!quoteDue.trim()) {
-                if (typeof showNotification === 'function') showNotification('Quotation date', 'Please select a quotation due date.', 'error');
+            const quoteDate = (document.getElementById('createRfqQuoteDue') && document.getElementById('createRfqQuoteDue').value) || '';
+            const quoteTime = (document.getElementById('createRfqQuoteDueTime') && document.getElementById('createRfqQuoteDueTime').value) || '17:00';
+            if (!quoteDate.trim()) {
+                if (typeof showNotification === 'function') showNotification('Quotation deadline', 'Please select a quotation due date.', 'error');
                 return;
             }
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const due = new Date(quoteDue + 'T12:00:00');
-            if (due < today) {
-                if (typeof showNotification === 'function') showNotification('Quotation date', 'Quotation due date must be today or a future date.', 'error');
+            const quoteDue = buildQuoteDueForApi(quoteDate, quoteTime);
+            const due = new Date(quoteDue.replace(' ', 'T'));
+            if (isNaN(due.getTime())) {
+                if (typeof showNotification === 'function') showNotification('Quotation deadline', 'Invalid date or time.', 'error');
+                return;
+            }
+            if (due.getTime() < Date.now()) {
+                if (typeof showNotification === 'function') showNotification('Quotation deadline', 'Quotation due date and time must be in the future.', 'error');
                 return;
             }
             hideCreateRfqModal();
@@ -2892,7 +2941,7 @@
             }
             const stepHint2 = document.getElementById('reviewRfqEmailStepHint');
             const backBtn2 = document.getElementById('rfqEmailBackToDateBtn');
-            if (stepHint2) stepHint2.textContent = 'Preview — Edit subject or message if needed, then send.';
+            if (stepHint2) stepHint2.textContent = 'Preview — Edit subject, To/CC/BCC, or message if needed, then send.';
             if (backBtn2) backBtn2.style.display = 'none';
             document.getElementById('reviewRfqEmailModalBackdrop').style.display = 'block';
             document.getElementById('reviewRfqEmailModal').style.display = 'block';

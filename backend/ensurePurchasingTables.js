@@ -49,7 +49,7 @@ async function ensurePurchasingTables() {
                 rfqNumber VARCHAR(50) UNIQUE NOT NULL,
                 purchaseRequestId INT NOT NULL,
                 status ENUM('DRAFT','SENT','QUOTES_RECEIVED','AWARDED','CLOSED') DEFAULT 'DRAFT',
-                quoteDueDate DATE,
+                quoteDueDate DATETIME,
                 notes TEXT,
                 createdBy INT,
                 createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -196,6 +196,20 @@ async function ensurePurchasingTables() {
                 ENUM('DRAFT','SENT','QUOTES_RECEIVED','AWARDED','CLOSED','WITHDRAW_PENDING','WITHDRAWN') DEFAULT 'DRAFT'
             `);
         } catch (_) {}
+
+        // quoteDueDate: DATE → DATETIME so quotation can have a deadline time (not just calendar day)
+        try {
+            const [dtCol] = await db.execute(
+                `SELECT DATA_TYPE FROM information_schema.columns
+                 WHERE table_schema = DATABASE() AND table_name = 'rfqs' AND column_name = 'quoteDueDate'`
+            );
+            if (dtCol.length && String(dtCol[0].DATA_TYPE || '').toLowerCase() === 'date') {
+                await db.execute('ALTER TABLE rfqs MODIFY COLUMN quoteDueDate DATETIME NULL');
+                console.log('[ensurePurchasingTables] rfqs.quoteDueDate upgraded to DATETIME');
+            }
+        } catch (e) {
+            console.warn('[ensurePurchasingTables] quoteDueDate DATETIME:', e.message);
+        }
 
         // Add FKs only if they don't exist (avoid errors on re-run)
         const tables = ['purchase_request_suppliers', 'purchase_requests', 'rfqs', 'rfq_suppliers', 'quotations', 'purchase_orders'];
