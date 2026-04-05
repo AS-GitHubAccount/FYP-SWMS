@@ -15,6 +15,83 @@ const db = require('../config/database');
 const QRCode = require('qrcode');
 const { requireCriticalApproval } = require('../utils/criticalApproval');
 
+/** DELETEs that may not exist in older DBs — ignore ER_NO_SUCH_TABLE */
+async function executeOptionalDelete(conn, sql, params) {
+    try {
+        await conn.execute(sql, params);
+    } catch (e) {
+        if (e && e.code === 'ER_NO_SUCH_TABLE') return;
+        throw e;
+    }
+}
+
+/**
+ * Tables that reference products without ON DELETE CASCADE block DELETE FROM products.
+ * Remove those rows first (movement/PO history for this product).
+ */
+async function getBookingDeletePlan(productId) {
+    try {
+        const [bookingStats] = await db.execute(
+            `SELECT status, COUNT(*) AS cnt
+             FROM bookings
+             WHERE productId = ?
+             GROUP BY status`,
+            [productId]
+        );
+        if (!Array.isArray(bookingStats) || bookingStats.length === 0) {
+            return { blocked: false, deleteResolvedBookings: false };
+        }
+        let activeCount = 0;
+        let resolvedCount = 0;
+        bookingStats.forEach(function (r) {
+            const s = String(r.status || '').toUpperCase();
+            const c = parseInt(r.cnt, 10) || 0;
+            if (s === 'PENDING' || s === 'APPROVED') activeCount += c;
+            else if (s === 'CANCELLED' || s === 'FULFILLED') resolvedCount += c;
+            else activeCount += c;
+        });
+        if (activeCount > 0) {
+            return {
+                blocked: true,
+                message: `Cannot delete this product because ${activeCount} active booking(s) are still linked. Cancel or fulfill those bookings first.`
+            };
+        }
+        return { blocked: false, deleteResolvedBookings: resolvedCount > 0 };
+    } catch (e) {
+        if (e && e.code === 'ER_NO_SUCH_TABLE') {
+            return { blocked: false, deleteResolvedBookings: false };
+        }
+        throw e;
+    }
+}
+
+async function runProductDeleteTransaction(productId, deleteResolvedBookings) {
+    const conn = await db.getConnection();
+    try {
+        await conn.beginTransaction();
+        if (deleteResolvedBookings) {
+            await conn.execute(
+                `DELETE FROM bookings
+                 WHERE productId = ?
+                   AND status IN ('CANCELLED', 'FULFILLED')`,
+                [productId]
+            );
+        }
+        await executeOptionalDelete(conn, 'DELETE FROM purchase_orders WHERE productId = ?', [productId]);
+        await executeOptionalDelete(conn, 'DELETE FROM out_records WHERE productId = ?', [productId]);
+        await executeOptionalDelete(conn, 'DELETE FROM in_records WHERE productId = ?', [productId]);
+        await executeOptionalDelete(conn, 'DELETE FROM stock_adjustments WHERE productId = ?', [productId]);
+        await executeOptionalDelete(conn, 'DELETE FROM disposal_requests WHERE productId = ?', [productId]);
+        await conn.execute('DELETE FROM products WHERE productId = ?', [productId]);
+        await conn.commit();
+    } catch (e) {
+        await conn.rollback();
+        throw e;
+    } finally {
+        conn.release();
+    }
+}
+
 router.get('/', async (req, res) => {
     try {
         // Query database
@@ -297,7 +374,6 @@ router.delete('/:id', async (req, res) => {
         const approvalCheck = await requireCriticalApproval(req, res, 'delete_product');
         if (approvalCheck) return;
 
-        // Check if product exists
         const [existing] = await db.execute(
             'SELECT * FROM products WHERE productId = ?',
             [productId]
@@ -310,57 +386,16 @@ router.delete('/:id', async (req, res) => {
             });
         }
 
-        // Handle bookings safely before deletion:
-        // - block if active bookings exist (PENDING/APPROVED)
-        // - auto-clean resolved bookings (CANCELLED/FULFILLED) so FK won't block delete
-        try {
-            const [bookingStats] = await db.execute(
-                `SELECT status, COUNT(*) AS cnt
-                 FROM bookings
-                 WHERE productId = ?
-                 GROUP BY status`,
-                [productId]
-            );
-            if (Array.isArray(bookingStats) && bookingStats.length > 0) {
-                let activeCount = 0;
-                let resolvedCount = 0;
-                bookingStats.forEach(function (r) {
-                    const s = String(r.status || '').toUpperCase();
-                    const c = parseInt(r.cnt, 10) || 0;
-                    if (s === 'PENDING' || s === 'APPROVED') activeCount += c;
-                    else if (s === 'CANCELLED' || s === 'FULFILLED') resolvedCount += c;
-                    else activeCount += c;
-                });
-
-                if (activeCount > 0) {
-                    return res.status(409).json({
-                        success: false,
-                        error: 'Product is referenced',
-                        message: `Cannot delete this product because ${activeCount} active booking(s) are still linked. Cancel or fulfill those bookings first.`
-                    });
-                }
-
-                if (resolvedCount > 0) {
-                    await db.execute(
-                        `DELETE FROM bookings
-                         WHERE productId = ?
-                           AND status IN ('CANCELLED', 'FULFILLED')`,
-                        [productId]
-                    );
-                }
-            }
-        } catch (bkErr) {
-            // If bookings table is unavailable in a partial environment, continue with normal delete path.
-            if (bkErr && bkErr.code !== 'ER_NO_SUCH_TABLE') {
-                throw bkErr;
-            }
+        const bookingPlan = await getBookingDeletePlan(productId);
+        if (bookingPlan.blocked) {
+            return res.status(409).json({
+                success: false,
+                error: 'Product is referenced',
+                message: bookingPlan.message
+            });
         }
 
-        // Delete product
-        await db.execute(
-            'DELETE FROM products WHERE productId = ?',
-            [productId]
-        );
+        await runProductDeleteTransaction(productId, bookingPlan.deleteResolvedBookings);
 
         res.json({
             success: true,
@@ -369,8 +404,6 @@ router.delete('/:id', async (req, res) => {
     } catch (error) {
         console.error('Error deleting product:', error);
 
-        // Friendly handling for FK constraint failures (e.g., bookings referencing products)
-        // MySQL common codes: ER_ROW_IS_REFERENCED / ER_ROW_IS_REFERENCED_2 / errno 1451
         const maybeReferenced =
             error &&
             (error.code === 'ER_ROW_IS_REFERENCED' ||
@@ -378,71 +411,29 @@ router.delete('/:id', async (req, res) => {
                 error.errno === 1451);
 
         if (maybeReferenced) {
-            // Attempt to extract referencing table name from message:
-            // "... fails (`swms_db`.`bookings`, CONSTRAINT ... FOREIGN KEY ... )"
             let referencedTable = 'a related record';
             const m = String(error.message || '').match(/`[^`]+`\.`([^`]+)`/);
             if (m && m[1]) referencedTable = m[1];
-            const rawErr = String(error.message || '');
-            const isBookingReference =
-                String(referencedTable).toLowerCase() === 'bookings' ||
-                /bookings/i.test(rawErr);
 
-            // Recovery path for bookings FK:
-            // If only resolved bookings remain, remove them and retry product deletion once.
-            if (isBookingReference) {
-                try {
-                    const [bookingStats] = await db.execute(
-                        `SELECT status, COUNT(*) AS cnt
-                         FROM bookings
-                         WHERE productId = ?
-                         GROUP BY status`,
-                        [req.params.id]
-                    );
-
-                    let activeCount = 0;
-                    let resolvedCount = 0;
-                    (bookingStats || []).forEach(function (r) {
-                        const s = String(r.status || '').toUpperCase();
-                        const c = parseInt(r.cnt, 10) || 0;
-                        if (s === 'PENDING' || s === 'APPROVED') activeCount += c;
-                        else if (s === 'CANCELLED' || s === 'FULFILLED') resolvedCount += c;
-                        else activeCount += c;
+            try {
+                const bookingPlan = await getBookingDeletePlan(req.params.id);
+                if (!bookingPlan.blocked) {
+                    await runProductDeleteTransaction(req.params.id, bookingPlan.deleteResolvedBookings);
+                    return res.json({
+                        success: true,
+                        message: 'Product deleted successfully'
                     });
-
-                    if (activeCount > 0) {
-                        return res.status(409).json({
-                            success: false,
-                            error: 'Product is referenced',
-                            message: `Cannot delete this product because ${activeCount} active booking(s) are still linked. Cancel or fulfill those bookings first.`
-                        });
-                    }
-
-                    if (resolvedCount > 0) {
-                        await db.execute(
-                            `DELETE FROM bookings
-                             WHERE productId = ?
-                               AND status IN ('CANCELLED', 'FULFILLED')`,
-                            [req.params.id]
-                        );
-                        // Retry delete once after cleaning resolved bookings.
-                        await db.execute('DELETE FROM products WHERE productId = ?', [req.params.id]);
-                        return res.json({
-                            success: true,
-                            message: 'Product deleted successfully'
-                        });
-                    }
-                } catch (retryErr) {
-                    console.error('Error resolving booking references during delete:', retryErr);
                 }
+            } catch (retryErr) {
+                console.error('Product delete retry after FK error:', retryErr);
             }
 
             return res.status(409).json({
                 success: false,
                 error: 'Product is referenced',
                 message:
-                    `Cannot delete this product because it is referenced by ${referencedTable}. ` +
-                    `Please resolve linked records first.`
+                    `Cannot delete this product because it is still referenced by table "${referencedTable}". ` +
+                    'Resolve or remove those records, or contact an administrator.'
             });
         }
 

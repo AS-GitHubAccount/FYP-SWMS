@@ -9,6 +9,37 @@ function getAPIBase() {
     return 'http://localhost:3000/api';
 }
 
+/**
+ * Numeric userId for notification API query params.
+ * sessionStorage may be missing userId after refresh in some flows; fall back to JWT payload.
+ */
+window.getSwmsSessionUserId = function getSwmsSessionUserId() {
+    if (typeof window === 'undefined' || typeof sessionStorage === 'undefined') return 0;
+    let id = parseInt(sessionStorage.getItem('userId') || '0', 10);
+    if (!isNaN(id) && id > 0) return id;
+    const token =
+        sessionStorage.getItem('authToken') ||
+        (typeof localStorage !== 'undefined' ? localStorage.getItem('authToken') : null);
+    if (!token || typeof token !== 'string') return 0;
+    try {
+        const parts = token.split('.');
+        if (parts.length < 2) return 0;
+        let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4) b64 += '=';
+        const payload = JSON.parse(atob(b64));
+        const uid = parseInt(payload.userId, 10);
+        if (!isNaN(uid) && uid > 0) {
+            try {
+                sessionStorage.setItem('userId', String(uid));
+            } catch (e) { /* ignore */ }
+            return uid;
+        }
+    } catch (e) {
+        /* ignore */
+    }
+    return 0;
+};
+
 function getAuthHeaders() {
     const token = (typeof window !== 'undefined' && typeof window.getAuthToken === 'function')
         ? window.getAuthToken()
@@ -58,7 +89,7 @@ window.consumePendingNotificationRead = async function() {
 
 async function fetchUnreadCountSafe() {
     const API_BASE = getAPIBase();
-    const userId = parseInt(sessionStorage.getItem('userId') || '0', 10);
+    const userId = typeof window.getSwmsSessionUserId === 'function' ? window.getSwmsSessionUserId() : parseInt(sessionStorage.getItem('userId') || '0', 10);
     const userRole = sessionStorage.getItem('userRole') || 'Admin';
     const userName = sessionStorage.getItem('userName') || ((userRole === 'Admin' || userRole === 'ADMIN') ? 'Admin' : 'Staff Member');
     if (!userId || isNaN(userId)) return 0;
@@ -110,7 +141,11 @@ window.updateNotificationBadge = async function() {
     }
 };
 
-window.loadNotifications = async function() {
+/**
+ * Updates header badge + optional dashboard banner. Do not use the name loadNotifications —
+ * notifications.html defines window.loadNotifications for the inbox list.
+ */
+window.syncNotificationBanner = async function syncNotificationBanner() {
     try {
         const unreadCount = await window.updateNotificationBadge();
 
@@ -176,6 +211,18 @@ window.loadNotifications = async function() {
             window.updateNotificationBadge();
         }
     });
+})();
+
+// Older pages call window.loadNotifications() only to refresh badge/banner — not the inbox list.
+(function compatLoadNotificationsAlias() {
+    try {
+        const p = (window.location && window.location.pathname) ? String(window.location.pathname).toLowerCase() : '';
+        if (p.indexOf('notifications.html') === -1 && typeof window.syncNotificationBanner === 'function') {
+            window.loadNotifications = window.syncNotificationBanner;
+        }
+    } catch (e) {
+        /* ignore */
+    }
 })();
 
 // Show notifications panel (available globally)
@@ -261,7 +308,8 @@ window.showNotificationsPanel = function() {
         notif.read = true;
     });
     window.storage.set('notifications', notifications);
-    window.loadNotifications();
+    if (typeof window.syncNotificationBanner === 'function') window.syncNotificationBanner();
+    else if (typeof window.updateNotificationBadge === 'function') window.updateNotificationBadge();
 };
 
 

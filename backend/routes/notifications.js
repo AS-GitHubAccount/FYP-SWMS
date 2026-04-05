@@ -16,9 +16,20 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 
+function resolveNotificationUserId(req) {
+    const fromQuery = parseInt(req.query.userId, 10);
+    let fromToken = NaN;
+    if (req.user && req.user.userId != null && req.user.userId !== '') {
+        fromToken = parseInt(req.user.userId, 10);
+    }
+    if (!isNaN(fromToken) && fromToken > 0) return fromToken;
+    if (!isNaN(fromQuery) && fromQuery > 0) return fromQuery;
+    return NaN;
+}
+
 router.get('/', async (req, res) => {
     try {
-        const userId = req.user && req.user.userId ? parseInt(req.user.userId, 10) : parseInt(req.query.userId, 10);
+        const userId = resolveNotificationUserId(req);
         if (!userId || isNaN(userId)) {
             return res.status(400).json({
                 success: false,
@@ -63,7 +74,7 @@ router.get('/', async (req, res) => {
 
 async function handleUnreadCount(req, res) {
     try {
-        const userId = req.user && req.user.userId ? parseInt(req.user.userId, 10) : parseInt(req.query.userId, 10);
+        const userId = resolveNotificationUserId(req);
         if (!userId || isNaN(userId)) {
             return res.status(400).json({
                 success: false,
