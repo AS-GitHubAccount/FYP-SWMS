@@ -1046,8 +1046,8 @@
                         const pdfPageH = pdf.internal.pageSize.getHeight();
                         const imgWidthMm = pdfPageW - margin * 2;
                         const fullImgHeightMm = (canvas.height / canvas.width) * imgWidthMm;
-                        const titleY = 14;
-                        const contentTopFirst = 22;
+                        const titleY = 12;
+                        const contentTopFirst = 19;
                         const bottomMargin = 12;
                         const footerBand = 10;
                         const availFirst = pdfPageH - contentTopFirst - bottomMargin - footerBand;
@@ -1060,9 +1060,9 @@
                                 pdf.addPage();
                             }
                             if (pageIndex === 0) {
-                                pdf.setFontSize(13);
+                                pdf.setFontSize(14);
                                 pdf.setFont('helvetica', 'bold');
-                                pdf.text(title, pdfPageW / 2, titleY, { align: 'center' });
+                                pdf.text(title, margin, titleY, { align: 'left' });
                                 pdf.setFont('helvetica', 'normal');
                             }
                             
@@ -1115,17 +1115,12 @@
                         pdf.setFont('helvetica', 'normal');
                         for (p = 1; p <= totalPdfPages; p++) {
                             pdf.setPage(p);
-                            pdf.setDrawColor(55, 55, 55);
-                            pdf.setLineWidth(0.4);
-                            pdf.rect(margin, margin, pdfPageW - 2 * margin, pdfPageH - 2 * margin, 'S');
                             pdf.setFontSize(8.5);
                             pdf.setTextColor(90, 90, 90);
                             pdf.text(printedLine, margin + footerInset, footerY);
                             pdf.text('Page ' + p + ' of ' + totalPdfPages, pdfPageW - margin - footerInset, footerY, { align: 'right' });
                         }
                         pdf.setTextColor(0, 0, 0);
-                        pdf.setDrawColor(0, 0, 0);
-                        pdf.setLineWidth(0.2);
                         
                         var fileName = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_' + new Date().toISOString().split('T')[0] + '.pdf';
                         pdf.save(fileName);
