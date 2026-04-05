@@ -262,6 +262,25 @@
         let currentReportType = null;
         let currentReportData = null;
 
+        /** Normalize API/mock dates to YYYY-MM-DD for comparisons with <input type="date">. */
+        function toYyyyMmDd(val) {
+            if (val == null || val === '') return '';
+            const s = String(val).trim();
+            if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+            const d = new Date(s);
+            if (isNaN(d.getTime())) return '';
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return y + '-' + m + '-' + day;
+        }
+        function recordFallsInYmdRange(r, fromYmd, toYmd) {
+            const raw = r.date != null && r.date !== '' ? r.date : (r.receivedDate != null && r.receivedDate !== '' ? r.receivedDate : r.issuedDate);
+            const d = toYyyyMmDd(raw);
+            if (!d) return false;
+            return d >= fromYmd && d <= toYmd;
+        }
+
         // Function to update button selected state
         function updateSelectedButton(reportType) {
             // Remove selected class from all report buttons
@@ -283,9 +302,11 @@
                 const token = sessionStorage.getItem('authToken');
                 const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
                 const base = window.API_BASE_URL || 'http://localhost:3000/api';
-                const [invRes, batchRes] = await Promise.all([
+                const [invRes, batchRes, recvRes, issueRes] = await Promise.all([
                     fetch(base + '/inventory', { headers }).catch(() => null),
-                    fetch(base + '/batches', { headers }).catch(() => null)
+                    fetch(base + '/batches', { headers }).catch(() => null),
+                    fetch(base + '/receiving', { headers }).catch(() => null),
+                    fetch(base + '/issuing', { headers }).catch(() => null)
                 ]);
                 if (invRes && invRes.ok) {
                     const d = await invRes.json();
@@ -297,6 +318,44 @@
                 if (batchRes && batchRes.ok) {
                     const d = await batchRes.json();
                     if (d.success && d.data) window.storage.set('batches', d.data);
+                }
+                if (recvRes && recvRes.ok) {
+                    const d = await recvRes.json();
+                    if (d.success && Array.isArray(d.data)) {
+                        window.storage.set('inRecords', d.data.map(function (r) {
+                            const by = r.receivedByName != null ? String(r.receivedByName) : (r.receivedBy != null ? String(r.receivedBy) : '');
+                            return {
+                                id: r.recordId,
+                                recordNumber: r.recordNumber,
+                                date: toYyyyMmDd(r.receivedDate),
+                                product: r.productName || r.productSku || '',
+                                lotCode: r.lotCode || '',
+                                qty: r.quantity != null ? Number(r.quantity) : 0,
+                                supplier: r.supplier || '',
+                                receivedBy: by,
+                                user: by
+                            };
+                        }));
+                    }
+                }
+                if (issueRes && issueRes.ok) {
+                    const d = await issueRes.json();
+                    if (d.success && Array.isArray(d.data)) {
+                        window.storage.set('outRecords', d.data.map(function (r) {
+                            const by = r.issuedByName != null ? String(r.issuedByName) : (r.issuedBy != null ? String(r.issuedBy) : '');
+                            return {
+                                id: r.recordId,
+                                recordNumber: r.recordNumber,
+                                date: toYyyyMmDd(r.issuedDate),
+                                product: r.productName || r.productSku || '',
+                                lotCode: r.lotCode || '',
+                                qty: r.quantity != null ? Number(r.quantity) : 0,
+                                recipient: r.recipient || '',
+                                issuedBy: by,
+                                user: by
+                            };
+                        }));
+                    }
                 }
             } catch (e) { console.warn('Report API fetch failed:', e.message); }
         }
@@ -575,7 +634,7 @@
                     <td>${record.lotCode}</td>
                     <td>${record.qty}</td>
                     <td>${record.supplier}</td>
-                    <td>${record.receivedBy}</td>
+                    <td>${record.receivedBy || record.user || ''}</td>
                 </tr>`;
             });
             
@@ -609,7 +668,7 @@
                     <td>${record.product}</td>
                     <td>${record.qty}</td>
                     <td>${record.recipient}</td>
-                    <td>${record.issuedBy}</td>
+                    <td>${record.issuedBy || record.user || ''}</td>
                 </tr>`;
             });
             
@@ -664,20 +723,30 @@
             return html;
         }
 
-        function generateDateRangeReport() {
+        async function generateDateRangeReport() {
             const fromDate = document.getElementById('fromDate').value;
             const toDate = document.getElementById('toDate').value;
             
             if (!fromDate || !toDate) {
-                showNotification('Please select both from and to dates', 'error');
+                if (typeof window.showNotification === 'function') {
+                    window.showNotification('Date range', 'Please select both From and To dates.', 'error');
+                }
                 return;
             }
-            
+            if (fromDate > toDate) {
+                if (typeof window.showNotification === 'function') {
+                    window.showNotification('Date range', 'From date must be on or before To date.', 'error');
+                }
+                return;
+            }
+
+            await fetchReportDataFromAPI();
+
             const inRecords = window.storage.get('inRecords') || [];
             const outRecords = window.storage.get('outRecords') || [];
-            
-            const filteredIn = inRecords.filter(r => r.date >= fromDate && r.date <= toDate);
-            const filteredOut = outRecords.filter(r => r.date >= fromDate && r.date <= toDate);
+
+            const filteredIn = inRecords.filter(function (r) { return recordFallsInYmdRange(r, fromDate, toDate); });
+            const filteredOut = outRecords.filter(function (r) { return recordFallsInYmdRange(r, fromDate, toDate); });
             
             // Store current report data
             currentReportType = 'dateRange';
