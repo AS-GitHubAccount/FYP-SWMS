@@ -281,6 +281,24 @@
             return d >= fromYmd && d <= toYmd;
         }
 
+        function escapeHtml(s) {
+            if (s == null || s === '') return '';
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function sortDetailRecordsAsc(records) {
+            return (records || []).slice().sort(function (a, b) {
+                const da = toYyyyMmDd(a.date != null && a.date !== '' ? a.date : (a.receivedDate || a.issuedDate));
+                const db = toYyyyMmDd(b.date != null && b.date !== '' ? b.date : (b.receivedDate || b.issuedDate));
+                if (da !== db) return da.localeCompare(db);
+                return String(a.recordNumber || a.id || '').localeCompare(String(b.recordNumber || b.id || ''));
+            });
+        }
+
         // Function to update button selected state
         function updateSelectedButton(reportType) {
             // Remove selected class from all report buttons
@@ -329,11 +347,17 @@
                                 recordNumber: r.recordNumber,
                                 date: toYyyyMmDd(r.receivedDate),
                                 product: r.productName || r.productSku || '',
+                                productSku: r.productSku || '',
+                                productId: r.productId,
+                                batchId: r.batchId,
                                 lotCode: r.lotCode || '',
+                                expiryDate: r.expiryDate ? toYyyyMmDd(r.expiryDate) : '',
                                 qty: r.quantity != null ? Number(r.quantity) : 0,
                                 supplier: r.supplier || '',
                                 receivedBy: by,
-                                user: by
+                                user: by,
+                                notes: r.notes != null ? String(r.notes) : '',
+                                warehouseId: r.warehouseId != null && r.warehouseId !== '' ? r.warehouseId : ''
                             };
                         }));
                     }
@@ -348,11 +372,17 @@
                                 recordNumber: r.recordNumber,
                                 date: toYyyyMmDd(r.issuedDate),
                                 product: r.productName || r.productSku || '',
+                                productSku: r.productSku || '',
+                                productId: r.productId,
+                                batchId: r.batchId,
                                 lotCode: r.lotCode || '',
+                                expiryDate: r.expiryDate ? toYyyyMmDd(r.expiryDate) : '',
                                 qty: r.quantity != null ? Number(r.quantity) : 0,
                                 recipient: r.recipient || '',
                                 issuedBy: by,
-                                user: by
+                                user: by,
+                                notes: r.notes != null ? String(r.notes) : '',
+                                warehouseId: r.warehouseId != null && r.warehouseId !== '' ? r.warehouseId : ''
                             };
                         }));
                     }
@@ -757,10 +787,65 @@
                 filteredOut: filteredOut
             };
             
-            let html = `<h3>Date Range: ${fromDate} to ${toDate}</h3>`;
+            let html = `<div class="report-range-heading" style="font-size:1.15rem;font-weight:600;margin-bottom:0.75rem;">Date Range: ${fromDate} to ${toDate}</div>`;
             html += `<p><strong>Stock In: ${filteredIn.length} records, ${filteredIn.reduce((sum, r) => sum + (r.qty || 0), 0)} units</strong></p>`;
             html += `<p><strong>Stock Out: ${filteredOut.length} records, ${filteredOut.reduce((sum, r) => sum + (r.qty || 0), 0)} units</strong></p>`;
-            
+
+            const inSorted = sortDetailRecordsAsc(filteredIn);
+            const outSorted = sortDetailRecordsAsc(filteredOut);
+
+            html += `<div class="report-section-title" style="font-size:1.1rem;font-weight:600;margin-top:1.5rem;margin-bottom:0.5rem;">Stock In — line items</div>`;
+            if (inSorted.length === 0) {
+                html += `<p style="color:var(--text-muted);">No receiving records in this range.</p>`;
+            } else {
+                html += `<div style="overflow-x:auto;margin-bottom:1.5rem;"><table class="table-container" style="width:100%;min-width:720px;"><thead><tr>
+                    <th>Record #</th><th>Date</th><th>SKU</th><th>Product</th><th>Batch ID</th><th>Lot</th><th>Expiry</th><th>Qty</th><th>Supplier</th><th>Received by</th><th>Warehouse</th><th>Notes</th>
+                </tr></thead><tbody>`;
+                inSorted.forEach(function (r) {
+                    html += `<tr>
+                        <td>${escapeHtml(r.recordNumber || r.id)}</td>
+                        <td>${escapeHtml(r.date)}</td>
+                        <td>${escapeHtml(r.productSku)}</td>
+                        <td>${escapeHtml(r.product)}</td>
+                        <td>${r.batchId != null && r.batchId !== '' ? escapeHtml(String(r.batchId)) : '—'}</td>
+                        <td>${escapeHtml(r.lotCode)}</td>
+                        <td>${escapeHtml(r.expiryDate)}</td>
+                        <td>${r.qty != null ? r.qty : 0}</td>
+                        <td style="max-width:160px;word-break:break-word;">${escapeHtml(r.supplier)}</td>
+                        <td>${escapeHtml(r.receivedBy || r.user || '')}</td>
+                        <td>${r.warehouseId != null && r.warehouseId !== '' ? escapeHtml(String(r.warehouseId)) : '—'}</td>
+                        <td style="max-width:220px;word-break:break-word;white-space:pre-wrap;font-size:0.9em;">${escapeHtml(r.notes)}</td>
+                    </tr>`;
+                });
+                html += `</tbody></table></div>`;
+            }
+
+            html += `<div class="report-section-title" style="font-size:1.1rem;font-weight:600;margin-top:1rem;margin-bottom:0.5rem;">Stock Out — line items</div>`;
+            if (outSorted.length === 0) {
+                html += `<p style="color:var(--text-muted);">No issuing records in this range.</p>`;
+            } else {
+                html += `<div style="overflow-x:auto;"><table class="table-container" style="width:100%;min-width:720px;"><thead><tr>
+                    <th>Record #</th><th>Date</th><th>SKU</th><th>Product</th><th>Batch ID</th><th>Lot</th><th>Expiry</th><th>Qty</th><th>Recipient</th><th>Issued by</th><th>Warehouse</th><th>Notes</th>
+                </tr></thead><tbody>`;
+                outSorted.forEach(function (r) {
+                    html += `<tr>
+                        <td>${escapeHtml(r.recordNumber || r.id)}</td>
+                        <td>${escapeHtml(r.date)}</td>
+                        <td>${escapeHtml(r.productSku)}</td>
+                        <td>${escapeHtml(r.product)}</td>
+                        <td>${r.batchId != null && r.batchId !== '' ? escapeHtml(String(r.batchId)) : '—'}</td>
+                        <td>${escapeHtml(r.lotCode)}</td>
+                        <td>${escapeHtml(r.expiryDate)}</td>
+                        <td>${r.qty != null ? r.qty : 0}</td>
+                        <td style="max-width:140px;word-break:break-word;">${escapeHtml(r.recipient)}</td>
+                        <td>${escapeHtml(r.issuedBy || r.user || '')}</td>
+                        <td>${r.warehouseId != null && r.warehouseId !== '' ? escapeHtml(String(r.warehouseId)) : '—'}</td>
+                        <td style="max-width:220px;word-break:break-word;white-space:pre-wrap;font-size:0.9em;">${escapeHtml(r.notes)}</td>
+                    </tr>`;
+                });
+                html += `</tbody></table></div>`;
+            }
+
             const reportResults = document.getElementById('reportResults');
             const reportContent = document.getElementById('reportContent');
             const reportTitle = document.getElementById('reportTitle');
@@ -851,6 +936,60 @@
             
             let worksheetData = [];
             let fileName = reportTitle.textContent.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_' + new Date().toISOString().split('T')[0] + '.xlsx';
+
+            if (currentReportType === 'dateRange' && currentReportData && currentReportData.filteredIn && currentReportData.filteredOut) {
+                const d = currentReportData;
+                const wb = XLSX.utils.book_new();
+                const dateStockIn = d.filteredIn.reduce(function (sum, r) { return sum + (r.qty || 0); }, 0);
+                const dateStockOut = d.filteredOut.reduce(function (sum, r) { return sum + (r.qty || 0); }, 0);
+                const summaryAoA = [
+                    ['Date Range Report', d.fromDate, 'to', d.toDate],
+                    [],
+                    ['Type', 'Total Records', 'Total Units'],
+                    ['Stock In', d.filteredIn.length, dateStockIn],
+                    ['Stock Out', d.filteredOut.length, dateStockOut]
+                ];
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryAoA), 'Summary');
+                const inHead = [['Record #', 'Date', 'SKU', 'Product', 'Batch ID', 'Lot code', 'Expiry', 'Qty', 'Supplier', 'Received by', 'Warehouse', 'Notes']];
+                const inBody = sortDetailRecordsAsc(d.filteredIn).map(function (r) {
+                    return [
+                        r.recordNumber || r.id || '',
+                        r.date || '',
+                        r.productSku || '',
+                        r.product || '',
+                        r.batchId != null && r.batchId !== '' ? r.batchId : '',
+                        r.lotCode || '',
+                        r.expiryDate || '',
+                        r.qty != null ? r.qty : 0,
+                        r.supplier || '',
+                        r.receivedBy || r.user || '',
+                        r.warehouseId != null && r.warehouseId !== '' ? r.warehouseId : '',
+                        r.notes || ''
+                    ];
+                });
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(inHead.concat(inBody)), 'Stock In');
+                const outHead = [['Record #', 'Date', 'SKU', 'Product', 'Batch ID', 'Lot code', 'Expiry', 'Qty', 'Recipient', 'Issued by', 'Warehouse', 'Notes']];
+                const outBody = sortDetailRecordsAsc(d.filteredOut).map(function (r) {
+                    return [
+                        r.recordNumber || r.id || '',
+                        r.date || '',
+                        r.productSku || '',
+                        r.product || '',
+                        r.batchId != null && r.batchId !== '' ? r.batchId : '',
+                        r.lotCode || '',
+                        r.expiryDate || '',
+                        r.qty != null ? r.qty : 0,
+                        r.recipient || '',
+                        r.issuedBy || r.user || '',
+                        r.warehouseId != null && r.warehouseId !== '' ? r.warehouseId : '',
+                        r.notes || ''
+                    ];
+                });
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(outHead.concat(outBody)), 'Stock Out');
+                XLSX.writeFile(wb, fileName);
+                showNotification('Excel file exported successfully', 'success');
+                return;
+            }
             
             // Prepare data based on report type
             switch(currentReportType) {
@@ -999,15 +1138,8 @@
                     break;
                     
                 case 'dateRange':
-                    worksheetData = [
-                        ['Date Range Report', currentReportData.fromDate, 'to', currentReportData.toDate],
-                        [],
-                        ['Type', 'Total Records', 'Total Units']
-                    ];
-                    const dateStockIn = currentReportData.filteredIn.reduce((sum, r) => sum + (r.qty || 0), 0);
-                    const dateStockOut = currentReportData.filteredOut.reduce((sum, r) => sum + (r.qty || 0), 0);
-                    worksheetData.push(['Stock In', currentReportData.filteredIn.length, dateStockIn]);
-                    worksheetData.push(['Stock Out', currentReportData.filteredOut.length, dateStockOut]);
+                    /* Handled above with multi-sheet workbook */
+                    worksheetData = [['Date Range — use Export Excel after generating report']];
                     break;
             }
             
