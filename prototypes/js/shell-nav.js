@@ -52,7 +52,7 @@
 
         parts.push(
             '<div class="sidebar-brand-row">' +
-                '<a href="dashboard.html" class="logo sidebar-logo" title="SWMS">' +
+                '<a href="dashboard.html" class="logo sidebar-logo" title="Smart Warehouse Management System">' +
                 '<span class="sidebar-logo-text">SWMS</span>' +
                 '<span class="sidebar-logo-mark" aria-hidden="true">S</span>' +
                 '</a>' +
