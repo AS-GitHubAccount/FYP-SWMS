@@ -490,7 +490,7 @@
 
         .doc-panel-body pre {
             margin: 0;
-            padding: 1rem;
+                padding: 1rem;
             max-height: min(72vh, 640px);
             overflow: auto;
             font-size: 0.75rem;
@@ -1698,7 +1698,7 @@
                 const headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' };
                 const tok = getAuthToken();
                 if (tok) headers['Authorization'] = 'Bearer ' + tok;
-
+                
                 const response = await fetch(url, {
                     method: currentEndpoint.method,
                     headers

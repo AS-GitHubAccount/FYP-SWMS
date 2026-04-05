@@ -231,7 +231,7 @@
                 id="searchInput"
                 class="form-input" 
                 placeholder="Search by product name, SKU, category, or location..."
-                oninput="performSearch()"
+                oninput="scheduleInventorySearchDebounce()"
                 onkeypress="if(event.key === 'Enter') performSearch()"
             >
             <select id="categoryFilter" class="form-select" onchange="performSearch()">
@@ -6158,12 +6158,24 @@
             renderInventory();
         }
         
+        var inventorySearchDebounceTimer = null;
+        var INVENTORY_SEARCH_DEBOUNCE_MS = 350;
+
+        /** Debounced filter while typing — avoids re-rendering and toasts on every keystroke. */
+        function scheduleInventorySearchDebounce() {
+            if (inventorySearchDebounceTimer) clearTimeout(inventorySearchDebounceTimer);
+            inventorySearchDebounceTimer = setTimeout(function () {
+                inventorySearchDebounceTimer = null;
+                renderInventory();
+            }, INVENTORY_SEARCH_DEBOUNCE_MS);
+        }
+
         function performSearch() {
-            renderInventory();
-            const searchTerm = document.getElementById('searchInput').value;
-            if (searchTerm) {
-                showNotification(`Searching for "${searchTerm}"...`, 'info');
+            if (inventorySearchDebounceTimer) {
+                clearTimeout(inventorySearchDebounceTimer);
+                inventorySearchDebounceTimer = null;
             }
+            renderInventory();
         }
 
         // Clear loading state so UI never stays stuck on "Loading..." (fail-safe)
@@ -6326,6 +6338,10 @@
         }
 
         function resetFilters() {
+            if (inventorySearchDebounceTimer) {
+                clearTimeout(inventorySearchDebounceTimer);
+                inventorySearchDebounceTimer = null;
+            }
             const searchInput = document.getElementById('searchInput');
             const categoryFilter = document.getElementById('categoryFilter');
             const statusFilter = document.getElementById('statusFilter');
