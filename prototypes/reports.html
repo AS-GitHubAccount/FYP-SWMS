@@ -1046,10 +1046,10 @@
                         const pdfPageH = pdf.internal.pageSize.getHeight();
                         const imgWidthMm = pdfPageW - margin * 2;
                         const fullImgHeightMm = (canvas.height / canvas.width) * imgWidthMm;
-                        const titleY = 12;
-                        const contentTopFirst = 19;
+                        const titleY = 10;
+                        const contentTopFirst = 18;
                         const bottomMargin = 12;
-                        const footerBand = 10;
+                        const footerBand = 8;
                         const availFirst = pdfPageH - contentTopFirst - bottomMargin - footerBand;
                         const availRest = pdfPageH - margin - bottomMargin - footerBand;
                         
@@ -1060,9 +1060,9 @@
                                 pdf.addPage();
                             }
                             if (pageIndex === 0) {
-                                pdf.setFontSize(14);
+                                pdf.setFontSize(13);
                                 pdf.setFont('helvetica', 'bold');
-                                pdf.text(title, margin, titleY, { align: 'left' });
+                                pdf.text(title, pdfPageW / 2, titleY, { align: 'center' });
                                 pdf.setFont('helvetica', 'normal');
                             }
                             
@@ -1108,8 +1108,7 @@
                         }
                         var printedAt = new Date();
                         var printedLine = 'Printed: ' + formatPdfPrintedAt(printedAt);
-                        var footerInset = 2;
-                        var footerY = pdfPageH - margin - 4;
+                        var footerY = pdfPageH - 4;
                         var totalPdfPages = pdf.internal.getNumberOfPages();
                         var p;
                         pdf.setFont('helvetica', 'normal');
@@ -1117,8 +1116,8 @@
                             pdf.setPage(p);
                             pdf.setFontSize(8.5);
                             pdf.setTextColor(90, 90, 90);
-                            pdf.text(printedLine, margin + footerInset, footerY);
-                            pdf.text('Page ' + p + ' of ' + totalPdfPages, pdfPageW - margin - footerInset, footerY, { align: 'right' });
+                            pdf.text(printedLine, margin, footerY);
+                            pdf.text('Page ' + p + ' of ' + totalPdfPages, pdfPageW - margin, footerY, { align: 'right' });
                         }
                         pdf.setTextColor(0, 0, 0);
                         
