@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
                 u.name as createdByName
             FROM rfqs r
             INNER JOIN purchase_requests pr ON r.purchaseRequestId = pr.requestId
-            INNER JOIN products p ON pr.productId = p.productId
+            LEFT JOIN products p ON pr.productId = p.productId
             LEFT JOIN users u ON r.createdBy = u.userId
             WHERE 1=1
         `;

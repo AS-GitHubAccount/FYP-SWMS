@@ -331,8 +331,9 @@
             <div id="purchasing-section-rfqs" style="display: none;">
                 <div style="margin-bottom: 1rem;"><button type="button" class="btn btn-secondary" onclick="showPurchasingOverview()">← Back to Purchasing</button></div>
             <div id="purchasing-rfqs" class="card">
-                <div class="card-header">
-                    <h2 class="card-title">3. RFQs & Quotations</h2>
+                <div class="card-header" style="flex-direction: column; align-items: flex-start; gap: 0.35rem;">
+                    <h2 class="card-title" style="margin: 0;">3. RFQs & Quotations</h2>
+                    <p style="margin: 0; font-size: 0.8125rem; color: var(--text-secondary, #6b7280); font-weight: 400;">Shows RFQs <strong>after</strong> the supplier email has been sent. Draft RFQs (Preview &amp; Send not completed) stay in <strong>2. Purchase Requests</strong> only.</p>
                 </div>
                 <div class="table-container">
                     <table id="rfqsTable">
@@ -3256,7 +3257,11 @@
             try {
                 const res = await fetch(`${API_BASE_URL}/rfqs`, { headers: getAuthHeaders() });
                 const data = await res.json();
-                allRfqs = (data.success && data.data) ? data.data : [];
+                const raw = (data.success && data.data) ? data.data : [];
+                // Section 3: only RFQs that have been sent (not DRAFT). Draft stays in 2. Purchase Requests until Preview & Send.
+                allRfqs = raw.filter(function (r) {
+                    return String(r.status || '').toUpperCase() !== 'DRAFT';
+                });
                 applyRfqsSort();
             } catch (e) {
                 tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 2rem; color: red;">Error: ${e.message}</td></tr>`;
@@ -3274,8 +3279,8 @@
             if (!rfqs || rfqs.length === 0) {
                     tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
                     <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📋</div>
-                    <div style="font-weight: 500; margin-bottom: 0.5rem;">No RFQs yet</div>
-                    <div style="font-size: 0.875rem;">Create an RFQ from an approved Purchase Request above.</div>
+                    <div style="font-weight: 500; margin-bottom: 0.5rem;">No sent RFQs yet</div>
+                    <div style="font-size: 0.875rem;">Use <strong>2. Purchase Requests</strong> to create an RFQ and <strong>Preview &amp; Send</strong>. After the email is sent, the RFQ appears here for quotes and compare.</div>
                 </td></tr>`;
                     return;
                 }
@@ -3293,7 +3298,6 @@
                         <td><span id="rfq-quote-count-${r.rfqId}">-</span></td>
                         <td><span class="badge badge-${statusBadge}">${status.replace(/_/g, ' ')}</span></td>
                         <td>
-                        ${status === 'draft' ? `<button type="button" class="btn btn-outline btn-sm" onclick="showPurchasingSection('requests')" style="margin-right: 0.25rem;" title="Preview &amp; Send is in section 2"><i data-lucide="arrow-left" style="width:12px;height:12px;vertical-align:middle;"></i> 2. Purchase Requests</button>` : ''}
                         ${isSentLike ? `<button type="button" class="btn btn-view-sent btn-sm" onclick="openViewSentRfqModal(${r.rfqId})" style="margin-right: 0.25rem;"><i data-lucide="mail" style="width:12px;height:12px;vertical-align:middle;"></i> Sent</button>` : ''}
                         ${status === 'withdraw_pending' && isAdmin ? `<button type="button" class="btn btn-primary btn-sm" onclick="openViewSentRfqModal(${r.rfqId})" style="margin-right: 0.25rem;">Approve Withdrawal</button>` : ''}
                             ${status !== 'awarded' && status !== 'closed' ? `<button type="button" class="btn btn-outline btn-sm" onclick="openAddQuoteModal(${r.rfqId})" style="margin-right: 0.25rem;">Add Quote</button>` : ''}
