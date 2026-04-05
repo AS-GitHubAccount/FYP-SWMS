@@ -208,13 +208,63 @@
             return `${day} ${month} ${year} ${hours}:${mins}`;
         }
 
-        // Commercial Muted palette: Green, Blue (IT), Amber
+        // Distinct segments for doughnut (avoid near-duplicate blues)
         const CHART_COLORS = {
             primary: '#4D7C0F',
             inbound: '#4D7C0F',
             outbound: '#92400E',
             itAssets: '#1E40AF',
-            palette: ['#4D7C0F', '#1E40AF', '#92400E', '#65a30d', '#1e3a8a', '#b45309', '#15803d', '#64748b']
+            palette: ['#166534', '#1d4ed8', '#9a3412', '#0d9488', '#6d28d9', '#c2410c', '#3f6212', '#475569']
+        };
+
+        function chartHexToRgb(color) {
+            if (!color || typeof color !== 'string') return [71, 85, 105];
+            var h = color.replace('#', '').trim();
+            if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+            var n = parseInt(h, 16);
+            if (Number.isNaN(n)) return [71, 85, 105];
+            return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+        }
+
+        function chartLabelFillForBg(rgb) {
+            var r = rgb[0] / 255;
+            var g = rgb[1] / 255;
+            var b = rgb[2] / 255;
+            var L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+            return L > 0.52 ? '#0f172a' : '#ffffff';
+        }
+
+        var doughnutPercentLabelsPlugin = {
+            id: 'doughnutPercentLabels',
+            afterDatasetsDraw: function (chart) {
+                var ctx = chart.ctx;
+                var ds = chart.data.datasets[0];
+                var meta = chart.getDatasetMeta(0);
+                if (!meta || !meta.data || !ds) return;
+                var tot = ds.data.reduce(function (a, b) { return a + b; }, 0);
+                if (!tot) return;
+                var colors = ds.backgroundColor;
+                meta.data.forEach(function (arc, index) {
+                    var val = Number(ds.data[index]) || 0;
+                    var pct = (val / tot) * 100;
+                    if (pct < 2.5) return;
+                    var txt = pct >= 10 ? Math.round(pct) + '%' : pct.toFixed(1) + '%';
+                    var pos = arc.tooltipPosition();
+                    var rgb = chartHexToRgb(Array.isArray(colors) ? colors[index] : colors);
+                    var fill = chartLabelFillForBg(rgb);
+                    var stroke = fill === '#ffffff' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.85)';
+                    ctx.save();
+                    ctx.font = '600 11px Inter, "Segoe UI", system-ui, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.lineWidth = 2.5;
+                    ctx.strokeStyle = stroke;
+                    ctx.strokeText(txt, pos.x, pos.y);
+                    ctx.fillStyle = fill;
+                    ctx.fillText(txt, pos.x, pos.y);
+                    ctx.restore();
+                });
+            }
         };
 
         // Initialize Product Distribution Chart (Pie/Doughnut) from API data
@@ -296,7 +346,8 @@
                             }
                         }
                     }
-                }
+                },
+                plugins: [doughnutPercentLabelsPlugin]
             });
         }
 
