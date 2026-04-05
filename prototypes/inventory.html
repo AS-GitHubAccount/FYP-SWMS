@@ -308,33 +308,24 @@
                     <h2 class="card-title">2. Purchase Requests</h2>
                 </div>
                 <div class="purchasing-table-filters" style="display:flex;flex-wrap:wrap;gap:0.75rem 1rem;align-items:flex-end;padding:0.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);background:#f9fafb;">
-                    <div class="form-group" style="margin:0;min-width:11rem;flex:1 1 10rem;">
-                        <label class="form-label" for="prFilterSearch" style="font-size:0.75rem;margin-bottom:0.2rem;">Search</label>
-                        <input type="search" id="prFilterSearch" class="form-input" placeholder="ID, #, product, location…" autocomplete="off" oninput="applyPurchaseRequestsSort()">
+                    <div class="form-group" style="margin:0;min-width:12rem;flex:1 1 11rem;">
+                        <label class="form-label" for="prFilterSearch" style="font-size:0.75rem;margin-bottom:0.2rem;">ID, Request #, Product, Priority, Sending location</label>
+                        <input type="search" id="prFilterSearch" class="form-input" placeholder="Filter…" autocomplete="off" oninput="applyPurchaseRequestsSort()">
                     </div>
-                    <div class="form-group" style="margin:0;min-width:9rem;">
-                        <label class="form-label" for="prFilterStatus" style="font-size:0.75rem;margin-bottom:0.2rem;">PR status</label>
+                    <div class="form-group" style="margin:0;min-width:13rem;">
+                        <label class="form-label" for="prFilterStatus" style="font-size:0.75rem;margin-bottom:0.2rem;">Status</label>
                         <select id="prFilterStatus" class="form-select" onchange="applyPurchaseRequestsSort()">
                             <option value="all">All</option>
-                            <option value="PENDING">Pending</option>
-                            <option value="APPROVED">Approved</option>
-                            <option value="REJECTED">Rejected</option>
-                            <option value="FULFILLED">Fulfilled</option>
-                            <option value="CANCELLED">Cancelled</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="margin:0;min-width:11rem;">
-                        <label class="form-label" for="prFilterRfqStatus" style="font-size:0.75rem;margin-bottom:0.2rem;">RFQ status</label>
-                        <select id="prFilterRfqStatus" class="form-select" onchange="applyPurchaseRequestsSort()">
-                            <option value="all">All</option>
-                            <option value="none">No RFQ yet</option>
-                            <option value="DRAFT">Draft</option>
-                            <option value="SENT">Sent</option>
-                            <option value="QUOTES_RECEIVED">Quotes received</option>
-                            <option value="AWARDED">Awarded</option>
-                            <option value="CLOSED">Closed</option>
-                            <option value="WITHDRAW_PENDING">Withdraw pending</option>
-                            <option value="WITHDRAWN">Withdrawn</option>
+                            <option value="Draft / Pending">Draft / Pending</option>
+                            <option value="Rejected">Rejected</option>
+                            <option value="Ready for RFQ">Ready for RFQ</option>
+                            <option value="RFQ draft — send email">RFQ draft — send email</option>
+                            <option value="RFQ Sent">RFQ Sent</option>
+                            <option value="Reviewing">Reviewing</option>
+                            <option value="Ordered">Ordered</option>
+                            <option value="Withdrawn">Withdrawn</option>
+                            <option value="FULFILLED">FULFILLED</option>
+                            <option value="CANCELLED">CANCELLED</option>
                         </select>
                     </div>
                     <button type="button" class="btn btn-outline btn-sm" onclick="resetPrFilters()" style="margin-bottom:2px;">Clear filters</button>
@@ -369,19 +360,19 @@
                 </div>
                 <div class="purchasing-table-filters" style="display:flex;flex-wrap:wrap;gap:0.75rem 1rem;align-items:flex-end;padding:0.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);background:#f9fafb;">
                     <div class="form-group" style="margin:0;min-width:11rem;flex:1 1 10rem;">
-                        <label class="form-label" for="rfqFilterSearch" style="font-size:0.75rem;margin-bottom:0.2rem;">Search</label>
-                        <input type="search" id="rfqFilterSearch" class="form-input" placeholder="ID, RFQ #, product…" autocomplete="off" oninput="applyRfqsSort()">
+                        <label class="form-label" for="rfqFilterSearch" style="font-size:0.75rem;margin-bottom:0.2rem;">ID, RFQ #, Product</label>
+                        <input type="search" id="rfqFilterSearch" class="form-input" placeholder="Filter…" autocomplete="off" oninput="applyRfqsSort()">
                     </div>
                     <div class="form-group" style="margin:0;min-width:10rem;">
                         <label class="form-label" for="rfqFilterStatus" style="font-size:0.75rem;margin-bottom:0.2rem;">Status</label>
                         <select id="rfqFilterStatus" class="form-select" onchange="applyRfqsSort()">
                             <option value="all">All</option>
-                            <option value="SENT">Sent</option>
-                            <option value="QUOTES_RECEIVED">Quotes received</option>
-                            <option value="AWARDED">Awarded</option>
-                            <option value="CLOSED">Closed</option>
-                            <option value="WITHDRAW_PENDING">Withdraw pending</option>
-                            <option value="WITHDRAWN">Withdrawn</option>
+                            <option value="SENT">sent</option>
+                            <option value="QUOTES_RECEIVED">quotes received</option>
+                            <option value="AWARDED">awarded</option>
+                            <option value="CLOSED">closed</option>
+                            <option value="WITHDRAW_PENDING">withdraw pending</option>
+                            <option value="WITHDRAWN">withdrawn</option>
                         </select>
                     </div>
                     <button type="button" class="btn btn-outline btn-sm" onclick="resetRfqFilters()" style="margin-bottom:2px;">Clear filters</button>
@@ -414,17 +405,17 @@
                 </div>
                 <div class="purchasing-table-filters" style="display:flex;flex-wrap:wrap;gap:0.75rem 1rem;align-items:flex-end;padding:0.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);background:#f9fafb;">
                     <div class="form-group" style="margin:0;min-width:11rem;flex:1 1 10rem;">
-                        <label class="form-label" for="poFilterSearch" style="font-size:0.75rem;margin-bottom:0.2rem;">Search</label>
-                        <input type="search" id="poFilterSearch" class="form-input" placeholder="ID, PO #, product, supplier…" autocomplete="off" oninput="applyPurchaseOrdersSort()">
+                        <label class="form-label" for="poFilterSearch" style="font-size:0.75rem;margin-bottom:0.2rem;">ID, PO #, Product, Supplier</label>
+                        <input type="search" id="poFilterSearch" class="form-input" placeholder="Filter…" autocomplete="off" oninput="applyPurchaseOrdersSort()">
                     </div>
                     <div class="form-group" style="margin:0;min-width:9rem;">
                         <label class="form-label" for="poFilterStatus" style="font-size:0.75rem;margin-bottom:0.2rem;">Status</label>
                         <select id="poFilterStatus" class="form-select" onchange="applyPurchaseOrdersSort()">
                             <option value="all">All</option>
-                            <option value="SENT">Sent</option>
-                            <option value="CONFIRMED">Confirmed</option>
-                            <option value="RECEIVED">Received</option>
-                            <option value="CANCELLED">Cancelled</option>
+                            <option value="SENT">sent</option>
+                            <option value="CONFIRMED">confirmed</option>
+                            <option value="RECEIVED">received</option>
+                            <option value="CANCELLED">cancelled</option>
                         </select>
                     </div>
                     <button type="button" class="btn btn-outline btn-sm" onclick="resetPoFilters()" style="margin-bottom:2px;">Clear filters</button>
@@ -2362,18 +2353,12 @@
             if (!Array.isArray(list) || !list.length) return [];
             const elS = document.getElementById('prFilterSearch');
             const elSt = document.getElementById('prFilterStatus');
-            const elRfq = document.getElementById('prFilterRfqStatus');
             const q = elS ? String(elS.value || '').trim().toLowerCase() : '';
-            const st = elSt ? String(elSt.value || 'all').toUpperCase() : 'ALL';
-            const rfqSt = elRfq ? String(elRfq.value || 'all').toUpperCase() : 'ALL';
+            const statusVal = elSt ? String(elSt.value || 'all') : 'all';
             return list.filter(function (r) {
-                if (st !== 'ALL' && String(r.status || '').toUpperCase() !== st) return false;
-                const hasRfq = r.rfqId != null && r.rfqId !== '';
-                const rs = String(r.rfqStatus || '').toUpperCase();
-                if (rfqSt === 'NONE') {
-                    if (hasRfq) return false;
-                } else if (rfqSt !== 'ALL') {
-                    if (!hasRfq || rs !== rfqSt) return false;
+                if (statusVal !== 'all') {
+                    const w = getPurchaseRequestWorkflow(r);
+                    if (w.statusLabel !== statusVal) return false;
                 }
                 if (q) {
                     const fields = [r.requestId, r.requestNumber, r.productName, r.productSku, r.sendingLocation, r.priority];
@@ -2387,8 +2372,6 @@
             if (s) s.value = '';
             const st = document.getElementById('prFilterStatus');
             if (st) st.value = 'all';
-            const r = document.getElementById('prFilterRfqStatus');
-            if (r) r.value = 'all';
             applyPurchaseRequestsSort();
         }
         function sortPurchaseRequestsBy(column) {
