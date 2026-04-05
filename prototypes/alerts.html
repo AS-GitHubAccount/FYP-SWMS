@@ -44,7 +44,7 @@
             </div>
             <div style="display: flex; gap: 0.5rem;">
                 <button class="btn btn-secondary" onclick="loadAlerts()" title="Refresh alerts"><i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Refresh</button>
-                <button class="btn btn-secondary" id="runCheckBtn" onclick="runAlertCheck()" title="Scan inventory and create new alerts"><i data-lucide="scan-search" style="width:14px;height:14px;"></i> Run Alert Check</button>
+                <button class="btn btn-secondary" id="runCheckBtn" onclick="runAlertCheck()" title="Scan inventory and create new alerts"><i data-lucide="radar" style="width:14px;height:14px;vertical-align:middle;margin-right:0.25rem;"></i> Run Alert Check</button>
             </div>
         </div>
 
@@ -217,9 +217,14 @@
         // (which doesn't exist in this repo). That can silently lead to empty results.
         const ALERTS_API = window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api';
 
+        const RUN_ALERT_CHECK_BTN_HTML = '<i data-lucide="radar" style="width:14px;height:14px;vertical-align:middle;margin-right:0.25rem;"></i> Run Alert Check';
+
         async function runAlertCheck() {
             const btn = document.getElementById('runCheckBtn');
-            if (btn) { btn.disabled = true; btn.textContent = 'Checking...'; }
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Checking...';
+            }
             try {
                 const token = sessionStorage.getItem('authToken');
                 const headers = { 'Content-Type': 'application/json' };
@@ -233,7 +238,11 @@
             } catch (e) {
                 if (typeof showNotification === 'function') showNotification('Error: ' + (e.message || 'Request failed'), 'error');
             } finally {
-                if (btn) { btn.disabled = false; btn.textContent = '🔄 Run Alert Check'; }
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = RUN_ALERT_CHECK_BTN_HTML;
+                    if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+                }
             }
         }
 
