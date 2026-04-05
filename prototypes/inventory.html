@@ -12,13 +12,17 @@
             display: block !important; visibility: visible;
             background: #fff;
         }
-        /* Portrait shelf label: QR top ~half, then SKU / lot / name (centered) — matches print preview */
+        /*
+         * Portrait QR label: fixed physical size (in/pt). Same look on A4, Letter, or label stock —
+         * only paper/orientation/margins come from the printer dialog; the label block stays centered.
+         */
         #qrLabelPrintArea {
             display: none;
             box-sizing: border-box;
             width: 2in;
-            min-height: 2.65in;
-            padding: 0.22in 0.2in 0.2in;
+            min-height: 2.85in;
+            max-width: 2in;
+            padding: 0.18in 0.2in 0.2in;
             font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
             background: #fff;
             flex-direction: column;
@@ -30,83 +34,91 @@
             align-items: center;
             justify-content: flex-start;
             width: 100%;
-            gap: 0.1in;
+            gap: 0.08in;
         }
         #qrLabelPrintArea #qrLabelPrintImg {
-            width: 1.38in;
-            height: 1.38in;
+            width: 1.65in;
+            height: 1.65in;
             object-fit: contain;
             flex-shrink: 0;
             display: block;
         }
         #qrLabelPrintArea #qrLabelPrintSku {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 700;
             color: #0f172a;
             text-align: center;
             width: 100%;
-            line-height: 1.2;
-            margin: 0.06in 0 0;
+            line-height: 1.15;
+            margin: 0.05in 0 0;
         }
         #qrLabelPrintArea #qrLabelPrintLot {
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 700;
             color: #0f172a;
             text-align: center;
             width: 100%;
-            line-height: 1.2;
+            line-height: 1.15;
         }
         #qrLabelPrintArea #qrLabelPrintName {
-            font-size: 9.5px;
+            font-size: 9px;
             font-weight: 400;
             color: #64748b;
             text-align: center;
             width: 100%;
-            line-height: 1.3;
+            line-height: 1.25;
             word-break: break-word;
         }
         @media print {
+            /* Paper size comes from the print dialog (A4, Letter, …); we only set safe margins */
             @page {
-                margin: 0.25in;
+                size: auto;
+                margin: 12mm;
+            }
+            html, body {
+                width: 100% !important;
+                height: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             body * { visibility: hidden; }
             #qrLabelPrintArea, #qrLabelPrintArea * { visibility: visible; }
             #qrLabelPrintArea {
                 position: fixed;
-                left: 0;
-                top: 0;
+                left: 50%;
+                top: 50%;
+                -webkit-transform: translate(-50%, -50%);
+                transform: translate(-50%, -50%);
                 width: 2in !important;
-                min-height: 2.65in !important;
-                max-width: 2in;
-                margin: 0;
-                padding: 0.22in 0.2in 0.2in !important;
+                min-height: 2.85in !important;
+                max-width: 2in !important;
+                margin: 0 !important;
+                padding: 0.18in 0.2in 0.2in !important;
                 display: flex !important;
                 flex-direction: column;
                 align-items: center;
                 justify-content: flex-start;
                 background: #fff !important;
+                box-shadow: none !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
             #qrLabelPrintArea .qr-label-print-stack {
-                gap: 0.1in !important;
+                gap: 0.08in !important;
             }
             #qrLabelPrintArea #qrLabelPrintImg {
-                width: 1.38in !important;
-                height: 1.38in !important;
+                width: 1.65in !important;
+                height: 1.65in !important;
             }
-            #qrLabelPrintArea #qrLabelPrintSku {
-                font-size: 14pt !important;
-                font-weight: 700 !important;
-                color: #0f172a !important;
-            }
+            /* SKU and lot: same size & weight per reference */
+            #qrLabelPrintArea #qrLabelPrintSku,
             #qrLabelPrintArea #qrLabelPrintLot {
-                font-size: 11.5pt !important;
+                font-size: 12pt !important;
                 font-weight: 700 !important;
                 color: #0f172a !important;
             }
             #qrLabelPrintArea #qrLabelPrintName {
-                font-size: 9.5pt !important;
+                font-size: 9pt !important;
                 font-weight: 400 !important;
                 color: #64748b !important;
             }
