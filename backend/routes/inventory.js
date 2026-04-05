@@ -490,6 +490,8 @@ async function handleScanRequest(decoded, res) {
                                     product: { productId: product.productId, name: product.name, sku: product.sku },
                                     productId: product.productId,
                                     batchId: batch.batchId,
+                                    lotCode: batch.lotCode || '—',
+                                    notes: batch.notes != null && String(batch.notes).trim() ? String(batch.notes).trim() : '',
                                     locationText: batch.location || 'N/A',
                                     status: { stage, label },
                                     timeline: {
@@ -561,6 +563,8 @@ async function handleScanRequest(decoded, res) {
                     },
                     productId: batch.productId,
                     batchId: batch.batchId,
+                    lotCode: batch.lotCode || '—',
+                    notes: batch.notes != null && String(batch.notes).trim() ? String(batch.notes).trim() : '',
                     locationText: batch.location || 'N/A',
                     status: {
                         stage,
@@ -639,6 +643,8 @@ async function handleScanRequest(decoded, res) {
                 },
                 productId: product.productId,
                 batchId: batch ? batch.batchId : null,
+                lotCode: batch && batch.lotCode ? String(batch.lotCode) : '—',
+                notes: batch && batch.notes != null && String(batch.notes).trim() ? String(batch.notes).trim() : '',
                 locationText: batch && batch.location ? batch.location : 'N/A',
                 status: {
                     stage,

@@ -6859,12 +6859,25 @@
                 }
 
                 const locationText = String(data.locationText || data.location || '—').replace(/</g, '&lt;');
-                const receivedDate = (data.timeline && data.timeline.receivedDate) ? data.timeline.receivedDate : '—';
-                const expiryDate = (data.timeline && data.timeline.expiryDate) ? data.timeline.expiryDate : '—';
-                const lastMovementType = String(data.history?.lastMovementType || data.history?.lastMovement || '—').replace(/</g, '&lt;');
-                const lastMovementDate = (data.history && data.history.lastMovementDate) ? data.history.lastMovementDate : '—';
+                const receivedDate = (data.timeline && data.timeline.receivedDate) ? String(data.timeline.receivedDate).replace(/</g, '&lt;') : '—';
+                const expiryDate = (data.timeline && data.timeline.expiryDate) ? String(data.timeline.expiryDate).replace(/</g, '&lt;') : '—';
+                const lotCodeText = String(data.lotCode != null && data.lotCode !== '' ? data.lotCode : '—').replace(/</g, '&lt;');
+                const notesRaw = data.notes != null ? String(data.notes).trim() : '';
+                const notesText = notesRaw.replace(/</g, '&lt;');
+                const lastMovementType = String(data.history?.lastMovementType || data.history?.lastMovement || 'Scan').replace(/</g, '&lt;');
+                var lastMovementDate = '—';
+                if (data.history && data.history.lastMovementDate) {
+                    try {
+                        lastMovementDate = new Date(data.history.lastMovementDate).toISOString().slice(0, 10);
+                    } catch (e1) {
+                        lastMovementDate = String(data.history.lastMovementDate).slice(0, 10);
+                    }
+                }
 
                 if (passportContent) {
+                    const noteBlock = notesText
+                        ? `<div style="margin-top:0.4rem; font-weight:400;"><span>Note:</span> ${notesText}</div>`
+                        : '';
                     passportContent.innerHTML = `
                         <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin-bottom:0.85rem;">
                             <div>
@@ -6878,23 +6891,13 @@
                             </div>
                         </div>
 
-                        <div class="qr-info-kv">
-                            <div class="qr-info-kv-label">Warehouse Location</div>
-                            <div class="qr-info-kv-value">${locationText}</div>
-                        </div>
-                        <div class="qr-info-kv">
-                            <div class="qr-info-kv-label">Timeline</div>
-                            <div class="qr-info-kv-value">
-                                <div style="font-weight:900;">Received: ${receivedDate}</div>
-                                <div style="font-weight:900;">Expiry: ${expiryDate}</div>
-                            </div>
-                        </div>
-                        <div class="qr-info-kv">
-                            <div class="qr-info-kv-label">History Summary</div>
-                            <div class="qr-info-kv-value">
-                                <div style="font-weight:900;">${lastMovementType}</div>
-                                <div style="font-weight:900;">${lastMovementDate}</div>
-                            </div>
+                        <div style="font-size:0.95rem; line-height:1.55; color: var(--text-primary);">
+                            <div style="font-weight:400;"><span>Lot code:</span> ${lotCodeText}</div>
+                            <div style="margin-top:0.4rem;"><span style="font-weight:700;">Warehouse Location:</span> <span style="font-weight:400;">${locationText}</span></div>
+                            <div style="margin-top:0.25rem;"><span style="font-weight:700;">Received:</span> <span style="font-weight:400;">${receivedDate}</span></div>
+                            <div style="margin-top:0.25rem;"><span style="font-weight:700;">Expiry:</span> <span style="font-weight:400;">${expiryDate}</span></div>
+                            ${noteBlock}
+                            <div style="margin-top:0.4rem; font-weight:400;">${lastMovementType}: ${lastMovementDate}</div>
                         </div>
                     `;
                 }
