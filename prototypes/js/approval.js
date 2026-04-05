@@ -58,7 +58,7 @@
         const statusEl = document.getElementById('approvalStatusFilter');
         const typeEl = document.getElementById('approvalTypeFilter');
         const nameEl = document.getElementById('approvalNameFilter');
-        const status = statusEl ? (statusEl.value || 'all').toUpperCase() : 'ALL';
+        const status = statusEl ? (statusEl.value || 'PENDING').toUpperCase() : 'PENDING';
         const type = typeEl ? typeEl.value : 'all';
         const name = nameEl ? String(nameEl.value || '').trim() : '';
         return { status: status === 'ALL' ? 'all' : status, type, name };
