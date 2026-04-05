@@ -27,7 +27,8 @@ window.getSwmsSessionUserId = function getSwmsSessionUserId() {
         let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
         while (b64.length % 4) b64 += '=';
         const payload = JSON.parse(atob(b64));
-        const uid = parseInt(payload.userId, 10);
+        const rawId = payload.userId != null ? payload.userId : (payload.user_id != null ? payload.user_id : (payload.id != null ? payload.id : payload.sub));
+        const uid = parseInt(rawId, 10);
         if (!isNaN(uid) && uid > 0) {
             try {
                 sessionStorage.setItem('userId', String(uid));

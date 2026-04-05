@@ -27,6 +27,41 @@ function resolveNotificationUserId(req) {
     return NaN;
 }
 
+/** Normalize mysql2 row keys (some drivers/configs return lowercase columns). */
+function mapNotificationRow(r) {
+    if (!r || typeof r !== 'object') return r;
+    const g = function pick() {
+        for (let i = 0; i < arguments.length; i++) {
+            const k = arguments[i];
+            if (r[k] !== undefined && r[k] !== null) return r[k];
+        }
+        return undefined;
+    };
+    return Object.assign({}, r, {
+        notificationId: g('notificationId', 'notificationid'),
+        userId: g('userId', 'userid'),
+        message: g('message') != null ? g('message') : '',
+        recipient: g('recipient') != null ? g('recipient') : '',
+        notificationType: g('notificationType', 'notificationtype') || 'INFO',
+        type: g('type'),
+        subject: g('subject'),
+        relatedEntityType: g('relatedEntityType', 'relatedentitytype'),
+        relatedEntityId: g('relatedEntityId', 'relatedentityid'),
+        isRead: !!(g('isRead', 'isread')),
+        readAt: g('readAt', 'readat'),
+        createdAt: g('createdAt', 'createdat'),
+        targetUrl: g('targetUrl', 'target_url', 'targeturl'),
+        target_url: g('target_url', 'targetUrl', 'targeturl')
+    });
+}
+
+function wantsAdminAllNotifications(req) {
+    const role = (req.user && req.user.role) ? String(req.user.role).toUpperCase() : '';
+    if (role !== 'ADMIN') return false;
+    const q = req.query.all;
+    return q === '1' || q === 'true' || q === 'yes';
+}
+
 router.get('/', async (req, res) => {
     try {
         const userId = resolveNotificationUserId(req);
@@ -39,14 +74,22 @@ router.get('/', async (req, res) => {
 
         let notifications = [];
         try {
-            const [rows] = await db.execute(
-                `SELECT n.*
-                 FROM notifications n
-                 WHERE n.userId = ?
-                 ORDER BY n.createdAt DESC`,
-                [userId]
-            );
-            notifications = rows || [];
+            const adminAll = wantsAdminAllNotifications(req);
+            const [rows] = adminAll
+                ? await db.execute(
+                    `SELECT n.*
+                     FROM notifications n
+                     ORDER BY n.createdAt DESC
+                     LIMIT 500`
+                )
+                : await db.execute(
+                    `SELECT n.*
+                     FROM notifications n
+                     WHERE n.userId = ?
+                     ORDER BY n.createdAt DESC`,
+                    [userId]
+                );
+            notifications = (rows || []).map(mapNotificationRow);
         } catch (dbErr) {
             if (dbErr.code === 'ER_NO_SUCH_TABLE') {
                 return res.json({ success: true, count: 0, data: [] });

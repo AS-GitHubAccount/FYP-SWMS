@@ -121,11 +121,11 @@
         }
 
         function normalizeId(n) {
-            return n && (n.notificationId || n.notification_id || n.id);
+            return n && (n.notificationId || n.notification_id || n.notificationid || n.id);
         }
 
         function isRead(n) {
-            return !!(n && (n.isRead || n.is_read || n.read));
+            return !!(n && (n.isRead || n.is_read || n.isread || n.read));
         }
 
         function getSubject(n) {
@@ -247,12 +247,18 @@
             });
         }
 
+        function extractNotificationsArray(data) {
+            if (!data || typeof data !== 'object') return null;
+            if (Array.isArray(data.data)) return data.data;
+            if (Array.isArray(data.notifications)) return data.notifications;
+            if (Array.isArray(data.results)) return data.results;
+            return null;
+        }
+
         async function fetchNotificationsFromAPI() {
-            // 1) HTTP API fetch with a strict timeout – this page should never feel stuck
-            const API_BASE = window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api';
-            const token = sessionStorage.getItem('authToken');
-            const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
-            if (token) headers.Authorization = 'Bearer ' + token;
+            const API_BASE = typeof window.getSwmsApiBase === 'function'
+                ? window.getSwmsApiBase()
+                : (window.API_BASE_URL || window.API_BASE || 'http://localhost:3000/api');
             const uid = typeof window.getSwmsSessionUserId === 'function' ? window.getSwmsSessionUserId() : userId;
             if (!uid || uid < 1) {
                 console.warn('Notifications: missing userId — log in again or ensure sessionStorage/JWT has userId.');
@@ -260,24 +266,49 @@
             }
             userId = uid;
             const params = new URLSearchParams({ userId: String(uid), userRole: String(userRole), userName: String(userName) });
+            const isAdmin = /admin/i.test(String(userRole || ''));
+            if (isAdmin) params.set('all', '1');
 
             try {
                 const controller = (typeof AbortController !== 'undefined') ? new AbortController() : null;
                 const signal = controller ? controller.signal : undefined;
-                const fetchPromise = fetch(`${API_BASE}/notifications?${params.toString()}`, { headers, signal });
-                // Shorter timeout here to keep the inbox snappy.
-                const res = await withTimeout(fetchPromise, 5000);
+                const url = API_BASE.replace(/\/$/, '') + '/notifications?' + params.toString();
+                const doFetch = typeof window.fetchWithAuth === 'function'
+                    ? function () { return window.fetchWithAuth(url, { method: 'GET', signal }); }
+                    : function () {
+                        const token = sessionStorage.getItem('authToken');
+                        const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+                        if (token) headers.Authorization = 'Bearer ' + token;
+                        return fetch(url, { headers, signal });
+                    };
+                const res = await withTimeout(doFetch(), 12000);
                 const data = await res.json().catch(() => ({}));
-                if (res.ok && data && Array.isArray(data.data)) {
-                    if (data.success === false && data.message) {
-                        console.warn('Notifications API:', data.message);
+                if (res.ok) {
+                    if (data && data.success === false) {
+                        const msg = (data.message || data.error || '').trim();
+                        if (msg) {
+                            const err = new Error(msg);
+                            err.swmsNotificationsApi = true;
+                            throw err;
+                        }
                     }
-                    return data.data;
-                }
-                if (!res.ok && data && data.error) {
-                    console.warn('Notifications HTTP', res.status, data.error, data.message || '');
+                    const list = extractNotificationsArray(data);
+                    if (Array.isArray(list)) return list;
+                    console.warn('Notifications API: unexpected JSON shape', data && typeof data === 'object' ? Object.keys(data) : data);
+                } else {
+                    const errMsg = (data && (data.message || data.error || '')).trim();
+                    if (errMsg) {
+                        const err = new Error(errMsg);
+                        err.swmsNotificationsApi = true;
+                        throw err;
+                    }
+                    if (data && data.error) {
+                        console.warn('Notifications HTTP', res.status, data.error, data.message || '');
+                    }
                 }
             } catch (e) {
+                if (e && e.swmsNotificationsApi) throw e;
+                if (e && e.message === 'Session expired') throw e;
                 console.warn('HTTP notifications fetch failed or timed out, falling back to local cache.', e);
             }
 
@@ -309,7 +340,7 @@
                 }
                 const result = await fetchNotificationsFromAPI();
                 allNotifications = Array.isArray(result) ? result.slice() : [];
-                allNotifications.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                allNotifications.sort((a, b) => new Date(b.createdAt || b.created_at || b.createdat || 0) - new Date(a.createdAt || a.created_at || a.createdat || 0));
                 filteredNotifications = allNotifications.slice();
                 displayNotifications();
                 if (typeof window.updateNotificationBadge === 'function') await window.updateNotificationBadge();
@@ -317,7 +348,10 @@
                 console.error('Error loading notifications:', error);
                 allNotifications = [];
                 filteredNotifications = [];
-                container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--danger-color);">Error loading notifications. Make sure backend is running and you are logged in.</div>';
+                const apiMsg = (error && error.message) ? String(error.message).trim() : '';
+                container.innerHTML = apiMsg
+                    ? '<div style="text-align:center;padding:40px;color:var(--danger-color);">' + escapeHtml(apiMsg) + '</div>'
+                    : '<div style="text-align:center;padding:40px;color:var(--danger-color);">Error loading notifications. Make sure backend is running and you are logged in.</div>';
             } finally {
                 // Fail-safe: if we somehow never replaced the loading spinner, show a clean empty state.
                 try {
@@ -366,7 +400,7 @@
                 const message = escapeHtml(getMessage(safe) || '');
                 const preview = message.length > 140 ? (message.slice(0, 140) + '...') : (message || 'No preview available.');
                 const target = getTargetUrl(safe) || '#';
-                const createdRaw = safe.createdAt || safe.created_at;
+                const createdRaw = safe.createdAt || safe.created_at || safe.createdat;
                 const created = createdRaw ? new Date(createdRaw).toLocaleString() : 'Just now';
                 const typeText = `${safe.type || ''} ${getSubject(safe)} ${getMessage(safe)}`.toLowerCase();
                 let bg = '#FFFFFF';
