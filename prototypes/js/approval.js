@@ -388,7 +388,7 @@
                 const s = String(status || '').toUpperCase();
                 if (s === 'APPROVED') return '<span style="color:#15803D;font-weight:600;">Approved</span>';
                 if (s === 'REJECTED' || s === 'CANCELLED') return '<span style="color:#B91C1C;font-weight:600;">Rejected</span>';
-                if (s === 'COMPLETED') return '<span style="color:#0369A1;font-weight:600;">Completed</span>';
+                if (s === 'COMPLETED' || s === 'FULFILLED') return '<span style="color:#0369A1;font-weight:600;">Completed</span>';
                 return '<span style="color:#92400E;font-weight:600;">Pending</span>';
             }
 

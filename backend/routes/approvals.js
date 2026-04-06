@@ -51,6 +51,7 @@ function statusToDbForBooking(status) {
     if (status === 'approved') return 'APPROVED';
     // UI calls it "Rejected", but bookings cancellation uses "CANCELLED"
     if (status === 'rejected') return 'CANCELLED';
+    if (status === 'completed') return 'FULFILLED';
     return null;
 }
 
@@ -162,9 +163,9 @@ router.get('/', async (req, res) => {
         }
 
         // -------------------------
-        // Purchase requests
+        // Purchase requests (no COMPLETED status in DB — skip entire block for "completed")
         // -------------------------
-        if (type === 'all' || type === 'purchase') {
+        if ((type === 'all' || type === 'purchase') && status !== 'completed') {
             const dbStatus = statusToDbForPurchase(status);
             const where = dbStatus ? ' AND pr.status = ?' : '';
             const params = dbStatus ? [dbStatus] : [];
@@ -206,8 +207,9 @@ router.get('/', async (req, res) => {
         // -------------------------
         // RFQ Withdrawal requests
         // Query rfqs directly first (no JOINs) so we never miss a pending withdrawal
+        // "Completed" filter targets disposal COMPLETED + booking FULFILLED only (withdrawals show as Approved in UI)
         // -------------------------
-        if (type === 'all' || type === 'rfq_withdrawal') {
+        if ((type === 'all' || type === 'rfq_withdrawal') && status !== 'completed') {
             const dbStatus = statusToDbForRfq(status);
             const where = dbStatus ? ' AND r.status = ?' : " AND r.status IN ('WITHDRAW_PENDING','WITHDRAWN')";
             const params = dbStatus ? [dbStatus] : [];
