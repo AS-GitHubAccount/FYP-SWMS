@@ -14,7 +14,8 @@ const {
     buildSmtpTransportOptions,
     isOutboundEmailConfigured,
     isResendRestrictedTestSender,
-    getEffectiveResendFromRaw
+    getResendFromEnvRaw,
+    hasExplicitResendFromEnv
 } = require('./utils/emailService');
 
 const limiter = rateLimit({
@@ -381,19 +382,20 @@ async function startServer() {
     }
 
     if (hasResend()) {
-        const fromRaw = process.env.RESEND_FROM && String(process.env.RESEND_FROM).trim();
-        console.log(
-            '[email] Resend From:',
-            fromRaw ? fromRaw : `(unset — using default ${getEffectiveResendFromRaw()})`
-        );
-    }
-
-    if (hasResend() && isResendRestrictedTestSender()) {
-        console.warn(
-            '[email] Resend sandbox sender is active (onboarding@resend.dev). Resend only delivers to your signup email. ' +
-                'Domain verification in the Resend dashboard is not enough: set server env RESEND_FROM to an address on your verified domain ' +
-                '(e.g. noreply@smartwarehouse.casa), redeploy, then add that sender in Resend if required.'
-        );
+        console.log('[email] Resend From (effective):', getResendFromEnvRaw());
+        if (!hasExplicitResendFromEnv()) {
+            console.warn(
+                '[email] RESEND_FROM / RESEND_MAIL_FROM not set — using onboarding@resend.dev (sandbox). ' +
+                    'Set RESEND_FROM=noreply@your-verified-domain.com in Railway Variables and redeploy. ' +
+                    'If the value has quotes in the dashboard, they are stripped; avoid leading/trailing spaces.'
+            );
+        }
+        if (isResendRestrictedTestSender()) {
+            console.warn(
+                '[email] Resend sandbox sender is active (onboarding@resend.dev). Only your Resend signup email can receive mail. ' +
+                    'Set RESEND_FROM to an address on your verified domain (e.g. noreply@smartwarehouse.casa) and redeploy.'
+            );
+        }
     }
 
     const publicBase = getFrontendBaseUrl();

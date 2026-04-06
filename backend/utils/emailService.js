@@ -21,14 +21,44 @@ function hasResend() {
     return !!String(process.env.RESEND_API_KEY || '').trim();
 }
 
+/** Strip wrapping quotes Railway/UI sometimes store in env values. */
+function stripEnvQuotes(s) {
+    const t = String(s == null ? '' : s).trim();
+    if (t.length >= 2 && ((t[0] === '"' && t[t.length - 1] === '"') || (t[0] === "'" && t[t.length - 1] === "'"))) {
+        return t.slice(1, -1).trim();
+    }
+    return t;
+}
+
+/**
+ * Effective Resend "From" (first non-empty): RESEND_FROM, then RESEND_MAIL_FROM, else sandbox default.
+ * Always normalize quotes so "noreply@domain.com" works.
+ */
+function getResendFromEnvRaw() {
+    const a = stripEnvQuotes(process.env.RESEND_FROM);
+    if (a) return a;
+    const b = stripEnvQuotes(process.env.RESEND_MAIL_FROM);
+    if (b) return b;
+    return 'onboarding@resend.dev';
+}
+
+/** Lowercase email part of From (handles `SWMS <name@domain.com>`). */
+function extractResendFromEmailLower(raw) {
+    const s = stripEnvQuotes(String(raw || ''));
+    const lower = s.toLowerCase();
+    const angle = lower.match(/<([^>]+)>/);
+    const addr = (angle ? angle[1] : lower).trim();
+    return stripEnvQuotes(addr).toLowerCase();
+}
+
+function hasExplicitResendFromEnv() {
+    return !!(stripEnvQuotes(process.env.RESEND_FROM) || stripEnvQuotes(process.env.RESEND_MAIL_FROM));
+}
+
 /** True when using Resend's unverified test From — API only delivers to the account owner's email. */
 function isResendRestrictedTestSender() {
     if (!hasResend()) return false;
-    const raw = String(process.env.RESEND_FROM || 'onboarding@resend.dev').trim();
-    const lower = raw.toLowerCase();
-    const angle = lower.match(/<([^>]+)>/);
-    const addr = (angle ? angle[1] : lower).trim();
-    return addr === 'onboarding@resend.dev';
+    return extractResendFromEmailLower(getResendFromEnvRaw()) === 'onboarding@resend.dev';
 }
 
 function augmentResendApiErrorMessage(apiMessage) {
@@ -136,7 +166,7 @@ async function sendViaResend(options) {
     const key = String(process.env.RESEND_API_KEY || '').trim();
     if (!key) return { ok: false, userMessage: 'RESEND_API_KEY is empty.' };
 
-    const fromRaw = (process.env.RESEND_FROM || 'onboarding@resend.dev').trim();
+    const fromRaw = getResendFromEnvRaw();
     const from = fromRaw.includes('<') ? fromRaw : `SWMS <${fromRaw}>`;
 
     const recipients = parseEmailList(options.to);
@@ -316,6 +346,7 @@ function mapSmtpFailureToUserMessage(err) {
 }
 
 async function sendEmailWithResult(options) {
+    // If RESEND_API_KEY is set, Resend is used and SMTP is not used for this send.
     if (hasResend()) {
         return sendViaResend(options);
     }
@@ -385,8 +416,7 @@ module.exports = {
     isResendRestrictedTestSender,
     mergeReplyToParts,
     parseEmailList,
-    /** Resend effective From when env is unset (for startup logs). */
-    getEffectiveResendFromRaw() {
-        return String(process.env.RESEND_FROM || 'onboarding@resend.dev').trim();
-    }
+    getResendFromEnvRaw,
+    extractResendFromEmailLower,
+    hasExplicitResendFromEnv
 };
