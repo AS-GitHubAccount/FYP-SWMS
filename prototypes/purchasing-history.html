@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="css/styles.css">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <style>
-        .ph-filter-bar { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 0.75rem; align-items: end; margin-bottom: 1rem; }
+        .ph-filter-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; align-items: end; margin-bottom: 1rem; }
         @media (max-width: 900px) { .ph-filter-bar { grid-template-columns: 1fr 1fr; } }
         @media (max-width: 500px) { .ph-filter-bar { grid-template-columns: 1fr; } }
         .ph-sortable { cursor: pointer; user-select: none; }
@@ -23,7 +23,6 @@
             <header class="header">
                 <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle menu"><i data-lucide="menu"></i></button>
                 <div class="header-compact">
-                    <a href="inventory.html?tab=purchasing" class="btn btn-outline" style="padding: 0.35rem 0.6rem; font-size: 0.8rem; margin-right: 0.25rem;"><i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i> Back to Purchasing</a>
                     <a href="notifications.html" class="notification-icon" style="position: relative; text-decoration: none; padding: 0.5rem; color: var(--text);">
                         <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
                         <span id="notificationBadge" class="badge badge-danger" style="position: absolute; top: -4px; right: -4px; font-size: 0.65rem; display: none; min-width: 16px; padding: 2px 5px;">0</span>
@@ -47,7 +46,7 @@
             <main class="container-fluid">
                 <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
                     <h1 class="page-title">All Purchase Requests</h1>
-                    <a href="inventory.html?tab=purchasing&section=create" class="btn btn-primary"><i data-lucide="plus" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 0.35rem;"></i>Create Request</a>
+                    <a href="inventory.html?tab=purchasing" class="btn btn-outline" style="padding: 0.5rem 0.85rem; font-size: 0.875rem;"><i data-lucide="arrow-left" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 0.35rem;"></i>Back to Purchasing</a>
                 </div>
 
                 <div class="card">
@@ -80,7 +79,6 @@
                                     <option value="">All</option>
                                 </select>
                             </div>
-                            <button type="button" class="btn btn-primary" onclick="applyFilters()"><i data-lucide="search" style="width: 14px; height: 14px;"></i> Apply</button>
                         </div>
                     </div>
                 </div>
