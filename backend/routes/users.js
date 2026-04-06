@@ -457,7 +457,7 @@ router.delete('/:id(\\d+)', requireAdmin, async (req, res) => {
         }
         const user = users[0];
         if (user.role === 'ADMIN') {
-            const [adminCount] = await db.execute('SELECT COUNT(*) as count FROM users WHERE role = "ADMIN"');
+            const [adminCount] = await db.execute("SELECT COUNT(*) AS count FROM users WHERE role = ?", ['ADMIN']);
             if (adminCount[0].count <= 1) {
                 return res.status(400).json({ success: false, error: 'Cannot delete the last admin user' });
             }
