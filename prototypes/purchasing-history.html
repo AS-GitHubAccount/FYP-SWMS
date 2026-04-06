@@ -412,9 +412,7 @@
                 clearTimeout(abortTimer);
 
                 if (res.status === 401) {
-                    // Avoid redirect loops; show the error instead.
-                    // If you're seeing this after logging in, the Authorization header or JWT_SECRET/port may be mismatched.
-                    throw new Error('Unauthorized (401) when calling GET /purchase-requests. Check token/port.');
+                    throw new Error('Your session has expired or access was denied. Please sign in again.');
                 }
 
                 const text = await res.text();
@@ -422,12 +420,12 @@
                 try {
                     data = text ? JSON.parse(text) : {};
                 } catch (parseErr) {
-                    throw new Error('Server did not return JSON (HTTP ' + res.status + '). Is the API URL correct? ' + listUrl);
+                    throw new Error('The server returned an unexpected response. Please try again later.');
                 }
 
                 if (!res.ok) {
                     var httpMsg = (data && (data.error || data.message)) || '';
-                    if (res.status === 404) httpMsg = 'API not found. Expected GET ' + listUrl.split('?')[0] + ' on the same host as this page.';
+                    if (res.status === 404) httpMsg = 'Purchase history could not be reached. Please try again later.';
                     else if (!httpMsg) httpMsg = 'HTTP ' + res.status + ' — Error loading purchase history';
                     throw new Error(httpMsg);
                 }
@@ -467,7 +465,7 @@
             } catch (err) {
                 if (errEl) {
                     var msg = (err.name === 'AbortError')
-                        ? 'Request timed out after ' + (fetchMs / 1000) + 's. Check Network for ' + (PH_API_BASE + '/purchase-requests') + ' and that MySQL is running.'
+                        ? 'Loading took too long. Please try again in a moment.'
                         : (err.message || 'Error loading purchase history');
                     errEl.textContent = msg;
                     errEl.style.display = 'block';
@@ -504,7 +502,7 @@
             } catch (e) { console.warn('lucide icons', e); }
         }
 
-        // Last resort: if the list request never settles (cached broken script, extension blocking fetch, etc.), never leave "Loading…" forever.
+        // Last resort: if the list request never settles, never leave "Loading…" forever.
         (function armPhStuckGuard() {
             var guardMs = 28000;
             setTimeout(function () {
@@ -520,13 +518,13 @@
                 }
                 if (errEl && errEl.style.display === 'block') return;
                 if (errEl) {
-                    errEl.textContent = 'This page is taking too long to load data. Hard-refresh (Ctrl+Shift+R), then check DevTools → Network for /api/purchase-requests.';
+                    errEl.textContent = 'Unable to finish loading. Please try again or refresh the page.';
                     errEl.style.display = 'block';
                 }
                 loading.style.display = 'none';
                 if (empty) {
                     empty.style.display = 'block';
-                    empty.textContent = 'If the problem persists, confirm you are logged in and the backend is running on the same port as this page.';
+                    empty.textContent = 'No data could be loaded. You can try changing filters or reload the page.';
                 }
             }, guardMs);
         })();

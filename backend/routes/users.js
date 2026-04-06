@@ -252,6 +252,7 @@ router.get('/', async (req, res) => {
             } else throw e;
         }
         const users = (rows || []).map(mapUserPublic);
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
         res.json({ success: true, data: users, count: users.length });
     } catch (error) {
         console.error('Error fetching users:', error);

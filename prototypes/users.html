@@ -138,14 +138,18 @@
             window.location.href = 'dashboard.html';
         }
 
-        // Load users from database
+        // Load users from database (always bypass cache so the list matches the server after create/update/delete)
         async function loadUsers() {
             try {
                 console.log('Loading users from database...');
-                const response = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/users`, {
+                const listUrl = `${API_BASE_URL}/users?_=${Date.now()}`;
+                const response = await (window.fetchWithAuth || fetch)(listUrl, {
                     method: 'GET',
+                    cache: 'no-store',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache',
+                        Pragma: 'no-cache'
                     }
                 });
 
@@ -403,8 +407,8 @@
                 const result = await response.json();
 
                 if (result.success) {
+                    await loadUsers();
                     showNotification(result.message || 'User deleted successfully', 'success');
-                    loadUsers(); // Reload users list
                 } else {
                     throw new Error(result.message || result.error || 'Failed to delete user');
                 }
