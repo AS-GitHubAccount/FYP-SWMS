@@ -381,11 +381,19 @@
         }
 
         async function deleteUser(userId) {
+            const id =
+                typeof userId === 'number' && Number.isInteger(userId) && userId > 0
+                    ? userId
+                    : parseInt(String(userId == null ? '' : userId).trim(), 10);
+            if (!Number.isInteger(id) || id < 1) {
+                showNotification('Invalid user id. Reload the page and try again.', 'error');
+                return;
+            }
             const ok = await (window.showConfirmWindow || function(t,m){return Promise.resolve(confirm(m));})('Delete User', 'Are you sure you want to delete this user? This action cannot be undone.');
             if (!ok) return;
 
             try {
-                const response = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/users/${userId}`, {
+                const response = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/users/${id}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json'

@@ -51,6 +51,48 @@ function escapeHtml(s) {
         .replace(/"/g, '&quot;');
 }
 
+/** Accept only real positive integer ids (avoids parseInt('1abc') === 1 and non-numeric strings reaching SQL). */
+function parseStrictPositiveInt(value) {
+    if (value == null || value === '') return null;
+    if (typeof value === 'number') {
+        if (!Number.isFinite(value)) return null;
+        const i = Math.trunc(value);
+        return i > 0 ? i : null;
+    }
+    const s = String(value).trim();
+    if (!/^\d+$/.test(s)) return null;
+    const n = parseInt(s, 10);
+    return n > 0 ? n : null;
+}
+
+/** Numeric userId from a DB row (handles occasional driver/casing quirks). */
+function userIdFromRow(row) {
+    if (!row) return null;
+    const v = row.userId != null ? row.userId : row.userid;
+    return parseStrictPositiveInt(v);
+}
+
+/**
+ * JWT should carry numeric userId; if missing or corrupted, resolve from users.email.
+ */
+async function resolveActorUserId(req) {
+    const raw = req.user && (req.user.userId != null ? req.user.userId : req.user.sub);
+    let n = parseStrictPositiveInt(raw);
+    if (n != null) return n;
+    const email = req.user && req.user.email && String(req.user.email).trim().toLowerCase();
+    if (!email) return null;
+    try {
+        const [rows] = await db.execute(
+            'SELECT userId FROM users WHERE LOWER(TRIM(email)) = ? LIMIT 1',
+            [email]
+        );
+        if (rows && rows[0]) return parseStrictPositiveInt(rows[0].userId);
+    } catch (e) {
+        console.warn('[users] resolveActorUserId lookup failed:', e.message);
+    }
+    return null;
+}
+
 function mapUserPublic(row) {
     if (!row) return null;
     const pending =
@@ -58,7 +100,7 @@ function mapUserPublic(row) {
         (row.passwordPending === 1 || row.passwordPending === true);
     const hasInvite = row.hasValidInvite === 1 || row.hasValidInvite === true;
     return {
-        userId: row.userId,
+        userId: userIdFromRow(row),
         name: row.name,
         email: row.email,
         role: row.role,
@@ -414,8 +456,11 @@ async function unlinkUserReferences(conn, fromUserId, reassignToUserId) {
             throw e;
         }
     };
-    const from = fromUserId;
-    const to = reassignToUserId;
+    const from = parseStrictPositiveInt(fromUserId);
+    const to = parseStrictPositiveInt(reassignToUserId);
+    if (from == null || to == null) {
+        throw new Error('Invalid user ids for reassignment');
+    }
 
     await safeExec('UPDATE in_records SET receivedBy = NULL WHERE receivedBy = ?', [from]);
     await safeExec('UPDATE out_records SET issuedBy = NULL WHERE issuedBy = ?', [from]);
@@ -442,9 +487,12 @@ async function unlinkUserReferences(conn, fromUserId, reassignToUserId) {
 
 router.delete('/:id(\\d+)', requireAdmin, async (req, res) => {
     try {
-        const userId = parseInt(req.params.id, 10);
-        const reassignTo = parseInt(req.user.userId, 10);
-        if (!reassignTo || Number.isNaN(reassignTo)) {
+        const userId = parseStrictPositiveInt(req.params.id);
+        if (userId == null) {
+            return res.status(400).json({ success: false, error: 'Invalid user id' });
+        }
+        const reassignTo = await resolveActorUserId(req);
+        if (reassignTo == null) {
             return res.status(400).json({ success: false, error: 'Invalid admin session' });
         }
         if (userId === reassignTo) {
