@@ -401,6 +401,8 @@ async function startServer() {
         await ensureWarehousesTable();
         const { ensureUserInvitationColumns } = require('./utils/ensureUserInvitationColumns');
         await ensureUserInvitationColumns();
+        const { ensureSupplierNotesColumn } = require('./utils/ensureSupplierNotesColumn');
+        await ensureSupplierNotesColumn();
         const { ensureInventoryItemsForProducts } = require('./ensureInventoryItems');
         await ensureInventoryItemsForProducts();
     } catch (err) {

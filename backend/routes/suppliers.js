@@ -16,7 +16,7 @@ const db = require('../config/database');
 router.get('/', async (req, res) => {
     try {
         const [suppliers] = await db.execute(
-            'SELECT supplierId, name, contactPerson, email, phone, address, status, createdAt FROM suppliers ORDER BY name ASC'
+            'SELECT supplierId, name, contactPerson, email, phone, address, notes, status, createdAt FROM suppliers ORDER BY name ASC'
         );
 
         res.json({
@@ -39,7 +39,7 @@ router.get('/:id', async (req, res) => {
         const supplierId = parseInt(req.params.id);
 
         const [suppliers] = await db.execute(
-            'SELECT supplierId, name, contactPerson, email, phone, address, status, createdAt FROM suppliers WHERE supplierId = ?',
+            'SELECT supplierId, name, contactPerson, email, phone, address, notes, status, createdAt FROM suppliers WHERE supplierId = ?',
             [supplierId]
         );
 
@@ -66,7 +66,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
     try {
-        const { name, contactPerson, email, phone, address, status } = req.body;
+        const { name, contactPerson, email, phone, address, notes, status } = req.body;
 
         if (!name || !email) {
             return res.status(400).json({
@@ -87,21 +87,24 @@ router.post('/', async (req, res) => {
             });
         }
 
+        const notesVal = notes != null && String(notes).trim() ? String(notes).trim() : null;
+
         const [result] = await db.execute(
-            `INSERT INTO suppliers (name, contactPerson, email, phone, address, status)
-             VALUES (?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO suppliers (name, contactPerson, email, phone, address, notes, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [
                 name.trim(),
                 contactPerson ? contactPerson.trim() : null,
                 email.trim(),
                 phone ? phone.trim() : null,
                 address ? address.trim() : null,
+                notesVal,
                 (status || 'active').toLowerCase()
             ]
         );
 
         const [newSupplier] = await db.execute(
-            'SELECT supplierId, name, contactPerson, email, phone, address, status, createdAt FROM suppliers WHERE supplierId = ?',
+            'SELECT supplierId, name, contactPerson, email, phone, address, notes, status, createdAt FROM suppliers WHERE supplierId = ?',
             [result.insertId]
         );
 
@@ -123,7 +126,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const supplierId = parseInt(req.params.id);
-        const { name, contactPerson, email, phone, address, status } = req.body;
+        const { name, contactPerson, email, phone, address, notes, status } = req.body;
 
         const [suppliers] = await db.execute(
             'SELECT * FROM suppliers WHERE supplierId = ?',
@@ -174,6 +177,10 @@ router.put('/:id', async (req, res) => {
             updates.push('address = ?');
             values.push(address ? address.trim() : null);
         }
+        if (notes !== undefined) {
+            updates.push('notes = ?');
+            values.push(notes != null && String(notes).trim() ? String(notes).trim() : null);
+        }
         if (status !== undefined) {
             updates.push('status = ?');
             values.push(status.toLowerCase());
@@ -194,7 +201,7 @@ router.put('/:id', async (req, res) => {
         );
 
         const [updatedSupplier] = await db.execute(
-            'SELECT supplierId, name, contactPerson, email, phone, address, status, createdAt FROM suppliers WHERE supplierId = ?',
+            'SELECT supplierId, name, contactPerson, email, phone, address, notes, status, createdAt FROM suppliers WHERE supplierId = ?',
             [supplierId]
         );
 

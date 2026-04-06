@@ -267,6 +267,7 @@
                         <td><span class="badge ${statusBadge}">${statusText}</span></td>
                         <td style="white-space: normal;">
                             <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center;">
+                            ${pending ? `<button type="button" class="btn btn-sm btn-outline" title="Resend invitation email with a new link (previous link stops working)" onclick="resendInvitation(${user.userId})">Resend invite</button>` : ''}
                             <button type="button" class="btn btn-sm btn-outline" onclick="editUser(${user.userId})">Edit</button>
                             <button type="button" class="btn btn-sm btn-outline btn-danger" onclick="deleteUser(${user.userId})" ${deleteDisabled ? 'disabled' : ''}>Delete</button>
                             </div>
@@ -344,6 +345,11 @@
         }
 
         async function resendInvitation(userId) {
+            const ok = await (window.showConfirmWindow || function(t, m) { return Promise.resolve(confirm(m)); })(
+                'Resend invitation',
+                'Send a new invitation email with a fresh setup link? The previous link will stop working.'
+            );
+            if (!ok) return;
             try {
                 const response = await (window.fetchWithAuth || fetch)(`${API_BASE_URL}/users/${userId}/resend-invitation`, {
                     method: 'POST',
@@ -354,7 +360,7 @@
                     const t = result.invitationEmailSent === false ? 'warning' : 'success';
                     showNotification(result.message || 'Invitation sent.', t);
                 } else {
-                    throw new Error(result.error || 'Failed to resend invitation');
+                    throw new Error(result.error || result.message || 'Failed to resend invitation');
                 }
             } catch (error) {
                 console.error(error);
