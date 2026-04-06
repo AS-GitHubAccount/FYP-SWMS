@@ -38,7 +38,8 @@ function augmentResendApiErrorMessage(apiMessage) {
     return (
         `${base.trim()} ` +
         'Hint: with sender onboarding@resend.dev, Resend allows only your Resend signup email in To, CC, and BCC. ' +
-        'For real recipients, verify a domain at https://resend.com/domains and set RESEND_FROM to an address on that domain (e.g. on Railway Variables).'
+        'If you already verified a domain in Resend, set RESEND_FROM on the server (e.g. Railway Variables) to an address on that domain ' +
+        '(e.g. noreply@yourdomain.com), redeploy, and ensure the sender is enabled in Resend for that domain.'
     );
 }
 
@@ -383,5 +384,9 @@ module.exports = {
     hasResend,
     isResendRestrictedTestSender,
     mergeReplyToParts,
-    parseEmailList
+    parseEmailList,
+    /** Resend effective From when env is unset (for startup logs). */
+    getEffectiveResendFromRaw() {
+        return String(process.env.RESEND_FROM || 'onboarding@resend.dev').trim();
+    }
 };

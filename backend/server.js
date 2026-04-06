@@ -13,7 +13,8 @@ const {
     hasResend,
     buildSmtpTransportOptions,
     isOutboundEmailConfigured,
-    isResendRestrictedTestSender
+    isResendRestrictedTestSender,
+    getEffectiveResendFromRaw
 } = require('./utils/emailService');
 
 const limiter = rateLimit({
@@ -379,9 +380,19 @@ async function startServer() {
         console.log('[email] Outbound mail configured (Resend and/or SMTP).');
     }
 
+    if (hasResend()) {
+        const fromRaw = process.env.RESEND_FROM && String(process.env.RESEND_FROM).trim();
+        console.log(
+            '[email] Resend From:',
+            fromRaw ? fromRaw : `(unset — using default ${getEffectiveResendFromRaw()})`
+        );
+    }
+
     if (hasResend() && isResendRestrictedTestSender()) {
         console.warn(
-            '[email] Resend test sender onboarding@resend.dev: API only delivers to your Resend account email. Invitations to other addresses fail or never arrive. Verify a domain at https://resend.com/domains and set RESEND_FROM.'
+            '[email] Resend sandbox sender is active (onboarding@resend.dev). Resend only delivers to your signup email. ' +
+                'Domain verification in the Resend dashboard is not enough: set server env RESEND_FROM to an address on your verified domain ' +
+                '(e.g. noreply@smartwarehouse.casa), redeploy, then add that sender in Resend if required.'
         );
     }
 
