@@ -240,7 +240,12 @@ ON DUPLICATE KEY UPDATE name=name;
 INSERT IGNORE INTO suppliers (name, contactPerson, email, phone, address, status) VALUES
 ('Fresh Farm Co.', 'John Smith', 'john@freshfarm.com', '+1 555-0101', '123 Farm Road, Green Valley', 'active'),
 ('Quality Dairy Ltd', 'Jane Doe', 'jane@qualitydairy.com', '+1 555-0102', '456 Milk Street, Dairy Town', 'active'),
-('Grain Masters Inc', 'Bob Wilson', 'bob@grainmasters.com', '+1 555-0103', '789 Harvest Ave, Grain City', 'active');
+('Grain Masters Inc', 'Bob Wilson', 'bob@grainmasters.com', '+1 555-0103', '789 Harvest Ave, Grain City', 'active'),
+('SWMS Test Supplier A', 'QA Mailbox A', 'rfq-test-alpha@example.com', '+1 555-0191', 'RFQ / email test sandbox', 'active'),
+('SWMS Test Supplier B', 'QA Mailbox B', 'rfq-test-beta@example.com', '+1 555-0192', 'RFQ / email test sandbox', 'active'),
+('SWMS Test Supplier C', 'QA Mailbox C', 'rfq-test-gamma@example.com', '+1 555-0193', 'RFQ / email test sandbox', 'active'),
+('SWMS Test Supplier D', 'QA Mailbox D', 'rfq-test-delta@example.com', '+1 555-0194', 'RFQ / email test sandbox', 'active'),
+('SWMS Test Supplier E', 'QA Mailbox E', 'rfq-test-epsilon@example.com', '+1 555-0195', 'RFQ / email test sandbox', 'active');
 
 -- ============================================
 -- SUPPLIER_PRODUCTS TABLE (offerings)
@@ -271,6 +276,13 @@ AND (
     (s.email = 'john@freshfarm.com' AND p.sku IN ('PRD-001', 'PRD-002', 'PRD-003'))
     OR (s.email = 'jane@qualitydairy.com' AND p.sku IN ('PRD-001', 'PRD-004'))
     OR (s.email = 'bob@grainmasters.com' AND p.sku IN ('PRD-002', 'PRD-005'))
+    OR (s.email IN (
+        'rfq-test-alpha@example.com',
+        'rfq-test-beta@example.com',
+        'rfq-test-gamma@example.com',
+        'rfq-test-delta@example.com',
+        'rfq-test-epsilon@example.com'
+    ) AND p.sku IN ('PRD-001', 'PRD-002', 'PRD-003', 'PRD-004', 'PRD-005'))
 );
 
 -- ============================================

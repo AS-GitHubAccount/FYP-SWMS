@@ -395,14 +395,14 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    showNotification('User deleted successfully', 'success');
+                    showNotification(result.message || 'User deleted successfully', 'success');
                     loadUsers(); // Reload users list
                 } else {
-                    throw new Error(result.error || 'Failed to delete user');
+                    throw new Error(result.message || result.error || 'Failed to delete user');
                 }
             } catch (error) {
                 console.error('Error deleting user:', error);
-                showNotification('Failed to delete user: ' + error.message, 'error');
+                showNotification('Failed to delete user: ' + (error.message || 'Unknown'), 'error');
             }
         }
 

@@ -398,9 +398,59 @@ router.put('/:id(\\d+)', requireAdmin, async (req, res) => {
     }
 });
 
+/**
+ * Clear or reassign FK references so DELETE FROM users can succeed (MySQL RESTRICT on most userId FKs).
+ * Nullable actor columns → NULL. Required requester/adjuster columns → reassignToUserId (the admin performing delete).
+ */
+async function unlinkUserReferences(conn, fromUserId, reassignToUserId) {
+    const safeExec = async (sql, params = []) => {
+        try {
+            await conn.execute(sql, params);
+        } catch (e) {
+            if (e.code === 'ER_NO_SUCH_TABLE' || e.code === 'ER_BAD_FIELD_ERROR') {
+                console.warn('[users] unlink skip (schema):', sql.slice(0, 60), e.message);
+                return;
+            }
+            throw e;
+        }
+    };
+    const from = fromUserId;
+    const to = reassignToUserId;
+
+    await safeExec('UPDATE in_records SET receivedBy = NULL WHERE receivedBy = ?', [from]);
+    await safeExec('UPDATE out_records SET issuedBy = NULL WHERE issuedBy = ?', [from]);
+    await safeExec('UPDATE alerts SET resolvedBy = NULL WHERE resolvedBy = ?', [from]);
+
+    await safeExec('UPDATE bookings SET approvedBy = NULL WHERE approvedBy = ?', [from]);
+    await safeExec('UPDATE bookings SET requestedBy = ? WHERE requestedBy = ?', [to, from]);
+
+    await safeExec('UPDATE purchase_requests SET approvedBy = NULL WHERE approvedBy = ?', [from]);
+    await safeExec('UPDATE purchase_requests SET rejectedBy = NULL WHERE rejectedBy = ?', [from]);
+    await safeExec('UPDATE purchase_requests SET requestedBy = ? WHERE requestedBy = ?', [to, from]);
+
+    await safeExec('UPDATE disposal_requests SET approvedBy = NULL WHERE approvedBy = ?', [from]);
+    await safeExec('UPDATE disposal_requests SET rejectedBy = NULL WHERE rejectedBy = ?', [from]);
+    await safeExec('UPDATE disposal_requests SET completedBy = NULL WHERE completedBy = ?', [from]);
+    await safeExec('UPDATE disposal_requests SET requestedBy = ? WHERE requestedBy = ?', [to, from]);
+
+    await safeExec('UPDATE stock_adjustments SET adjustedBy = ? WHERE adjustedBy = ?', [to, from]);
+
+    await safeExec('UPDATE rfqs SET createdBy = NULL WHERE createdBy = ?', [from]);
+    await safeExec('UPDATE quotations SET createdBy = NULL WHERE createdBy = ?', [from]);
+    await safeExec('UPDATE purchase_orders SET createdBy = NULL WHERE createdBy = ?', [from]);
+}
+
 router.delete('/:id(\\d+)', requireAdmin, async (req, res) => {
     try {
         const userId = parseInt(req.params.id, 10);
+        const reassignTo = parseInt(req.user.userId, 10);
+        if (!reassignTo || Number.isNaN(reassignTo)) {
+            return res.status(400).json({ success: false, error: 'Invalid admin session' });
+        }
+        if (userId === reassignTo) {
+            return res.status(400).json({ success: false, error: 'You cannot delete your own account from this list' });
+        }
+
         const [users] = await db.execute('SELECT * FROM users WHERE userId = ?', [userId]);
         if (users.length === 0) {
             return res.status(404).json({ success: false, error: 'User not found' });
@@ -412,11 +462,43 @@ router.delete('/:id(\\d+)', requireAdmin, async (req, res) => {
                 return res.status(400).json({ success: false, error: 'Cannot delete the last admin user' });
             }
         }
-        await db.execute('DELETE FROM users WHERE userId = ?', [userId]);
-        res.json({ success: true, message: 'User deleted successfully' });
+
+        const pool = db;
+        const conn = await pool.getConnection();
+        try {
+            await conn.beginTransaction();
+            await unlinkUserReferences(conn, userId, reassignTo);
+            await conn.execute('DELETE FROM users WHERE userId = ?', [userId]);
+            await conn.commit();
+        } catch (txErr) {
+            try {
+                await conn.rollback();
+            } catch (rbErr) {
+                console.error('[users] rollback failed:', rbErr);
+            }
+            throw txErr;
+        } finally {
+            conn.release();
+        }
+
+        res.json({
+            success: true,
+            message: 'User deleted successfully. Their past requests were reassigned to you for history continuity.'
+        });
     } catch (error) {
         console.error('Error deleting user:', error);
-        res.status(500).json({ success: false, error: 'Failed to delete user', message: error.message });
+        const msg = error.message || String(error);
+        const isFk =
+            error.code === 'ER_ROW_IS_REFERENCED_2' ||
+            error.errno === 1451 ||
+            /Cannot delete or update a parent row/i.test(msg);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to delete user',
+            message: isFk
+                ? 'This user is still referenced by data the server could not reassign. Check server logs or contact support.'
+                : msg
+        });
     }
 });
 
