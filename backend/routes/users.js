@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 const db = require('../config/database');
 const getConnectionErrorMessage = db.getConnectionErrorMessage || ((e) => e && e.message);
 const { requireAdmin } = require('../middleware/auth');
-const { sendEmailWithOptions } = require('../utils/emailService');
+const { sendEmailWithResult } = require('../utils/emailService');
 const {
     generateInviteToken,
     hashInviteToken,
@@ -39,7 +39,11 @@ async function sendInviteOrResetEmail({ to, name, rawToken, subject, introHtml }
   <p style="font-size:12px;color:#94a3b8;word-break:break-all;">If the button does not work, copy this URL:<br>${escapeHtml(link)}</p>
 </body></html>`;
     const text = `${subject}\n\n${introHtml.replace(/<[^>]+>/g, '')}\n\nOpen: ${link}`;
-    return sendEmailWithOptions({ to, subject, html, text });
+    const r = await sendEmailWithResult({ to, subject, html, text });
+    return {
+        ok: !!r.ok,
+        userMessage: r.ok ? undefined : (r.userMessage || 'Email could not be sent.')
+    };
 }
 
 function escapeHtml(s) {
@@ -368,7 +372,7 @@ router.post('/', requireAdmin, async (req, res) => {
             return [nu];
         });
 
-        const sent = await sendInviteOrResetEmail({
+        const emailResult = await sendInviteOrResetEmail({
             to: emailNorm,
             name: name.trim(),
             rawToken,
@@ -376,19 +380,22 @@ router.post('/', requireAdmin, async (req, res) => {
             introHtml: '<strong>Welcome to SWMS.</strong> Click the button below to choose your password and activate your account.'
         });
 
-        if (!sent) {
+        if (!emailResult.ok) {
             console.warn(
-                '[users] Invitation created but email not sent (configure SMTP_USER/SMTP_PASS). Dev link:',
+                '[users] Invitation created but email not sent:',
+                emailResult.userMessage || '(no detail)',
+                'Dev link:',
                 `${getFrontendBaseUrl()}/set-password.html?token=${rawToken}`
             );
         }
 
         res.status(201).json({
             success: true,
-            message: sent
-                ? 'User invited. They will receive an email to set their password.'
-                : 'User created but invitation email could not be sent. Configure SMTP or share the setup link manually (see server log).',
-            invitationEmailSent: !!sent,
+            message: emailResult.ok
+                ? 'User invited. An email was sent with a link to set their password. If they do not see it within a few minutes, ask them to check Spam or Junk.'
+                : `User was created, but the invitation email could not be sent. ${emailResult.userMessage || 'Configure RESEND_API_KEY or SMTP_USER + SMTP_PASS on the server.'} Ask your administrator to check server logs, or share the setup link from the log.`,
+            invitationEmailSent: !!emailResult.ok,
+            invitationEmailError: emailResult.ok ? undefined : emailResult.userMessage,
             data: mapUserPublic(newUser[0]) || { userId: newId, name, email: emailNorm, role: roleUpper }
         });
     } catch (error) {
@@ -582,20 +589,28 @@ router.post('/:id(\\d+)/resend-invitation', requireAdmin, async (req, res) => {
             return res.status(400).json({ success: false, error: 'User already activated. Use Reset password email instead.' });
         }
         const { rawToken } = await setInviteTokenForUser(userId, 'invite');
-        const sent = await sendInviteOrResetEmail({
+        const emailResult = await sendInviteOrResetEmail({
             to: u.email,
             name: u.name,
             rawToken,
             subject: 'SWMS — Complete your account setup',
             introHtml: '<strong>Invitation reminder.</strong> Set your password using the link below.'
         });
-        if (!sent) {
-            console.warn('[users] Resend: SMTP missing. Link:', `${getFrontendBaseUrl()}/set-password.html?token=${rawToken}`);
+        if (!emailResult.ok) {
+            console.warn(
+                '[users] Resend invite:',
+                emailResult.userMessage || '(no detail)',
+                'Link:',
+                `${getFrontendBaseUrl()}/set-password.html?token=${rawToken}`
+            );
         }
         res.json({
             success: true,
-            message: sent ? 'Invitation email sent.' : 'Token renewed but email not sent (check SMTP / server log).',
-            invitationEmailSent: !!sent
+            message: emailResult.ok
+                ? 'Invitation email sent. If the recipient does not see it, ask them to check Spam or Junk.'
+                : `Invitation link was renewed but email was not sent. ${emailResult.userMessage || 'Configure RESEND_API_KEY or SMTP on the server.'}`,
+            invitationEmailSent: !!emailResult.ok,
+            invitationEmailError: emailResult.ok ? undefined : emailResult.userMessage
         });
     } catch (error) {
         console.error('resend-invitation', error);

@@ -351,7 +351,8 @@
                 });
                 const result = await response.json().catch(() => ({}));
                 if (result.success) {
-                    showNotification(result.message || 'Invitation sent.', 'success');
+                    const t = result.invitationEmailSent === false ? 'warning' : 'success';
+                    showNotification(result.message || 'Invitation sent.', t);
                 } else {
                     throw new Error(result.error || 'Failed to resend invitation');
                 }
@@ -493,8 +494,10 @@
                 console.log('Save user response:', result);
 
                 if (result.success) {
-                    showNotification(result.message || 'User saved successfully', 'success');
-            closeUserModal();
+                    const notifyType =
+                        mode === 'add' && result.invitationEmailSent === false ? 'warning' : 'success';
+                    showNotification(result.message || 'User saved successfully', notifyType);
+                    closeUserModal();
                     loadUsers(); // Reload users list
                 } else {
                     throw new Error(result.error || (mode === 'add' ? 'Failed to add user' : 'Failed to save user'));
