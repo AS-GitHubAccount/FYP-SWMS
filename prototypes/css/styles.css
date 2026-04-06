@@ -1658,61 +1658,6 @@ table tbody tr:hover {
     padding: 0.75rem 1.5rem;
 }
 
-/* Suppliers page — align with Users table density; cap content width; clamp long columns */
-body.suppliers-page .page-header,
-body.suppliers-page .search-filter-bar,
-body.suppliers-page .suppliers-table-card {
-    max-width: 1120px;
-    margin-left: auto;
-    margin-right: auto;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-body.suppliers-page #suppliersTable {
-    table-layout: fixed;
-    width: 100%;
-}
-
-body.suppliers-page #suppliersTable th:nth-child(1),
-body.suppliers-page #suppliersTable td:nth-child(1) {
-    width: 3.5rem;
-}
-
-body.suppliers-page #suppliersTable th:nth-child(9),
-body.suppliers-page #suppliersTable td:nth-child(9) {
-    width: 9.75rem;
-    white-space: normal;
-    vertical-align: middle;
-}
-
-body.suppliers-page #suppliersTable .supplier-cell-clamp {
-    max-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-body.suppliers-page #suppliersTable .supplier-cell-email {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    word-break: break-all;
-}
-
-body.suppliers-page #suppliersTable .supplier-cell-text {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-body.suppliers-page .supplier-actions-wrap {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    align-items: center;
-}
-
 /* Grid Layout */
 .grid {
     display: grid;
