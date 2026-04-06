@@ -93,6 +93,22 @@ async function resolveActorUserId(req) {
     return null;
 }
 
+/**
+ * WHERE clause for columns that may be INT (user id) or VARCHAR (display name) — see receiving.js / issuing.js.
+ * Pure string comparison avoids MySQL coercing values like 'Admin User' to DOUBLE (ER_TRUNCATED_WRONG_VALUE).
+ */
+function whereUserRefMatchesColumn(column, fromId, displayName) {
+    const col = `\`${column}\``;
+    const clauses = [`BINARY CAST(${col} AS CHAR(255)) = BINARY CAST(? AS CHAR(255))`];
+    const params = [String(fromId)];
+    const dn = displayName != null && String(displayName).trim() ? String(displayName).trim() : '';
+    if (dn) {
+        clauses.push(`BINARY CAST(${col} AS CHAR(255)) = BINARY CAST(? AS CHAR(255))`);
+        params.push(dn);
+    }
+    return { where: clauses.join(' OR '), params };
+}
+
 function mapUserPublic(row) {
     if (!row) return null;
     const pending =
@@ -443,8 +459,9 @@ router.put('/:id(\\d+)', requireAdmin, async (req, res) => {
 /**
  * Clear or reassign FK references so DELETE FROM users can succeed (MySQL RESTRICT on most userId FKs).
  * Nullable actor columns → NULL. Required requester/adjuster columns → reassignToUserId (the admin performing delete).
+ * @param {string} [deletedUserDisplayName] users.name for the row being deleted (clears VARCHAR name-stored receiving/issuing refs).
  */
-async function unlinkUserReferences(conn, fromUserId, reassignToUserId) {
+async function unlinkUserReferences(conn, fromUserId, reassignToUserId, deletedUserDisplayName) {
     const safeExec = async (sql, params = []) => {
         try {
             await conn.execute(sql, params);
@@ -462,8 +479,10 @@ async function unlinkUserReferences(conn, fromUserId, reassignToUserId) {
         throw new Error('Invalid user ids for reassignment');
     }
 
-    await safeExec('UPDATE in_records SET receivedBy = NULL WHERE receivedBy = ?', [from]);
-    await safeExec('UPDATE out_records SET issuedBy = NULL WHERE issuedBy = ?', [from]);
+    const inWhere = whereUserRefMatchesColumn('receivedBy', from, deletedUserDisplayName);
+    await safeExec(`UPDATE in_records SET receivedBy = NULL WHERE ${inWhere.where}`, inWhere.params);
+    const outWhere = whereUserRefMatchesColumn('issuedBy', from, deletedUserDisplayName);
+    await safeExec(`UPDATE out_records SET issuedBy = NULL WHERE ${outWhere.where}`, outWhere.params);
     await safeExec('UPDATE alerts SET resolvedBy = NULL WHERE resolvedBy = ?', [from]);
 
     await safeExec('UPDATE bookings SET approvedBy = NULL WHERE approvedBy = ?', [from]);
@@ -515,7 +534,7 @@ router.delete('/:id(\\d+)', requireAdmin, async (req, res) => {
         const conn = await pool.getConnection();
         try {
             await conn.beginTransaction();
-            await unlinkUserReferences(conn, userId, reassignTo);
+            await unlinkUserReferences(conn, userId, reassignTo, user.name);
             await conn.execute('DELETE FROM users WHERE userId = ?', [userId]);
             await conn.commit();
         } catch (txErr) {
