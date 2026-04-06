@@ -492,6 +492,9 @@
 
                 const result = await response.json();
                 console.log('Save user response:', result);
+                if (mode === 'add' && typeof result.invitationEmailSent !== 'undefined') {
+                    console.log('[add user] invitationEmailSent =', result.invitationEmailSent, result.invitationEmailError || '');
+                }
 
                 if (result.success) {
                     const notifyType =

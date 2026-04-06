@@ -11,7 +11,8 @@ const {
     createSmtpTransport,
     sendEmailWithResult,
     hasResend,
-    buildSmtpTransportOptions
+    buildSmtpTransportOptions,
+    isOutboundEmailConfigured
 } = require('./utils/emailService');
 
 const limiter = rateLimit({
@@ -52,6 +53,7 @@ const settingsRoutes = require('./routes/settings');
 const { startDailyAlertsJob } = require('./jobs/dailyAlerts');
 const { startMinuteAlertsJob } = require('./jobs/minuteAlerts');
 const { authMiddleware, optionalAuth } = require('./middleware/auth');
+const { getFrontendBaseUrl } = require('./utils/userInviteTokens');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -366,6 +368,22 @@ async function startServer() {
     const secret = process.env.JWT_SECRET;
     if (!secret || secret === 'secret_key') {
         console.warn('JWT_SECRET missing or default; set in .env for production.');
+    }
+
+    if (!isOutboundEmailConfigured()) {
+        console.warn(
+            '[email] Outbound mail not configured (set RESEND_API_KEY or SMTP_USER + SMTP_PASS). Invitation / password emails will not send until configured.'
+        );
+    } else {
+        console.log('[email] Outbound mail configured (Resend and/or SMTP).');
+    }
+
+    const publicBase = getFrontendBaseUrl();
+    console.log('[invite] set-password links in emails use base URL:', publicBase);
+    if (/^http:\/\/localhost/i.test(publicBase) && String(process.env.RAILWAY_ENVIRONMENT || '').trim()) {
+        console.warn(
+            '[invite] Still using localhost for links. Set FRONTEND_BASE_URL to your public https URL (e.g. https://your-app.up.railway.app) so invitation emails work.'
+        );
     }
 
     try {
