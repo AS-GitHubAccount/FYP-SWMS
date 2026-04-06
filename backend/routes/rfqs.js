@@ -376,7 +376,7 @@ function buildWithdrawalRecipients(supplierRows, lastTo, lastCc, lastBcc) {
     return out;
 }
 
-function buildWithdrawalNoticeContent(greetingName, { productName, quantity, deliveryDateStr, specs, deliveryLocation, senderName, companyName }) {
+function buildWithdrawalNoticeContent(greetingName, { productName, quantity, deliveryDateStr, specs, deliveryLocation, senderName, senderTitle, companyName }) {
     const border = 'border:1px solid #d1d5db;';
     const thStyle = `${border}padding:10px 12px;font-weight:bold;background:#f3f4f6;`;
     const tdStyle = `${border}padding:10px 12px;background:#fff;`;
