@@ -5326,6 +5326,39 @@
             console.log('Products loaded:', products ? products.length : 0);
             return products || [];
         }
+
+        /**
+         * Load batches for one product into currentProductBatches / allBatches and refresh disposal cache.
+         * Used by the batch modal and after disposal complete (confirmBatchDisposal).
+         */
+        async function loadBatchesForProduct(dbProductId, product) {
+            const prod = product != null ? product : currentProduct;
+            const matchId = function (b) {
+                return String(b.productId || b.id) === String(dbProductId)
+                    || (prod != null && String(b.productId || b.id) === String(prod.id));
+            };
+            try {
+                const batches = await fetchBatchesFromAPI(dbProductId);
+                let productBatches = batches;
+                if (!productBatches || productBatches.length === 0) {
+                    const fallbackBatches = window.storage.get('batches') || initializeBatchData();
+                    productBatches = Array.isArray(fallbackBatches) ? fallbackBatches.filter(matchId) : [];
+                }
+                currentProductBatches = productBatches;
+                allBatches = productBatches;
+                await loadDisposalRequestsForBatches();
+            } catch (error) {
+                console.error('Error loading batches for product:', error);
+                const fallbackBatches = window.storage.get('batches') || initializeBatchData();
+                currentProductBatches = Array.isArray(fallbackBatches) ? fallbackBatches.filter(matchId) : [];
+                allBatches = currentProductBatches;
+                try {
+                    await loadDisposalRequestsForBatches();
+                } catch (e2) {
+                    window._disposalRequestsCache = [];
+                }
+            }
+        }
         
         // Show batch details for a product - fetches only batches for this product (product-level filtering)
         async function showBatchDetails(productId) {
@@ -5361,21 +5394,7 @@
             document.getElementById('batchDetailsTitle').textContent = `Batch Details - ${product.name} (${product.sku})`;
             
             try {
-                // Fetch batches from API for this product only (GET /api/batches/product/:productId)
-                const batches = await fetchBatchesFromAPI(dbProductId);
-                
-                let productBatches = batches;
-                
-                // If API returned empty (e.g. 401, network error), use fallback data filtered by product
-                if (!productBatches || productBatches.length === 0) {
-                    const fallbackBatches = window.storage.get('batches') || initializeBatchData();
-                    const matchId = (b) => String(b.productId || b.id) === String(dbProductId) || String(b.productId || b.id) === String(product.id);
-                    productBatches = Array.isArray(fallbackBatches) ? fallbackBatches.filter(matchId) : [];
-                }
-                
-                currentProductBatches = productBatches;
-                allBatches = productBatches;
-                await loadDisposalRequestsForBatches();
+                await loadBatchesForProduct(dbProductId, product);
                 currentSortColumn = 'expiryDate';
                 currentSortDirection = 'asc';
                 resetBatchFilters(true);
