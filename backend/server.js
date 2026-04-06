@@ -12,7 +12,8 @@ const {
     sendEmailWithResult,
     hasResend,
     buildSmtpTransportOptions,
-    isOutboundEmailConfigured
+    isOutboundEmailConfigured,
+    isResendRestrictedTestSender
 } = require('./utils/emailService');
 
 const limiter = rateLimit({
@@ -376,6 +377,12 @@ async function startServer() {
         );
     } else {
         console.log('[email] Outbound mail configured (Resend and/or SMTP).');
+    }
+
+    if (hasResend() && isResendRestrictedTestSender()) {
+        console.warn(
+            '[email] Resend test sender onboarding@resend.dev: API only delivers to your Resend account email. Invitations to other addresses fail or never arrive. Verify a domain at https://resend.com/domains and set RESEND_FROM.'
+        );
     }
 
     const publicBase = getFrontendBaseUrl();

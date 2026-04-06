@@ -206,6 +206,57 @@ async function sendViaResend(options) {
     }
 }
 
+function escapeHtmlForEmail(s) {
+    if (s == null) return '';
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+/**
+ * New-user invitation (same transport as password reset / daily mail).
+ * Optional INVITE_EMAIL_BCC: comma-separated addresses to receive a copy (helps verify delivery).
+ */
+async function sendInvitationEmail({ to, name, setPasswordUrl, subject, introHtml }) {
+    const subj = (subject || process.env.INVITE_EMAIL_SUBJECT || 'SWMS - Complete your account setup').trim();
+    const greeting = escapeHtmlForEmail(name || 'there');
+    const safeUrlDisplay = escapeHtmlForEmail(setPasswordUrl);
+    const inner =
+        introHtml ||
+        '<strong>Welcome to SWMS.</strong> Click the button below to choose your password and activate your account.';
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:Segoe UI,Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
+  <h2 style="color:#1e293b;">${escapeHtmlForEmail(subj)}</h2>
+  <p>Hello ${greeting},</p>
+  <p>${inner}</p>
+  <p style="margin:24px 0;">
+    <a href="${setPasswordUrl}" style="display:inline-block;background:#15803d;color:#fff;padding:12px 20px;text-decoration:none;border-radius:8px;font-weight:600;">Set your password</a>
+  </p>
+  <p style="font-size:13px;color:#64748b;">This link expires in 7 days. If you did not expect this email, contact your administrator.</p>
+  <p style="font-size:12px;color:#94a3b8;word-break:break-all;">If the button does not work, copy this URL:<br>${safeUrlDisplay}</p>
+</body></html>`;
+    const textPlain = `${subj}\n\nHello ${name || 'there'},\n\n${inner.replace(/<[^>]+>/g, ' ')}\n\nOpen: ${setPasswordUrl}\n`;
+    const bcc = parseEmailList(process.env.INVITE_EMAIL_BCC);
+    const r = await sendEmailWithResult({
+        to,
+        subject: subj,
+        html,
+        text: textPlain,
+        bcc: bcc && bcc.length ? bcc : undefined
+    });
+    if (r.ok) {
+        const domain = String(to).includes('@') ? String(to).split('@')[1] : '';
+        console.log('[email] Invitation email accepted by provider for recipient @' + domain);
+    } else {
+        console.warn('[email] Invitation email failed:', r.userMessage || r.raw || '');
+    }
+    return {
+        ok: !!r.ok,
+        userMessage: r.ok ? undefined : (r.userMessage || 'Email could not be sent.')
+    };
+}
+
 async function sendEmail(to, subject, html, text) {
     if (hasResend()) {
         const r = await sendEmailWithResult({ to, subject, html, text });
@@ -323,6 +374,7 @@ module.exports = {
     sendEmail,
     sendEmailWithOptions,
     sendEmailWithResult,
+    sendInvitationEmail,
     notifyAdminsByEmail,
     getTransporter,
     createSmtpTransport,

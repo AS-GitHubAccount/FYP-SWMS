@@ -869,7 +869,7 @@ window.setFormSubmitting = function(formOrFormId, isSubmitting) {
 // Auth guard - redirect to login if not authenticated
 function requireAuth() {
     const page = (window.location.pathname || '').split('/').pop() || 'login.html';
-    const publicPages = ['login.html', 'forgot-password.html', 'forgot-password'];
+    const publicPages = ['login.html', 'forgot-password.html', 'forgot-password', 'set-password.html'];
     const prototypeSoftAuthPages = ['inventory.html', 'issuing.html', 'receiving.html', 'issuedRecords.html', 'receivedRecords.html'];
     if (publicPages.includes(page) || page === '') return;
     const token = getAuthToken();

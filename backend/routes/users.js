@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 const db = require('../config/database');
 const getConnectionErrorMessage = db.getConnectionErrorMessage || ((e) => e && e.message);
 const { requireAdmin } = require('../middleware/auth');
-const { sendEmailWithResult } = require('../utils/emailService');
+const { sendInvitationEmail } = require('../utils/emailService');
 const {
     generateInviteToken,
     hashInviteToken,
@@ -27,32 +27,7 @@ const USER_LIST_FIELDS = `userId, name, email, role, createdAt,
 async function sendInviteOrResetEmail({ to, name, rawToken, subject, introHtml }) {
     const base = getFrontendBaseUrl();
     const link = `${base}/set-password.html?token=${encodeURIComponent(rawToken)}`;
-    const html = `
-<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:Segoe UI,Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
-  <h2 style="color:#1e293b;">${subject}</h2>
-  <p>Hello ${escapeHtml(name || 'there')},</p>
-  <p>${introHtml}</p>
-  <p style="margin:24px 0;">
-    <a href="${link}" style="display:inline-block;background:#15803d;color:#fff;padding:12px 20px;text-decoration:none;border-radius:8px;font-weight:600;">Set your password</a>
-  </p>
-  <p style="font-size:13px;color:#64748b;">This link expires in 7 days. If you did not expect this email, contact your administrator.</p>
-  <p style="font-size:12px;color:#94a3b8;word-break:break-all;">If the button does not work, copy this URL:<br>${escapeHtml(link)}</p>
-</body></html>`;
-    const text = `${subject}\n\n${introHtml.replace(/<[^>]+>/g, '')}\n\nOpen: ${link}`;
-    const r = await sendEmailWithResult({ to, subject, html, text });
-    return {
-        ok: !!r.ok,
-        userMessage: r.ok ? undefined : (r.userMessage || 'Email could not be sent.')
-    };
-}
-
-function escapeHtml(s) {
-    if (s == null) return '';
-    return String(s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+    return sendInvitationEmail({ to, name, setPasswordUrl: link, subject, introHtml });
 }
 
 /** Accept only real positive integer ids (avoids parseInt('1abc') === 1 and non-numeric strings reaching SQL). */
