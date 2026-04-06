@@ -763,7 +763,7 @@
                     </div>
                     <div style="display: flex; align-items: center; min-height: 36px;">
                         <div style="width: 72px; flex-shrink: 0; padding: 6px 12px; font-size: 12px; font-weight: 600; color: #6b7280; background: #f9fafb;">Subject</div>
-                        <input type="text" id="rfqEmailSubject" class="form-input" placeholder="RFQ - [Quantity] x [Product Name] ([Reference number])" style="flex: 1; border: none; border-radius: 0; padding: 6px 12px; font-size: 13px; background: #fff; min-height: 36px;">
+                        <input type="text" id="rfqEmailSubject" class="form-input" placeholder="RFQ - [Quantity] x [Product Name] (PR-…)" style="flex: 1; border: none; border-radius: 0; padding: 6px 12px; font-size: 13px; background: #fff; min-height: 36px;">
                     </div>
                 </div>
                 <!-- Email body canvas -->
@@ -823,7 +823,7 @@
             </div>
             <div style="padding: 1.25rem;">
                 <label class="form-label" for="withdrawRfqReason">Reason</label>
-                <textarea id="withdrawRfqReason" class="form-input" rows="3" minlength="1" placeholder="e.g. Project cancelled, budget frozen..." oninput="updateWithdrawRfqConfirmBtn()" style="width: 100%; resize: vertical; min-height: 3.25rem;"></textarea>
+                <textarea id="withdrawRfqReason" class="form-input" rows="3" minlength="1" oninput="updateWithdrawRfqConfirmBtn()" style="width: 100%; resize: vertical; min-height: 3.25rem;"></textarea>
                 <span id="withdrawRfqReasonError" style="display: none; color: #B91C1C; font-size: 0.875rem;"></span>
                 <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
                     <button type="button" class="btn btn-outline" onclick="closeWithdrawConfirmModal()">Cancel</button>
@@ -3108,9 +3108,10 @@
             ccInput.value = '';
             bccInput.value = (pending.supplierEmails || []).join(', ');
             const refPending = (pending.requestNumber && String(pending.requestNumber).trim()) ? String(pending.requestNumber).trim() : '';
+            const productLabelPending = pending.productName || pending.productSku || 'Item';
             subjectInput.value = refPending
-                ? `RFQ - ${pending.quantity || 0} x ${pending.productName || pending.productSku || 'Item'} (${refPending})`
-                : `RFQ - ${pending.quantity || 0} x ${pending.productName || pending.productSku || 'Item'}`;
+                ? `RFQ - ${pending.quantity || 0} x ${productLabelPending} (${refPending})`
+                : `RFQ - ${pending.quantity || 0} x ${productLabelPending}`;
             const deliveryDateFormatted = formatDateForEmail(pending.neededBy || pending.quoteDueDate);
             const targetDateFormatted = formatDateForEmail(pending.quoteDueDate);
             const specs = (pending.prNotes || '').trim();
@@ -3181,11 +3182,12 @@
                 toInput.value = toList.join(', ');
                 ccInput.value = '';
                 bccInput.value = emails.join(', ');
-                const refRfq = (rfq.rfqNumber && String(rfq.rfqNumber).trim()) ? String(rfq.rfqNumber).trim()
-                    : ((rfq.requestNumber && String(rfq.requestNumber).trim()) ? String(rfq.requestNumber).trim() : '');
+                const refRfq = (rfq.requestNumber && String(rfq.requestNumber).trim()) ? String(rfq.requestNumber).trim()
+                    : ((rfq.rfqNumber && String(rfq.rfqNumber).trim()) ? String(rfq.rfqNumber).trim() : '');
+                const productLabelRfq = rfq.productName || rfq.productSku || 'Item';
                 subjectInput.value = refRfq
-                    ? `RFQ - ${rfq.quantity || 0} x ${rfq.productName || rfq.productSku || 'Item'} (${refRfq})`
-                    : `RFQ - ${rfq.quantity || 0} x ${rfq.productName || rfq.productSku || 'Item'}`;
+                    ? `RFQ - ${rfq.quantity || 0} x ${productLabelRfq} (${refRfq})`
+                    : `RFQ - ${rfq.quantity || 0} x ${productLabelRfq}`;
                 const deliveryDateFormatted = formatDateForEmail(rfq.neededBy || rfq.quoteDueDate);
                 const targetDateFormatted = formatDateForEmail(rfq.quoteDueDate);
                 const specs = (rfq.prNotes || rfq.notes || '').trim();
@@ -3256,10 +3258,10 @@
                 bcc = supplierEmails.join(', ');
             }
             if (!subject) {
-                const refPart = (rfq.rfqNumber && String(rfq.rfqNumber).trim()) ? String(rfq.rfqNumber).trim()
-                    : ((rfq.requestNumber && String(rfq.requestNumber).trim()) ? String(rfq.requestNumber).trim() : '');
-                subject = 'RFQ - ' + (rfq.quantity != null ? rfq.quantity : 0) + ' x ' + (rfq.productName || rfq.productSku || 'Item') +
-                    (refPart ? ' (' + refPart + ')' : '');
+                const refPart = (rfq.requestNumber && String(rfq.requestNumber).trim()) ? String(rfq.requestNumber).trim()
+                    : ((rfq.rfqNumber && String(rfq.rfqNumber).trim()) ? String(rfq.rfqNumber).trim() : '');
+                const pl = rfq.productName || rfq.productSku || 'Item';
+                subject = 'RFQ - ' + (rfq.quantity != null ? rfq.quantity : 0) + ' x ' + pl + (refPart ? ' (' + refPart + ')' : '');
             }
             const bodyEmpty = !body || /^<p>\s*<\/p>\s*$/i.test(body) || body === '<p></p>';
             if (bodyEmpty) {
@@ -3440,9 +3442,25 @@
             }
         }
 
+        /** Canonical: RFQ - {qty} x {product} ({PR…}); prefer PR (requestNumber), else RFQ number. */
+        function ensureRfqEmailSubjectHasReference(subject, requestNum, rfqNum) {
+            const s = String(subject || '').trim();
+            const pr = String(requestNum || '').trim();
+            const rfn = String(rfqNum || '').trim();
+            const ref = pr || rfn;
+            if (!ref || !s) return s;
+            if (pr && s.indexOf('(' + pr + ')') !== -1) return s;
+            if (!pr && rfn && s.indexOf('(' + rfn + ')') !== -1) return s;
+            if (pr && rfn && s.indexOf('(' + rfn + ')') !== -1 && s.indexOf('(' + pr + ')') === -1) {
+                return s.replace(/\s*\([^)]*\)\s*$/, '').trim() + ' (' + pr + ')';
+            }
+            if (s.indexOf('(' + ref + ')') !== -1) return s;
+            return s.replace(/\s+$/, '') + ' (' + ref + ')';
+        }
         async function confirmSendRfqEmail() {
             const to = document.getElementById('rfqEmailTo').value.trim();
-            const subject = document.getElementById('rfqEmailSubject').value.trim();
+            const subjectInput = document.getElementById('rfqEmailSubject');
+            let subject = subjectInput ? subjectInput.value.trim() : '';
             const bodyEl = document.getElementById('rfqEmailBody');
             const htmlBody = bodyEl ? (bodyEl.innerHTML || bodyEl.innerText || '').trim() : '';
             if (!to || !subject || !htmlBody) {
@@ -3472,6 +3490,11 @@
                     const row = data.data || {};
                     rfqIdToUse = data.rfqId != null ? data.rfqId : (row.rfqId != null ? row.rfqId : row.rfq_id);
                     if (!rfqIdToUse) throw new Error('RFQ created but no ID returned from server');
+                    const rfqNum = row.rfqNumber != null && String(row.rfqNumber).trim() ? String(row.rfqNumber).trim() : '';
+                    const reqNum = row.requestNumber != null && String(row.requestNumber).trim() ? String(row.requestNumber).trim() : '';
+                    const pendingPr = (reviewRfqEmailPending.requestNumber && String(reviewRfqEmailPending.requestNumber).trim()) || '';
+                    subject = ensureRfqEmailSubjectHasReference(subject, reqNum || pendingPr, rfqNum);
+                    if (subjectInput) subjectInput.value = subject;
                 }
                 if (!rfqIdToUse) {
                     showNotification('Error', 'No RFQ to send. Close and try again.', 'error');

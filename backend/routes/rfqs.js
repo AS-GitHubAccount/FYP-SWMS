@@ -287,12 +287,46 @@ function formatRfqDeliveryDate(d) {
     }
 }
 
+/** e.g. "25 Apr 2026 08:00" when time is present; date-only otherwise */
+function formatRfqWithdrawalDeliveryLine(d) {
+    if (!d) return '—';
+    try {
+        const x = new Date(d);
+        if (Number.isNaN(x.getTime())) return '—';
+        const raw = String(d).trim();
+        const day = x.getDate();
+        const month = x.toLocaleString('en-GB', { month: 'short' });
+        const year = x.getFullYear();
+        const dateStr = `${day} ${month} ${year}`;
+        const hasTimeInSource = /\d{1,2}:\d{2}/.test(raw);
+        const nonMidnight =
+            x.getHours() !== 0 ||
+            x.getMinutes() !== 0 ||
+            x.getSeconds() !== 0 ||
+            x.getMilliseconds() !== 0;
+        if (!hasTimeInSource && !nonMidnight) return dateStr;
+        const hh = String(x.getHours()).padStart(2, '0');
+        const mm = String(x.getMinutes()).padStart(2, '0');
+        return `${dateStr} ${hh}:${mm}`;
+    } catch (_) {
+        return '—';
+    }
+}
+
 function escapeHtml(s) {
     return String(s == null ? '' : s)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+}
+
+/** Maps users.role to a short English line for email signature (name / title / company). */
+function userRoleToPositionLabel(role) {
+    const r = String(role || '').toUpperCase();
+    if (r === 'ADMIN') return 'Administrator';
+    if (r === 'STAFF') return 'Staff';
+    return r ? r.charAt(0) + r.slice(1).toLowerCase() : 'Staff';
 }
 
 function normEmailAddr(e) {
@@ -325,7 +359,7 @@ function buildWithdrawalRecipients(supplierRows, lastTo, lastCc, lastBcc) {
         seen.add(n);
         out.push({
             raw: String(addr).trim(),
-            greeting: greetingByNorm.get(n) || 'Sir/Madam'
+            greeting: greetingByNorm.get(n) || 'Supplier'
         });
     }
     for (const s of supplierRows || []) {
@@ -343,32 +377,70 @@ function buildWithdrawalRecipients(supplierRows, lastTo, lastCc, lastBcc) {
 }
 
 function buildWithdrawalNoticeContent(greetingName, { productName, quantity, deliveryDateStr, specs, deliveryLocation, senderName, companyName }) {
+    const border = 'border:1px solid #d1d5db;';
+    const thStyle = `${border}padding:10px 12px;font-weight:bold;background:#f3f4f6;`;
+    const tdStyle = `${border}padding:10px 12px;background:#fff;`;
+    const loc = String(deliveryLocation || '').trim() || '—';
+    const spec = String(specs || '').trim() || '—';
     const tableHtml =
-        '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%;max-width:640px;font-size:14px;">' +
-        '<thead><tr style="background:#f3f4f6;">' +
-        '<th align="left">Product Name</th><th align="left">Quantity</th><th align="left">Delivery Date</th>' +
-        '<th align="left">Specifications</th><th align="left">Delivery Location</th>' +
-        '</tr></thead><tbody><tr>' +
-        `<td>${escapeHtml(productName)}</td><td>${escapeHtml(String(quantity))}</td><td>${escapeHtml(deliveryDateStr)}</td>` +
-        `<td>${escapeHtml(specs)}</td><td>${escapeHtml(deliveryLocation)}</td>` +
-        '</tr></tbody></table>';
+        '<table cellpadding="0" cellspacing="0" style="border-collapse:collapse;width:100%;max-width:640px;font-size:14px;font-family:Segoe UI,Calibri,Arial,sans-serif;">' +
+        '<thead><tr>' +
+        `<th align="left" style="${thStyle}">Product Name</th>` +
+        `<th align="left" style="${thStyle}">Quantity</th>` +
+        `<th align="left" style="${thStyle}">Delivery Date</th>` +
+        `<th align="left" style="${thStyle}">Specifications</th>` +
+        '</tr></thead><tbody>' +
+        '<tr>' +
+        `<td style="${tdStyle}">${escapeHtml(productName)}</td>` +
+        `<td style="${tdStyle}">${escapeHtml(String(quantity))}</td>` +
+        `<td style="${tdStyle}">${escapeHtml(deliveryDateStr)}</td>` +
+        `<td style="${tdStyle}">${escapeHtml(spec)}</td>` +
+        '</tr>' +
+        '<tr>' +
+        `<td style="${tdStyle}font-weight:bold;">Delivery Location</td>` +
+        `<td colspan="3" align="left" style="${tdStyle}">${escapeHtml(loc)}</td>` +
+        '</tr>' +
+        '</tbody></table>';
     const textTable =
-        `Product Name: ${productName}\nQuantity: ${quantity}\nDelivery Date: ${deliveryDateStr}\nSpecifications: ${specs}\nDelivery Location: ${deliveryLocation}\n`;
+        'Product Name\tQuantity\tDelivery Date\tSpecifications\n' +
+        `${productName}\t${quantity}\t${deliveryDateStr}\t${spec}\n` +
+        `Delivery Location\t${loc}\n`;
     const html =
         `<p>Dear ${escapeHtml(greetingName)},</p>` +
-        '<p>We are writing to formally withdraw our request for quotation regarding the following item(s):</p>' +
-        '<p><strong>Product</strong></p>' +
+        '<p>I regret to inform you that we must withdraw the RFQ for the following item(s):</p>' +
         tableHtml +
-        '<p>We apologize for any inconvenience or lost time this may cause your team. We value our relationship with you and look forward to receiving your bid on a revised request once it is released.</p>' +
-        `<p>Best regards,<br>${escapeHtml(senderName)}<br>${escapeHtml(companyName)}</p>`;
+        '<p>We apologize for any inconvenience this may cause and want to express our gratitude for your understanding in this matter. Maintaining a positive relationship with your company is important to us.</p>' +
+        '<p>Thank you for your attention to this issue.</p>' +
+        `<p>Best regards,<br>${escapeHtml(senderName)}<br>${escapeHtml(senderTitle)}<br>${escapeHtml(companyName)}</p>`;
+    const titleLine = String(senderTitle || '').trim() || 'Staff';
     const text =
         `Dear ${greetingName},\n\n` +
-        'We are writing to formally withdraw our request for quotation regarding the following item(s):\n\n' +
-        'Product\n' +
+        'I regret to inform you that we must withdraw the RFQ for the following item(s):\n\n' +
         textTable +
-        '\nWe apologize for any inconvenience or lost time this may cause your team. We value our relationship with you and look forward to receiving your bid on a revised request once it is released.\n\n' +
-        `Best regards,\n${senderName}\n${companyName}`;
+        '\n' +
+        'We apologize for any inconvenience this may cause and want to express our gratitude for your understanding in this matter. Maintaining a positive relationship with your company is important to us.\n\n' +
+        'Thank you for your attention to this issue.\n\n' +
+        `Best regards,\n${senderName}\n${titleLine}\n${companyName}`;
     return { html, text };
+}
+
+/**
+ * Canonical RFQ email subject: RFQ - {qty} x {product} ({ref})
+ * Prefer purchase request number (e.g. PR-2604-0005), else rfqNumber.
+ */
+function ensureRfqEmailSubjectHasReference(subject, requestNum, rfqNum) {
+    const s = String(subject || '').trim();
+    const pr = String(requestNum || '').trim();
+    const rfn = String(rfqNum || '').trim();
+    const ref = pr || rfn;
+    if (!ref || !s) return s;
+    if (pr && s.includes(`(${pr})`)) return s;
+    if (!pr && rfn && s.includes(`(${rfn})`)) return s;
+    if (pr && rfn && s.includes(`(${rfn})`) && !s.includes(`(${pr})`)) {
+        return `${s.replace(/\s*\([^)]*\)\s*$/, '').trim()} (${pr})`;
+    }
+    if (s.includes(`(${ref})`)) return s;
+    return `${s.replace(/\s+$/, '')} (${ref})`;
 }
 
 // POST send RFQ email (Review Email flow - human-in-the-loop); store snapshot for read-only view
@@ -390,6 +462,7 @@ router.post('/:id/send-email', async (req, res) => {
             return res.status(404).json({ success: false, error: 'RFQ not found' });
         }
         const rfq = rfqs[0];
+        const subjectForSend = ensureRfqEmailSubjectHasReference(subject, rfq.requestNumber, rfq.rfqNumber);
         const htmlBody = (html && typeof html === 'string') ? html : (body || '').replace(/\n/g, '<br>');
         const textFallback = (body && typeof body === 'string') ? body.replace(/<[^>]+>/g, '') : htmlBody.replace(/<[^>]+>/g, '');
         if (!isOutboundEmailConfigured()) {
@@ -408,7 +481,7 @@ router.post('/:id/send-email', async (req, res) => {
             cc: (cc || '').trim() || undefined,
             bcc: (bcc || '').trim() || undefined,
             replyTo: mergedReplyTo,
-            subject: subject.trim(),
+            subject: subjectForSend,
             html: htmlBody,
             text: textFallback
         });
@@ -423,7 +496,7 @@ router.post('/:id/send-email', async (req, res) => {
         const toVal = (to || '').trim();
         const ccVal = (cc || '').trim() || null;
         const bccVal = (bcc || '').trim() || null;
-        const subjVal = (subject || '').trim() || null;
+        const subjVal = subjectForSend || null;
         try {
             await db.execute(
                 `UPDATE rfqs SET status = ?, last_sent_at = ?, last_sent_to = ?, last_sent_cc = ?, last_sent_bcc = ?, last_sent_subject = ?, last_sent_body = ? WHERE rfqId = ?`,
@@ -503,15 +576,17 @@ router.put('/:id/approve-withdrawal', async (req, res) => {
             `,
             [rfqId]
         );
-        const [users] = await db.execute('SELECT name FROM users WHERE userId = ?', [approvedBy || rfq.createdBy]);
-        const senderName = (users && users[0] && users[0].name && String(users[0].name).trim()) ? users[0].name.trim() : 'SWMS';
+        const [users] = await db.execute('SELECT name, role FROM users WHERE userId = ?', [approvedBy || rfq.createdBy]);
+        const urow = users && users[0];
+        const senderName = (urow && urow.name && String(urow.name).trim()) ? String(urow.name).trim() : 'SWMS';
+        const senderTitle = userRoleToPositionLabel(urow && urow.role);
         const companyName =
             String(process.env.SWMS_COMPANY_NAME || process.env.COMPANY_NAME || '').trim() || 'Smart Warehouse Management';
-        const refLabel = String(rfq.rfqNumber || rfq.requestNumber || '').trim();
+        const refLabel = String(rfq.requestNumber || rfq.rfqNumber || '').trim();
         const qty = rfq.quantity != null ? rfq.quantity : '';
         const productTitle = String(rfq.productName || rfq.productSku || 'Item').trim();
-        const subject = `Withdrawal RFQ – ${qty} x ${productTitle}${refLabel ? ` (${refLabel})` : ''}`;
-        const deliveryDateStr = formatRfqDeliveryDate(rfq.neededBy);
+        const subject = `Withdrawal of RFQ - ${qty} x ${productTitle}${refLabel ? ` (${refLabel})` : ''}`;
+        const deliveryDateStr = formatRfqWithdrawalDeliveryLine(rfq.neededBy);
         const specs = String(rfq.prNotes || '').trim() || '—';
         const deliveryLocation = String(rfq.sendingLocation || '').trim() || '—';
 
@@ -541,6 +616,7 @@ router.put('/:id/approve-withdrawal', async (req, res) => {
                 specs,
                 deliveryLocation,
                 senderName,
+                senderTitle,
                 companyName
             });
             const wr = await sendEmailWithResult({
