@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { generateRfqNumber } = require('../utils/idGenerator');
-const { sendEmailWithResult, isOutboundEmailConfigured, mergeReplyToParts } = require('../utils/emailService');
+const { sendEmailWithResult, isOutboundEmailConfigured, mergeReplyToParts, parseEmailList } = require('../utils/emailService');
 const { requireCriticalApproval } = require('../utils/criticalApproval');
 const { notifyAdmins } = require('../utils/notificationHelper');
 const { getProductPriceBenchmark } = require('../utils/priceHistoryQueries');
@@ -45,7 +45,7 @@ router.get('/:id', async (req, res) => {
         const rfqId = req.params.id;
         // LEFT JOIN PR/product so RFQ row still loads if product/PR was removed or mismatched (avoids false "not found")
         const [rfqs] = await db.execute(`
-            SELECT r.*, pr.requestNumber, pr.productId, pr.quantity, pr.neededBy, pr.notes as prNotes,
+            SELECT r.*, pr.requestNumber, pr.productId, pr.quantity, pr.neededBy, pr.notes as prNotes, pr.sendingLocation,
                 p.name as productName, p.sku as productSku,
                 u.name as createdByName
             FROM rfqs r
@@ -276,16 +276,99 @@ router.post('/:id/quotations', async (req, res) => {
     }
 });
 
-// Format date for emails: "16 Mar 2026 11:45"
-function formatRfqDate(d) {
-    if (!d) return '';
-    const x = new Date(d);
-    const day = x.getDate();
-    const month = x.toLocaleString('en-GB', { month: 'short' });
-    const year = x.getFullYear();
-    const h = x.getHours();
-    const m = x.getMinutes();
-    return `${day} ${month} ${year} ${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+function formatRfqDeliveryDate(d) {
+    if (!d) return '—';
+    try {
+        const x = new Date(d);
+        if (Number.isNaN(x.getTime())) return '—';
+        return x.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch (_) {
+        return '—';
+    }
+}
+
+function escapeHtml(s) {
+    return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function normEmailAddr(e) {
+    const s = String(e || '').trim();
+    const m = s.match(/<([^>]+)>/);
+    return ((m ? m[1] : s).trim()).toLowerCase();
+}
+
+/**
+ * Unique recipient emails from snapshot To/CC/BCC plus supplier list; greeting from supplier name when known.
+ */
+function buildWithdrawalRecipients(supplierRows, lastTo, lastCc, lastBcc) {
+    const greetingByNorm = new Map();
+    for (const s of supplierRows || []) {
+        const em = s.email && String(s.email).trim();
+        if (!em) continue;
+        const n = normEmailAddr(em);
+        const name = (s.name && String(s.name).trim()) || 'Supplier';
+        if (n) greetingByNorm.set(n, name);
+    }
+    const raw = []
+        .concat(parseEmailList(lastTo) || [])
+        .concat(parseEmailList(lastCc) || [])
+        .concat(parseEmailList(lastBcc) || []);
+    const seen = new Set();
+    const out = [];
+    for (const addr of raw) {
+        const n = normEmailAddr(addr);
+        if (!n || seen.has(n)) continue;
+        seen.add(n);
+        out.push({
+            raw: String(addr).trim(),
+            greeting: greetingByNorm.get(n) || 'Sir/Madam'
+        });
+    }
+    for (const s of supplierRows || []) {
+        const em = s.email && String(s.email).trim();
+        if (!em) continue;
+        const n = normEmailAddr(em);
+        if (!n || seen.has(n)) continue;
+        seen.add(n);
+        out.push({
+            raw: em,
+            greeting: greetingByNorm.get(n) || 'Supplier'
+        });
+    }
+    return out;
+}
+
+function buildWithdrawalNoticeContent(greetingName, { productName, quantity, deliveryDateStr, specs, deliveryLocation, senderName, companyName }) {
+    const tableHtml =
+        '<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;width:100%;max-width:640px;font-size:14px;">' +
+        '<thead><tr style="background:#f3f4f6;">' +
+        '<th align="left">Product Name</th><th align="left">Quantity</th><th align="left">Delivery Date</th>' +
+        '<th align="left">Specifications</th><th align="left">Delivery Location</th>' +
+        '</tr></thead><tbody><tr>' +
+        `<td>${escapeHtml(productName)}</td><td>${escapeHtml(String(quantity))}</td><td>${escapeHtml(deliveryDateStr)}</td>` +
+        `<td>${escapeHtml(specs)}</td><td>${escapeHtml(deliveryLocation)}</td>` +
+        '</tr></tbody></table>';
+    const textTable =
+        `Product Name: ${productName}\nQuantity: ${quantity}\nDelivery Date: ${deliveryDateStr}\nSpecifications: ${specs}\nDelivery Location: ${deliveryLocation}\n`;
+    const html =
+        `<p>Dear ${escapeHtml(greetingName)},</p>` +
+        '<p>We are writing to formally withdraw our request for quotation regarding the following item(s):</p>' +
+        '<p><strong>Product</strong></p>' +
+        tableHtml +
+        '<p>We apologize for any inconvenience or lost time this may cause your team. We value our relationship with you and look forward to receiving your bid on a revised request once it is released.</p>' +
+        `<p>Best regards,<br>${escapeHtml(senderName)}<br>${escapeHtml(companyName)}</p>`;
+    const text =
+        `Dear ${greetingName},\n\n` +
+        'We are writing to formally withdraw our request for quotation regarding the following item(s):\n\n' +
+        'Product\n' +
+        textTable +
+        '\nWe apologize for any inconvenience or lost time this may cause your team. We value our relationship with you and look forward to receiving your bid on a revised request once it is released.\n\n' +
+        `Best regards,\n${senderName}\n${companyName}`;
+    return { html, text };
 }
 
 // POST send RFQ email (Review Email flow - human-in-the-loop); store snapshot for read-only view
@@ -386,7 +469,7 @@ router.put('/:id/request-withdrawal', async (req, res) => {
     }
 });
 
-// PUT approve withdrawal (admin); verification + optional approval token; sends withdrawal email, sets WITHDRAWN
+// PUT approve withdrawal (admin); verification + optional approval token; sends withdrawal email(s), sets WITHDRAWN
 router.put('/:id/approve-withdrawal', async (req, res) => {
     try {
         const approvalCheck = await requireCriticalApproval(req, res, 'approve_withdrawal');
@@ -394,46 +477,78 @@ router.put('/:id/approve-withdrawal', async (req, res) => {
 
         const rfqId = req.params.id;
         const { approvedBy } = req.body;
-        const [rows] = await db.execute(`
-            SELECT r.*, pr.productId, p.name as productName, p.sku as productSku,
+        const [rows] = await db.execute(
+            `
+            SELECT r.*, pr.requestNumber, pr.quantity, pr.neededBy, pr.notes as prNotes, pr.sendingLocation,
+                p.name as productName, p.sku as productSku,
                 r.last_sent_to, r.last_sent_cc, r.last_sent_bcc, r.last_sent_at
             FROM rfqs r
             INNER JOIN purchase_requests pr ON r.purchaseRequestId = pr.requestId
             INNER JOIN products p ON pr.productId = p.productId
             WHERE r.rfqId = ?
-        `, [rfqId]);
+            `,
+            [rfqId]
+        );
         if (rows.length === 0) return res.status(404).json({ success: false, error: 'RFQ not found' });
         if (rows[0].status !== 'WITHDRAW_PENDING') {
             return res.status(400).json({ success: false, error: 'RFQ is not pending withdrawal' });
         }
         const rfq = rows[0];
-        const productLabel = [rfq.productSku, rfq.productName].filter(Boolean).join(' - ') || 'Item';
-        const originalSendDate = formatRfqDate(rfq.last_sent_at);
+        const [suppliers] = await db.execute(
+            `
+            SELECT s.name, s.email
+            FROM rfq_suppliers rs
+            INNER JOIN suppliers s ON rs.supplierId = s.supplierId
+            WHERE rs.rfqId = ?
+            `,
+            [rfqId]
+        );
         const [users] = await db.execute('SELECT name FROM users WHERE userId = ?', [approvedBy || rfq.createdBy]);
         const senderName = (users && users[0] && users[0].name && String(users[0].name).trim()) ? users[0].name.trim() : 'SWMS';
-        const withdrawalBody = `Dear Supplier,
+        const companyName =
+            String(process.env.SWMS_COMPANY_NAME || process.env.COMPANY_NAME || '').trim() || 'Smart Warehouse Management';
+        const refLabel = String(rfq.rfqNumber || rfq.requestNumber || '').trim();
+        const qty = rfq.quantity != null ? rfq.quantity : '';
+        const productTitle = String(rfq.productName || rfq.productSku || 'Item').trim();
+        const subject = `Withdrawal RFQ – ${qty} x ${productTitle}${refLabel ? ` (${refLabel})` : ''}`;
+        const deliveryDateStr = formatRfqDeliveryDate(rfq.neededBy);
+        const specs = String(rfq.prNotes || '').trim() || '—';
+        const deliveryLocation = String(rfq.sendingLocation || '').trim() || '—';
 
-I regret to inform you that we must withdraw the RFQ for ${productLabel} that was sent on ${originalSendDate}.
+        const recipients = buildWithdrawalRecipients(suppliers, rfq.last_sent_to, rfq.last_sent_cc, rfq.last_sent_bcc);
 
-We apologize for any inconvenience this may cause and want to express our gratitude for your understanding in this matter. Maintaining a positive relationship with your company is important to us.
+        if (!isOutboundEmailConfigured()) {
+            return res.status(503).json({
+                success: false,
+                error:
+                    'Email is not configured. Add RESEND_API_KEY and RESEND_FROM (or SMTP) so withdrawal notices can be sent.'
+            });
+        }
 
-Thank you for your attention to this issue.
+        if (recipients.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'No recipient addresses found for this RFQ (To/CC/Bcc snapshot or supplier list). Cannot notify withdrawal.'
+            });
+        }
 
-Best regards,
-${senderName}
-Smart Warehouse Management`;
-        const toList = (rfq.last_sent_to || '').trim();
-        const ccList = (rfq.last_sent_cc || '').trim() || undefined;
-        const bccList = (rfq.last_sent_bcc || '').trim() || undefined;
-        if (toList) {
+        const mergedReplyTo = mergeReplyToParts(process.env.MAIL_REPLY_TO_EXTRA);
+        for (const rec of recipients) {
+            const { html, text } = buildWithdrawalNoticeContent(rec.greeting, {
+                productName: productTitle,
+                quantity: qty,
+                deliveryDateStr,
+                specs,
+                deliveryLocation,
+                senderName,
+                companyName
+            });
             const wr = await sendEmailWithResult({
-                to: toList,
-                cc: ccList,
-                bcc: bccList,
-                replyTo: mergeReplyToParts(process.env.MAIL_REPLY_TO_EXTRA),
-                subject: `Withdrawal of RFQ - ${rfq.productName || rfq.productSku || 'Request'}`,
-                html: withdrawalBody.replace(/\n/g, '<br>'),
-                text: withdrawalBody
+                to: rec.raw,
+                replyTo: mergedReplyTo,
+                subject,
+                html,
+                text
             });
             if (!wr.ok) {
                 return res.status(500).json({
@@ -442,6 +557,7 @@ Smart Warehouse Management`;
                 });
             }
         }
+
         await db.execute(
             `UPDATE rfqs SET status = 'WITHDRAWN', withdrawal_approved_by = ?, withdrawal_approved_at = NOW() WHERE rfqId = ?`,
             [approvedBy || null, rfqId]

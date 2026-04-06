@@ -763,7 +763,7 @@
                     </div>
                     <div style="display: flex; align-items: center; min-height: 36px;">
                         <div style="width: 72px; flex-shrink: 0; padding: 6px 12px; font-size: 12px; font-weight: 600; color: #6b7280; background: #f9fafb;">Subject</div>
-                        <input type="text" id="rfqEmailSubject" class="form-input" placeholder="RFQ - [Quantity] x [Product Name]" style="flex: 1; border: none; border-radius: 0; padding: 6px 12px; font-size: 13px; background: #fff; min-height: 36px;">
+                        <input type="text" id="rfqEmailSubject" class="form-input" placeholder="RFQ - [Quantity] x [Product Name] ([Reference number])" style="flex: 1; border: none; border-radius: 0; padding: 6px 12px; font-size: 13px; background: #fff; min-height: 36px;">
                     </div>
                 </div>
                 <!-- Email body canvas -->
@@ -814,22 +814,20 @@
             </div>
         </div>
 
-        <!-- Withdraw RFQ Confirmation Modal -->
+        <!-- Withdraw RFQ — same layout as Approval Center reject/approve reason modals -->
         <div id="withdrawRfqConfirmBackdrop" onclick="closeWithdrawConfirmModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1100;"></div>
         <div id="withdrawRfqConfirmModal" class="card" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1101; max-width: 420px; width: 90%; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.10); border: 1px solid var(--border, #e5e7eb); border-radius: 4px;">
-            <div class="card-header" style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border);">
-                <h2 class="card-title" style="margin: 0;">Approve RFQ Withdrawal</h2>
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; background: #fff; border-bottom: 1px solid var(--border, #e5e7eb);">
+                <h2 class="card-title" style="margin: 0; font-size: 1.1rem;">Withdraw RFQ</h2>
+                <button type="button" onclick="closeWithdrawConfirmModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
             </div>
-            <div style="padding: 1.5rem;">
-                <p style="margin-bottom: 1rem;">Are you sure you want to withdraw this RFQ?</p>
-                <div class="form-group" style="margin-bottom: 1rem;">
-                    <label class="form-label">Reason for Withdrawal <span style="color: #dc2626;">*</span></label>
-                    <textarea id="withdrawRfqReason" class="form-input" rows="3" placeholder="e.g. Project cancelled, budget frozen..." style="width: 100%; resize: vertical; min-height: 80px; border: 1px solid var(--border, #e5e7eb); border-radius: 4px; padding: 0.5rem 0.75rem;"></textarea>
-                    <span id="withdrawRfqReasonError" style="display: none; font-size: 0.8rem; color: #dc2626;">Reason is required.</span>
-                </div>
-                <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+            <div style="padding: 1.25rem;">
+                <label class="form-label" for="withdrawRfqReason">Reason</label>
+                <textarea id="withdrawRfqReason" class="form-input" rows="3" minlength="1" placeholder="e.g. Project cancelled, budget frozen..." oninput="updateWithdrawRfqConfirmBtn()" style="width: 100%; resize: vertical; min-height: 3.25rem;"></textarea>
+                <span id="withdrawRfqReasonError" style="display: none; color: #B91C1C; font-size: 0.875rem;"></span>
+                <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
                     <button type="button" class="btn btn-outline" onclick="closeWithdrawConfirmModal()">Cancel</button>
-                    <button type="button" class="btn" style="background: #15803D; color: #fff; border: none; border-radius: 4px; cursor: pointer;" onclick="submitWithdrawRfq()"><i data-lucide="check" style="width: 14px; height: 14px; margin-right: 0.25rem; vertical-align: middle;"></i>Approve Withdrawal</button>
+                    <button type="button" class="btn btn-danger" id="withdrawRfqConfirmBtn" disabled style="opacity: 0.6; cursor: not-allowed;" onclick="submitWithdrawRfq()">Request withdrawal</button>
                 </div>
             </div>
         </div>
@@ -3044,6 +3042,7 @@
                 const supplierNames = (pr.suppliers || []).map(s => s.supplierName).filter(Boolean);
                 const pending = {
                     requestId,
+                    requestNumber: pr.requestNumber,
                     quoteDueDate: quoteDue,
                     supplierIds,
                     supplierEmails,
@@ -3108,7 +3107,10 @@
             toInput.value = toList.join(', ');
             ccInput.value = '';
             bccInput.value = (pending.supplierEmails || []).join(', ');
-            subjectInput.value = `RFQ - ${pending.quantity || 0} x ${pending.productName || pending.productSku || 'Item'}`;
+            const refPending = (pending.requestNumber && String(pending.requestNumber).trim()) ? String(pending.requestNumber).trim() : '';
+            subjectInput.value = refPending
+                ? `RFQ - ${pending.quantity || 0} x ${pending.productName || pending.productSku || 'Item'} (${refPending})`
+                : `RFQ - ${pending.quantity || 0} x ${pending.productName || pending.productSku || 'Item'}`;
             const deliveryDateFormatted = formatDateForEmail(pending.neededBy || pending.quoteDueDate);
             const targetDateFormatted = formatDateForEmail(pending.quoteDueDate);
             const specs = (pending.prNotes || '').trim();
@@ -3179,7 +3181,11 @@
                 toInput.value = toList.join(', ');
                 ccInput.value = '';
                 bccInput.value = emails.join(', ');
-                subjectInput.value = `RFQ - ${rfq.quantity || 0} x ${rfq.productName || rfq.productSku || 'Item'}`;
+                const refRfq = (rfq.rfqNumber && String(rfq.rfqNumber).trim()) ? String(rfq.rfqNumber).trim()
+                    : ((rfq.requestNumber && String(rfq.requestNumber).trim()) ? String(rfq.requestNumber).trim() : '');
+                subjectInput.value = refRfq
+                    ? `RFQ - ${rfq.quantity || 0} x ${rfq.productName || rfq.productSku || 'Item'} (${refRfq})`
+                    : `RFQ - ${rfq.quantity || 0} x ${rfq.productName || rfq.productSku || 'Item'}`;
                 const deliveryDateFormatted = formatDateForEmail(rfq.neededBy || rfq.quoteDueDate);
                 const targetDateFormatted = formatDateForEmail(rfq.quoteDueDate);
                 const specs = (rfq.prNotes || rfq.notes || '').trim();
@@ -3250,7 +3256,10 @@
                 bcc = supplierEmails.join(', ');
             }
             if (!subject) {
-                subject = 'RFQ - ' + (rfq.quantity != null ? rfq.quantity : 0) + ' x ' + (rfq.productName || rfq.productSku || 'Item');
+                const refPart = (rfq.rfqNumber && String(rfq.rfqNumber).trim()) ? String(rfq.rfqNumber).trim()
+                    : ((rfq.requestNumber && String(rfq.requestNumber).trim()) ? String(rfq.requestNumber).trim() : '');
+                subject = 'RFQ - ' + (rfq.quantity != null ? rfq.quantity : 0) + ' x ' + (rfq.productName || rfq.productSku || 'Item') +
+                    (refPart ? ' (' + refPart + ')' : '');
             }
             const bodyEmpty = !body || /^<p>\s*<\/p>\s*$/i.test(body) || body === '<p></p>';
             if (bodyEmpty) {
@@ -3349,12 +3358,29 @@
             modalEl.style.display = 'none';
             loadRfqs();
         }
+        function updateWithdrawRfqConfirmBtn() {
+            const ta = document.getElementById('withdrawRfqReason');
+            const btn = document.getElementById('withdrawRfqConfirmBtn');
+            if (!ta || !btn) return;
+            const ok = !!(ta.value && String(ta.value).trim());
+            btn.disabled = !ok;
+            btn.style.opacity = ok ? '1' : '0.6';
+            btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+        }
         function openWithdrawConfirmModal() {
             if (!viewSentRfqCurrent || normalizeRfqStatus(viewSentRfqCurrent.status) !== 'SENT') return;
-            document.getElementById('withdrawRfqReason').value = '';
-            document.getElementById('withdrawRfqReasonError').style.display = 'none';
+            const ta = document.getElementById('withdrawRfqReason');
+            const errEl = document.getElementById('withdrawRfqReasonError');
+            if (ta) ta.value = '';
+            if (errEl) {
+                errEl.style.display = 'none';
+                errEl.textContent = '';
+            }
+            updateWithdrawRfqConfirmBtn();
             document.getElementById('withdrawRfqConfirmBackdrop').style.display = 'block';
             document.getElementById('withdrawRfqConfirmModal').style.display = 'block';
+            if (ta) setTimeout(function () { ta.focus(); }, 50);
+            if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
         }
         function closeWithdrawConfirmModal() {
             document.getElementById('withdrawRfqConfirmBackdrop').style.display = 'none';
@@ -3364,11 +3390,14 @@
             const reason = (document.getElementById('withdrawRfqReason').value || '').trim();
             const errEl = document.getElementById('withdrawRfqReasonError');
             if (!reason) {
+                if (errEl) {
+                    errEl.textContent = 'Reason is required.';
+                    errEl.style.display = 'block';
+                }
                 if (typeof showNotification === 'function') showNotification('Error', 'Reason required.', 'error');
-                errEl.style.display = 'block';
                 return;
             }
-            errEl.style.display = 'none';
+            if (errEl) errEl.style.display = 'none';
             if (!viewSentRfqCurrent || !viewSentRfqCurrent.rfqId) return;
             const userId = parseInt(sessionStorage.getItem('userId') || '0', 10);
             try {

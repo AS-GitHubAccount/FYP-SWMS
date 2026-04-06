@@ -382,5 +382,6 @@ module.exports = {
     isOutboundEmailConfigured,
     hasResend,
     isResendRestrictedTestSender,
-    mergeReplyToParts
+    mergeReplyToParts,
+    parseEmailList
 };
