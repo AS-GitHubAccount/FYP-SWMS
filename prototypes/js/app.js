@@ -415,7 +415,7 @@ window.showPromptWindow = function(title, message, options = {}) {
             if (!options.allowEmpty && !v) {
                 inputEl.style.borderColor = 'var(--danger-color)';
                 inputEl.focus();
-                if (typeof window.showNotification === 'function') window.showNotification('Reason required', 'Reason cannot be empty. Please fill in a reason before taking this action.', 'error');
+                if (typeof window.showNotification === 'function') window.showNotification('Error', 'Reason required.', 'error');
                 return;
             }
             inputEl.style.borderColor = '';
@@ -433,18 +433,12 @@ window.showPromptWindow = function(title, message, options = {}) {
 // Returns a Promise<string|null> (null means cancelled).
 window.showApprovalReasonModal = function(cfg = {}) {
     const action = String(cfg.action || '').toLowerCase() === 'reject' ? 'reject' : 'approve';
-    const title = String(cfg.title || (action === 'approve' ? 'Confirm Approval' : 'Confirm Rejection'));
+    const title = String(cfg.title || (action === 'approve' ? 'Approve' : 'Reject'));
     const required = cfg.required !== false; // default: true
-    const placeholder = String(cfg.placeholder || 'e.g. OK');
-    const description = cfg.description
-        ? String(cfg.description)
-        : (action === 'reject'
-            ? 'Please provide a reason for rejection. This will be stored and shown to the requester.'
-            : 'Please provide a reason for approval. This will be stored and shown to the requester.');
-    const confirmText = String(cfg.confirmText || (action === 'approve' ? 'Submit Approval' : 'Submit Rejection'));
+    const placeholder = cfg.placeholder != null ? String(cfg.placeholder) : '';
+    const description = cfg.description != null ? String(cfg.description).trim() : '';
+    const confirmText = String(cfg.confirmText || (action === 'approve' ? 'Approve' : 'Reject'));
     const cancelText = String(cfg.cancelText || 'Cancel');
-
-    const confirmBg = action === 'approve' ? '#15803D' : '#B91C1C';
 
     return new Promise(function(resolve) {
         // Backdrop
@@ -515,24 +509,33 @@ window.showApprovalReasonModal = function(cfg = {}) {
         const body = document.createElement('div');
         body.style.cssText = ['padding: 1.25rem;'].join('');
 
-        const desc = document.createElement('p');
-        desc.textContent = description;
-        desc.style.cssText = [
-            'color: var(--text-secondary, #6b7280);',
-            'margin-bottom: 0.75rem;'
-        ].join('');
+        if (description) {
+            const desc = document.createElement('p');
+            desc.textContent = description;
+            desc.className = 'form-hint';
+            desc.style.cssText = ['margin: 0 0 0.5rem 0;', 'color: var(--text-secondary);'].join('');
+            body.appendChild(desc);
+        }
+
+        const taId = 'swmsArModalTa_' + Math.random().toString(36).slice(2, 11);
+        const labelText = cfg.label != null ? String(cfg.label) : (action === 'approve' ? 'Comment' : 'Reason');
+        const lbl = document.createElement('label');
+        lbl.className = 'form-label';
+        lbl.setAttribute('for', taId);
+        lbl.textContent = labelText;
+        lbl.style.cssText = ['display: block;', 'margin-bottom: 0.35rem;'].join('');
+        body.appendChild(lbl);
 
         const textarea = document.createElement('textarea');
+        textarea.id = taId;
         textarea.className = 'form-input';
-        textarea.rows = String(cfg.rows || 4);
+        textarea.rows = String(cfg.rows || 3);
         textarea.placeholder = placeholder;
         textarea.style.cssText = [
             'width: 100%;',
             'resize: vertical;',
-            'min-height: 80px;',
-            'border: 1px solid var(--border, #e5e7eb);',
-            'border-radius: 4px;',
-            'padding: 0.5rem 0.75rem;'
+            'min-height: 3.25rem;',
+            'margin-top: 0;'
         ].join('');
 
         // Keep a separate error node so layout doesn't jump.
@@ -560,16 +563,10 @@ window.showApprovalReasonModal = function(cfg = {}) {
 
         const confirmBtn = document.createElement('button');
         confirmBtn.type = 'button';
-        confirmBtn.className = 'btn';
+        confirmBtn.className = 'btn ' + (action === 'approve' ? 'btn-success' : 'btn-danger');
         confirmBtn.textContent = confirmText;
-        confirmBtn.style.cssText = [
-            'background: ' + confirmBg + ';',
-            'color: #fff;',
-            'border: none;',
-            'border-radius: 4px;',
-            'opacity: 0.6;',
-            'cursor: not-allowed;'
-        ].join('');
+        confirmBtn.style.opacity = '0.6';
+        confirmBtn.style.cursor = 'not-allowed';
 
         const close = function(value) {
             document.removeEventListener('keydown', onKeydown);
@@ -585,7 +582,7 @@ window.showApprovalReasonModal = function(cfg = {}) {
             confirmBtn.style.opacity = ok ? '1' : '0.6';
             confirmBtn.style.cursor = ok ? 'pointer' : 'not-allowed';
             errorEl.style.display = ok ? 'none' : 'inline';
-            if (!ok) errorEl.textContent = 'Reason cannot be empty.';
+            if (!ok) errorEl.textContent = 'Required.';
             return ok;
         }
 
@@ -613,7 +610,6 @@ window.showApprovalReasonModal = function(cfg = {}) {
 
         // Assemble
         header.style.borderRadius = '4px 4px 0 0';
-        body.appendChild(desc);
         body.appendChild(textarea);
         body.appendChild(errorEl);
         footer.appendChild(cancelBtn);

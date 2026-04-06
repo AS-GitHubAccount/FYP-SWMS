@@ -115,35 +115,35 @@
         </div>
     </div>
 
-    <!-- Approval/Reject Modals (same as approval.html) -->
+    <!-- Approval/Reject modals (aligned with approval.html) -->
     <div id="rejectReasonModalBackdrop" onclick="window.closeRejectReasonModal && window.closeRejectReasonModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001;"></div>
     <div id="rejectReasonModal" class="card" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1002; max-width: 420px; width: 90%; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.10); border: 1px solid var(--border, #e5e7eb); border-radius: 4px;">
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; background: #fff; border-bottom: 1px solid var(--border, #e5e7eb);">
-            <h2 class="card-title" style="margin: 0; font-size: 1.1rem;">Rejection Reason (Required)</h2>
+            <h2 class="card-title" style="margin: 0; font-size: 1.1rem;">Reject</h2>
             <button type="button" onclick="window.closeRejectReasonModal && window.closeRejectReasonModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
         </div>
         <div style="padding: 1.25rem;">
-            <p style="color: var(--text-secondary, #6b7280); margin-bottom: 0.75rem;">Please provide a reason for rejection.</p>
-            <textarea id="rejectReasonInput" class="form-input" rows="4" placeholder="e.g. No" minlength="1" style="width: 100%; resize: vertical; min-height: 80px;"></textarea>
+            <label class="form-label" for="rejectReasonInput">Reason</label>
+            <textarea id="rejectReasonInput" class="form-input" rows="3" minlength="1" style="width: 100%; resize: vertical; min-height: 3.25rem;"></textarea>
             <span id="rejectReasonError" style="display: none; color: #B91C1C; font-size: 0.875rem;"></span>
             <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
                 <button type="button" class="btn btn-outline" onclick="window.closeRejectReasonModal && window.closeRejectReasonModal()">Cancel</button>
-                <button type="button" class="btn" id="rejectReasonConfirmBtn" disabled style="background: #B91C1C; color: #fff; border: none; border-radius: 4px; opacity: 0.6; cursor: not-allowed;">Submit Rejection</button>
+                <button type="button" class="btn btn-danger" id="rejectReasonConfirmBtn" disabled style="opacity: 0.6; cursor: not-allowed;">Reject</button>
             </div>
         </div>
     </div>
     <div id="approvalReasonModalBackdrop" onclick="window.closeApprovalReasonModal && window.closeApprovalReasonModal()" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1003;"></div>
     <div id="approvalReasonModal" class="card" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1004; max-width: 420px; width: 90%; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.10); border: 1px solid var(--border, #e5e7eb); border-radius: 4px;">
         <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; background: #fff; border-bottom: 1px solid var(--border, #e5e7eb);">
-            <h2 class="card-title" style="margin: 0; font-size: 1.1rem;">Confirm Approval</h2>
+            <h2 class="card-title" style="margin: 0; font-size: 1.1rem;">Approve</h2>
             <button type="button" onclick="window.closeApprovalReasonModal && window.closeApprovalReasonModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
         </div>
         <div style="padding: 1.25rem;">
-            <label class="form-label" for="approvalReasonInput" style="display: block; margin-bottom: 0.5rem;">Approval Remarks / Reason</label>
-            <textarea id="approvalReasonInput" class="form-input" rows="4" placeholder="e.g. OK" minlength="1" style="width: 100%; resize: vertical; min-height: 80px;"></textarea>
+            <label class="form-label" for="approvalReasonInput">Comment</label>
+            <textarea id="approvalReasonInput" class="form-input" rows="3" minlength="1" style="width: 100%; resize: vertical; min-height: 3.25rem;"></textarea>
             <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 1rem;">
                 <button type="button" class="btn btn-outline" onclick="window.closeApprovalReasonModal && window.closeApprovalReasonModal()">Cancel</button>
-                <button type="button" class="btn" id="approvalReasonConfirmBtn" disabled style="background: #15803D; color: #fff; border: none; border-radius: 4px; opacity: 0.6; cursor: not-allowed;">Submit Approval</button>
+                <button type="button" class="btn btn-success" id="approvalReasonConfirmBtn" disabled style="opacity: 0.6; cursor: not-allowed;">Approve</button>
             </div>
         </div>
     </div>

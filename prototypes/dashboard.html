@@ -844,17 +844,14 @@
             const reason = await (window.showApprovalReasonModal
                 ? window.showApprovalReasonModal({
                     action: 'approve',
-                    title: 'Approve Booking',
+                    title: 'Approve booking',
                     required: true,
-                    placeholder: 'e.g. Verified, Urgent...',
-                    description: 'Please provide a reason for this approval. This will be stored and shown to the requester.',
-                    confirmText: 'Submit Approval',
                     cancelText: 'Cancel'
                 })
                 : (window.showPromptWindow || function(){ return Promise.resolve(prompt('Reason for approval:')); })(
-                    'Approve Booking',
-                    'Please provide a reason for approval:',
-                    { label: 'Reason *', placeholder: 'e.g. Verified, Urgent...', multiline: true, allowEmpty: false, submitLabel: 'Approve', cancelLabel: 'Cancel' }
+                    'Approve booking',
+                    'Comment:',
+                    { label: 'Comment', multiline: true, allowEmpty: false, submitLabel: 'Approve', cancelLabel: 'Cancel' }
                 ));
             if (reason === null || reason === undefined) return;
             const reasonVal = String(reason || '').trim();
@@ -891,17 +888,14 @@
             const reason = await (window.showApprovalReasonModal
                 ? window.showApprovalReasonModal({
                     action: 'reject',
-                    title: 'Reject Booking',
+                    title: 'Reject booking',
                     required: true,
-                    placeholder: 'e.g. Out of stock, Budget cut...',
-                    description: 'Please provide a reason for this rejection. This will be stored and shown to the requester.',
-                    confirmText: 'Submit Rejection',
                     cancelText: 'Cancel'
                 })
                 : (window.showPromptWindow || function(){ return Promise.resolve(prompt('Reason for rejection:')); })(
-                    'Reject Booking',
-                    'Please provide a reason for rejection:',
-                    { label: 'Reason *', placeholder: 'e.g. Out of stock, Budget cut...', multiline: true, allowEmpty: false, submitLabel: 'Reject', cancelLabel: 'Cancel' }
+                    'Reject booking',
+                    'Reason:',
+                    { label: 'Reason', multiline: true, allowEmpty: false, submitLabel: 'Reject', cancelLabel: 'Cancel' }
                 ));
             if (reason === null || reason === undefined) return;
             const reasonVal = String(reason || '').trim();

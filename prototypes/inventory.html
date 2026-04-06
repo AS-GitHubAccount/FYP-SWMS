@@ -2209,11 +2209,7 @@
                     action: act,
                     title: title || (act === 'approve' ? 'Approve' : 'Reject'),
                     required: true,
-                    placeholder: 'e.g. OK',
-                    description: act === 'reject'
-                        ? 'Please provide a reason for your rejection. This will be stored and shown to the requester.'
-                        : 'Please provide a reason for your approval. This will be stored and shown to the requester.',
-                    confirmText: act === 'approve' ? 'Submit Approval' : 'Submit Rejection',
+                    confirmText: act === 'approve' ? 'Approve' : 'Reject',
                     cancelText: 'Cancel'
                 }).then((reason) => {
                     if (reason === null || reason === undefined) return;
@@ -2246,9 +2242,9 @@
             if (!approveRejectModalConfig) return;
             const reason = document.getElementById('approveRejectReason').value.trim();
             if (!reason) {
-                if (typeof showNotification === 'function') showNotification('Reason required', 'Reason cannot be empty. Please fill in a reason before taking this action.', 'error');
+                if (typeof showNotification === 'function') showNotification('Error', 'Reason required.', 'error');
                 const errEl = document.getElementById('approveRejectReasonError');
-                if (errEl) { errEl.textContent = 'Reason cannot be empty.'; errEl.style.display = 'block'; }
+                if (errEl) { errEl.textContent = 'Required.'; errEl.style.display = 'block'; }
                 return;
             }
             const cfg = approveRejectModalConfig;
@@ -3346,7 +3342,7 @@
             const reason = (document.getElementById('withdrawRfqReason').value || '').trim();
             const errEl = document.getElementById('withdrawRfqReasonError');
             if (!reason) {
-                if (typeof showNotification === 'function') showNotification('Reason required', 'Reason cannot be empty. Please fill in a reason before taking this action.', 'error');
+                if (typeof showNotification === 'function') showNotification('Error', 'Reason required.', 'error');
                 errEl.style.display = 'block';
                 return;
             }
@@ -5956,7 +5952,7 @@
             var reason = reasonEl ? reasonEl.value.trim() : '';
             if (!currentProduct || !batchId) return;
             if (!reason) {
-                showNotification('Reason required', 'Reason cannot be empty. Please fill in a reason before taking this action.', 'error');
+                showNotification('Error', 'Reason required.', 'error');
                 return;
             }
             var productId = currentProduct.productId || currentProduct.id;
@@ -6003,22 +5999,19 @@
             const reason = await (window.showApprovalReasonModal
                 ? window.showApprovalReasonModal({
                     action: 'approve',
-                    title: 'Approve Disposal',
+                    title: 'Approve disposal',
                     required: true,
-                    placeholder: 'e.g. Verified for disposal',
-                    description: 'Fill in your comment for this approval (required). This will be stored and shown to the requester.',
-                    confirmText: 'Submit Approval',
                     cancelText: 'Cancel'
                 })
                 : (window.showPromptWindow || function() { return Promise.resolve(prompt.apply(null, arguments)); })(
-                    'Approve Disposal',
-                    'Fill in your comment for this approval (required, min 1 character):',
-                    { label: 'Comment *', placeholder: 'e.g. Verified for disposal', multiline: true, allowEmpty: false, submitLabel: 'Approve', cancelLabel: 'Cancel' }
+                    'Approve disposal',
+                    'Comment:',
+                    { label: 'Comment', multiline: true, allowEmpty: false, submitLabel: 'Approve', cancelLabel: 'Cancel' }
                 ));
             if (reason === null || reason === undefined) return;
             const reasonVal = String(reason || '').trim();
             if (!reasonVal) {
-                showNotification('Comment required', 'Comment cannot be empty (minimum 1 character).', 'error');
+                showNotification('Error', 'Comment required.', 'error');
                 return;
             }
             const userId = parseInt(sessionStorage.getItem('userId') || '1');
@@ -6042,22 +6035,19 @@
             const reason = await (window.showApprovalReasonModal
                 ? window.showApprovalReasonModal({
                     action: 'reject',
-                    title: 'Reject Disposal',
+                    title: 'Reject disposal',
                     required: true,
-                    placeholder: 'Enter reason...',
-                    description: 'Please provide a reason for rejection. This will be stored and shown to the requester.',
-                    confirmText: 'Submit Rejection',
                     cancelText: 'Cancel'
                 })
                 : (window.showPromptWindow || function() { return Promise.resolve(prompt.apply(null, arguments)); })(
-                    'Reject Disposal',
-                    'Please provide reason for rejection:',
-                    { label: 'Reason *', placeholder: 'Enter reason...', multiline: true, allowEmpty: false, submitLabel: 'Reject', cancelLabel: 'Cancel' }
+                    'Reject disposal',
+                    'Reason:',
+                    { label: 'Reason', multiline: true, allowEmpty: false, submitLabel: 'Reject', cancelLabel: 'Cancel' }
                 ));
             if (reason === null || reason === undefined) return;
             const reasonVal = String(reason || '').trim();
             if (!reasonVal) {
-                showNotification('Reason required', 'Reason cannot be empty. Please fill in a reason before taking this action.', 'error');
+                showNotification('Error', 'Reason required.', 'error');
                 return;
             }
             const userId = parseInt(sessionStorage.getItem('userId') || '1');

@@ -228,7 +228,7 @@
             const ok = val.length >= minLen;
             if (errorEl) {
                 if (!ok) {
-                    errorEl.textContent = 'Reason cannot be empty.';
+                    errorEl.textContent = 'Required.';
                     errorEl.style.display = 'block';
                 } else {
                     errorEl.textContent = '';
@@ -245,9 +245,9 @@
             const minLen = rejectContext.minLen;
 
             if (!val || val.length < minLen) {
-                if (typeof showNotification === 'function') showNotification('Reason required', 'Reason cannot be empty. Please fill in a reason before taking this action.', 'error');
+                if (typeof showNotification === 'function') showNotification('Error', 'Reason required.', 'error');
                 if (errorEl) {
-                    errorEl.textContent = 'Reason cannot be empty.';
+                    errorEl.textContent = 'Required.';
                     errorEl.style.display = 'block';
                 }
                 setConfirmEnabled(confirmBtn, false);
@@ -288,7 +288,7 @@
             if (!approveContext) return;
             const val = String(textarea.value || '').trim();
             if (val.length < 1) {
-                if (typeof showNotification === 'function') showNotification('Reason required', 'Reason cannot be empty. Please fill in a reason before taking this action.', 'error');
+                if (typeof showNotification === 'function') showNotification('Error', 'Comment required.', 'error');
                 textarea.classList.add('approval-reason-error');
                 return;
             }
