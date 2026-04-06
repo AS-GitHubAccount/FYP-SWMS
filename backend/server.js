@@ -56,6 +56,15 @@ const { authMiddleware, optionalAuth } = require('./middleware/auth');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Behind Railway / nginx / load balancers, X-Forwarded-For is set. Required so express-rate-limit
+// can identify clients (ERR_ERL_UNEXPECTED_X_FORWARDED_FOR if false). Set TRUST_PROXY=0 to disable locally if needed.
+if (process.env.TRUST_PROXY !== 'false' && process.env.TRUST_PROXY !== '0') {
+    const n = process.env.TRUST_PROXY != null && String(process.env.TRUST_PROXY).trim() !== ''
+        ? parseInt(process.env.TRUST_PROXY, 10)
+        : 1;
+    app.set('trust proxy', Number.isFinite(n) && n >= 0 ? n : 1);
+}
+
 app.use(cors({
     origin: function(origin, callback) {
         callback(null, true);
