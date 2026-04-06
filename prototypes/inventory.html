@@ -3622,6 +3622,7 @@
                     const status = (r.status || '').toLowerCase();
                 const statusBadge = status === 'draft' ? 'secondary' : status === 'sent' ? 'info' : status === 'quotes_received' ? 'warning' : status === 'awarded' ? 'success' : status === 'withdraw_pending' ? 'warning' : status === 'withdrawn' ? 'dark' : 'dark';
                 const isSentLike = status === 'sent' || status === 'withdraw_pending' || status === 'withdrawn';
+                const showAddQuote = status !== 'awarded' && status !== 'closed' && status !== 'withdrawn';
                     return `<tr>
                         <td>${r.rfqId || '-'}</td>
                         <td>${r.rfqNumber}</td>
@@ -3631,9 +3632,9 @@
                         <td><span id="rfq-quote-count-${r.rfqId}">-</span></td>
                         <td><span class="badge badge-${statusBadge}">${status.replace(/_/g, ' ')}</span></td>
                         <td>
-                        ${isSentLike ? `<button type="button" class="btn btn-view-sent btn-sm" onclick="openViewSentRfqModal(${r.rfqId})" style="margin-right: 0.25rem;"><i data-lucide="mail" style="width:12px;height:12px;vertical-align:middle;"></i> Sent</button>` : ''}
+                        ${isSentLike ? `<button type="button" class="btn btn-view-sent btn-sm" onclick="openViewSentRfqModal(${r.rfqId})" style="margin-right: 0.25rem;"><i data-lucide="mail" style="width:12px;height:12px;vertical-align:middle;"></i> View Sent</button>` : ''}
                         ${status === 'withdraw_pending' && isAdmin ? `<button type="button" class="btn btn-primary btn-sm" onclick="openViewSentRfqModal(${r.rfqId})" style="margin-right: 0.25rem;">Approve Withdrawal</button>` : ''}
-                            ${status !== 'awarded' && status !== 'closed' ? `<button type="button" class="btn btn-outline btn-sm" onclick="openAddQuoteModal(${r.rfqId})" style="margin-right: 0.25rem;">Add Quote</button>` : ''}
+                            ${showAddQuote ? `<button type="button" class="btn btn-outline btn-sm" onclick="openAddQuoteModal(${r.rfqId})" style="margin-right: 0.25rem;">Add Quote</button>` : ''}
                             ${status === 'quotes_received' || status === 'sent' ? `<button type="button" class="btn btn-primary-green btn-sm" onclick="openCompareModal(${r.rfqId})">Compare</button>` : ''}
                         </td>
                     </tr>`;
