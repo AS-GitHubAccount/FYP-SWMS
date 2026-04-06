@@ -1697,6 +1697,28 @@
                 return s.replace(', ', ' ');
             } catch (e) { return String(dateStr); }
         }
+        /** Needed By / tables: calendar date only (no time), same style as date part of en-GB. */
+        function formatDateDayOnly(dateStr) {
+            if (dateStr == null || dateStr === '') return '-';
+            const s = String(dateStr).trim();
+            if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+                const y = parseInt(s.slice(0, 4), 10);
+                const m = parseInt(s.slice(5, 7), 10) - 1;
+                const day = parseInt(s.slice(8, 10), 10);
+                const d = new Date(y, m, day);
+                if (!isNaN(d.getTime())) {
+                    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                }
+                return s.slice(0, 10);
+            }
+            try {
+                const d = new Date(dateStr);
+                if (isNaN(d.getTime())) return '-';
+                return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            } catch (e) {
+                return '-';
+            }
+        }
         /** Combine Step 1 date + time for MySQL DATETIME (YYYY-MM-DD HH:mm:ss). */
         function buildQuoteDueForApi(dateStr, timeStr) {
             const d = (dateStr || '').trim();
@@ -2098,7 +2120,7 @@
                     <td>${booking.orderRequester || '-'}</td>
                     <td>${booking.deliveryTo || '-'}</td>
                     <td>${booking.requestedByName || '-'}</td>
-                    <td>${booking.neededBy ? formatDateForEmail(booking.neededBy) : '-'}</td>
+                    <td>${formatDateDayOnly(booking.neededBy)}</td>
                     <td><span class="badge badge-${getStatusBadgeClass(booking.status)}">${booking.status}</span></td>
                     <td>
                         ${booking.status === 'PENDING' ? `<button class="btn btn-success" onclick="approveBooking(${booking.bookingId})" style="padding: 0.25rem 0.75rem; font-size: 0.75rem; margin-right: 0.25rem;">Approve</button>` : ''}
@@ -2333,7 +2355,7 @@
                     <p><strong>Delivery To:</strong> ${b.deliveryTo || '-'}</p>
                     <p><strong>Created By:</strong> ${b.requestedByName || b.requestedBy || '-'}</p>
                     <p><strong>Requested Date:</strong> ${b.requestedDate || '-'}</p>
-                    <p><strong>Needed By:</strong> ${b.neededBy ? formatDateForEmail(b.neededBy) : '-'}</p>
+                    <p><strong>Needed By:</strong> ${formatDateDayOnly(b.neededBy)}</p>
                     <p><strong>Status:</strong> <span class="badge badge-${getStatusBadgeClass(b.status)}">${b.status || '-'}</span></p>
                     ${b.notes ? `<p><strong>Notes:</strong> ${b.notes}</p>` : ''}
                     ${transactionSection}
@@ -2555,7 +2577,7 @@
                     <td>${r.productName || r.productSku || '-'}</td>
                     <td>${r.quantity}</td>
                     <td><span class="badge badge-${priority === 'low' ? 'secondary' : priority === 'high' ? 'warning' : 'info'}">${priority}</span></td>
-                    <td>${r.neededBy ? formatDateForEmail(r.neededBy) : '-'}</td>
+                    <td>${formatDateDayOnly(r.neededBy)}</td>
                     <td>${loc || '-'}</td>
                     <td><span class="badge badge-${w.statusBadge}">${w.statusLabel}</span></td>
                     <td>${actions}</td>
@@ -2664,7 +2686,7 @@
                     </span></td>
                     <td>${r.quantity}</td>
                     <td><span class="badge badge-${priority === 'low' ? 'secondary' : priority === 'high' ? 'warning' : 'info'}">${priority}</span></td>
-                    <td>${r.neededBy ? formatDateForEmail(r.neededBy) : '-'}</td>
+                    <td>${formatDateDayOnly(r.neededBy)}</td>
                     <td>${loc || '-'}</td>
                     <td><span class="badge badge-${w.statusBadge}">${w.statusLabel}</span></td>
                     <td>${w.actions}</td>
