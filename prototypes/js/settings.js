@@ -316,7 +316,7 @@
         var browserNotif = document.getElementById('setting-browserNotificationsEnabled');
         if (browserNotif) browserNotif.addEventListener('change', requestBrowserNotificationPermission);
 
-        // Password update is handled by the "Update credentials" modal.
+        // Password update is handled by the "Change Password" modal.
         wirePasswordModal();
         wireApprovalTokenControls();
         wireProfileAvatarUpload();
