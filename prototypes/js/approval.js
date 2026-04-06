@@ -64,6 +64,18 @@
         return { status: status === 'ALL' ? 'all' : status, type, name };
     }
 
+    /** Aligns API row.status with the selected Status filter (defensive; avoids stale cache / race). */
+    function rowMatchesApprovalStatusFilter(row, statusFilter) {
+        const f = String(statusFilter || 'all').toLowerCase();
+        if (f === 'all') return true;
+        const rs = String(row.status || '').toUpperCase();
+        if (f === 'pending') return rs === 'PENDING' || rs === 'WITHDRAW_PENDING';
+        if (f === 'approved') return rs === 'APPROVED' || rs === 'WITHDRAWN';
+        if (f === 'rejected') return rs === 'REJECTED' || rs === 'CANCELLED';
+        if (f === 'completed') return rs === 'COMPLETED' || rs === 'FULFILLED';
+        return true;
+    }
+
     function filterByName(list, nameTerm) {
         const term = String(nameTerm || '').toLowerCase().trim();
         if (!term) return list;
@@ -75,9 +87,9 @@
         });
     }
 
-    // Cache approvals; invalidate after approve/reject. statusParam stored to refetch when status filter changes.
+    // Cache approvals; invalidate after approve/reject. Query key = status|type so changing either refetches.
     let allApprovalsCache = null;
-    let lastApprovalStatusParam = null;
+    let lastApprovalQueryKey = null;
 
     async function rejectWithReason(requestType, id, reason) {
         const userId = parseInt(sessionStorage.getItem('userId') || '0', 10);
@@ -333,17 +345,20 @@
         try {
             const filters = getCurrentFilters();
             const statusParam = filters.status === 'all' ? 'all' : (filters.status || 'all');
-            const statusChanged = lastApprovalStatusParam !== statusParam;
-            if (!fromCache || statusChanged) {
+            const typeForApi = String(filters.type || 'all').toLowerCase();
+            const queryKey = String(statusParam).toLowerCase() + '|' + typeForApi;
+            const queryChanged = lastApprovalQueryKey !== queryKey;
+            if (!fromCache || queryChanged) {
+                if (queryChanged) allApprovalsCache = null;
                 const statusForApi = statusParam === 'all' ? 'all' : String(statusParam).toLowerCase();
-                const qs = new URLSearchParams({ status: statusForApi, type: 'all' }).toString();
+                const qs = new URLSearchParams({ status: statusForApi, type: typeForApi }).toString();
                 const url = API_BASE + '/approvals?' + qs;
                 const headers = Object.assign({ 'Content-Type': 'application/json' }, getAuthHeaders());
                 const res = await (window.fetchWithAuth || fetch)(url, { headers });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error((data && data.error) || (data && data.message) || 'Failed to load approvals');
                 allApprovalsCache = Array.isArray(data.data) ? data.data : [];
-                lastApprovalStatusParam = statusParam;
+                lastApprovalQueryKey = queryKey;
             }
 
             // Apply UI filters locally (instant).
@@ -351,6 +366,7 @@
             if (typeFilter === 'purchase') typeFilter = 'purchase_request';
 
             let list = allApprovalsCache || [];
+            list = list.filter(row => rowMatchesApprovalStatusFilter(row, statusParam));
             if (typeFilter !== 'all') {
                 list = list.filter(r => String(r.type || '') === typeFilter);
             }
