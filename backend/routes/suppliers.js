@@ -13,6 +13,45 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 
+/**
+ * Clears rows that reference suppliers.supplierId with ON DELETE RESTRICT
+ * (e.g. purchase_orders, purchase_requests) so the supplier row can be removed.
+ * rfq_suppliers / quotations / supplier_products typically CASCADE on supplier delete.
+ */
+async function unlinkSupplierReferences(conn, supplierId) {
+    try {
+        await conn.execute(
+            `DELETE ph FROM price_history ph
+             INNER JOIN purchase_orders po ON ph.poId = po.poId
+             WHERE po.supplierId = ?`,
+            [supplierId]
+        );
+    } catch (e) {
+        if (e.code !== 'ER_NO_SUCH_TABLE' && e.errno !== 1146) throw e;
+    }
+    try {
+        await conn.execute('UPDATE price_history SET supplierId = NULL WHERE supplierId = ?', [supplierId]);
+    } catch (e) {
+        if (e.code !== 'ER_NO_SUCH_TABLE' && e.errno !== 1146) throw e;
+    }
+    await conn.execute('DELETE FROM purchase_orders WHERE supplierId = ?', [supplierId]);
+    try {
+        await conn.execute('DELETE FROM purchase_request_suppliers WHERE supplierId = ?', [supplierId]);
+    } catch (e) {
+        if (e.code !== 'ER_NO_SUCH_TABLE' && e.errno !== 1146) throw e;
+    }
+    try {
+        await conn.execute('UPDATE purchase_requests SET supplierId = NULL WHERE supplierId = ?', [supplierId]);
+    } catch (e) {
+        if (e.code !== 'ER_NO_SUCH_TABLE' && e.errno !== 1146) throw e;
+    }
+    try {
+        await conn.execute('UPDATE products SET supplierId = NULL WHERE supplierId = ?', [supplierId]);
+    } catch (e) {
+        if (e.code !== 'ER_BAD_FIELD_ERROR' && e.errno !== 1054) throw e;
+    }
+}
+
 router.get('/', async (req, res) => {
     try {
         const [suppliers] = await db.execute(
@@ -236,7 +275,23 @@ router.delete('/:id', async (req, res) => {
             });
         }
 
-        await db.execute('DELETE FROM suppliers WHERE supplierId = ?', [supplierId]);
+        const pool = db;
+        const conn = await pool.getConnection();
+        try {
+            await conn.beginTransaction();
+            await unlinkSupplierReferences(conn, supplierId);
+            await conn.execute('DELETE FROM suppliers WHERE supplierId = ?', [supplierId]);
+            await conn.commit();
+        } catch (txErr) {
+            try {
+                await conn.rollback();
+            } catch (rbErr) {
+                console.error('[suppliers] rollback failed:', rbErr);
+            }
+            throw txErr;
+        } finally {
+            conn.release();
+        }
 
         res.json({
             success: true,
@@ -244,10 +299,17 @@ router.delete('/:id', async (req, res) => {
         });
     } catch (error) {
         console.error('Error deleting supplier:', error);
+        const msg = error.message || String(error);
+        const isFk =
+            error.code === 'ER_ROW_IS_REFERENCED_2' ||
+            error.errno === 1451 ||
+            /Cannot delete or update a parent row/i.test(msg);
         res.status(500).json({
             success: false,
             error: 'Failed to delete supplier',
-            message: error.message
+            message: isFk
+                ? 'This supplier is still referenced by data the server could not remove. Check server logs or contact support.'
+                : msg
         });
     }
 });
