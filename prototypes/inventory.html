@@ -655,7 +655,7 @@
                         <tbody id="compareQuotesBody"></tbody>
                     </table>
                 </div>
-                <p style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-secondary);">Click "Award" or "Reject" — a reason is required (cannot be empty). <strong>Variance:</strong> unit price vs 12-mo average — green if &gt;10% lower, red if &gt;10% higher.</p>
+                <p style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-secondary);">Pick <strong>Award</strong> or <strong>Reject</strong> and add a reason (the box can’t be left blank). The row shading compares unit price to the 12-month average: greener when it’s clearly cheaper, redder when it’s clearly higher (we use about a 10% band).</p>
             </div>
         </div>
         <!-- Price trend (12-month) — Purchase Request product -->
@@ -3854,22 +3854,50 @@
             ]);
         }
 
+        function formatCompareBenchDate(val) {
+            if (!val) return '';
+            try {
+                var d = new Date(val);
+                if (isNaN(d.getTime())) return String(val);
+                return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+            } catch (e) {
+                return String(val);
+            }
+        }
+
         function buildCompareBenchmarkRows(bench) {
             var lastTxt = '—';
             if (bench && bench.lastPrice != null && !isNaN(parseFloat(bench.lastPrice))) {
-                lastTxt = '$' + Number(bench.lastPrice).toFixed(2);
-                if (bench.lastAt) lastTxt += ' on ' + bench.lastAt;
-                if (bench.lastSupplierName) lastTxt += ' (' + (typeof escapeHtml === 'function' ? escapeHtml(bench.lastSupplierName) : bench.lastSupplierName) + ')';
+                var bits = ['$' + Number(bench.lastPrice).toFixed(2)];
+                if (bench.lastAt) bits.push(formatCompareBenchDate(bench.lastAt));
+                var sup = bench.lastSupplierName
+                    ? typeof escapeHtml === 'function'
+                        ? escapeHtml(bench.lastSupplierName)
+                        : bench.lastSupplierName
+                    : '';
+                if (sup) bits.push(sup);
+                lastTxt = bits.join(' · ');
             }
             var avgTxt = '—';
             if (bench && bench.avg12 != null && bench.avg12 > 0) {
-                avgTxt = '$' + Number(bench.avg12).toFixed(2) + ' (n=' + (bench.count12 || 0) + ')';
+                var n = parseInt(bench.count12, 10) || 0;
+                avgTxt =
+                    '$' +
+                    Number(bench.avg12).toFixed(2) +
+                    (n > 0 ? ' · from ' + n + ' PO' + (n === 1 ? '' : 's') + ' (12 mo)' : '');
             }
-            return '<tr class="compare-benchmark-row" style="background:var(--slate-50, #f8fafc);border-top:2px solid var(--border, #e5e7eb);">' +
-                '<td colspan="2"><strong>Historical benchmark</strong><br><span style="font-size:0.75rem;color:var(--text-muted);">Last price paid &amp; 12-mo unit average</span></td>' +
-                '<td colspan="2" style="text-align:left;vertical-align:middle"><div><strong>Last paid (unit):</strong> ' + lastTxt + '</div>' +
-                '<div style="margin-top:0.35rem"><strong>12-mo avg (unit):</strong> ' + avgTxt + '</div></td>' +
-                '<td colspan="3" style="font-size:0.8rem;color:var(--text-muted);vertical-align:middle">Quotes above: green = over 10% below avg; red = over 10% above avg.</td></tr>';
+            return (
+                '<tr class="compare-benchmark-row" style="background:var(--slate-50, #f8fafc);border-top:2px solid var(--border, #e5e7eb);">' +
+                '<td colspan="2"><strong>Recent buys (same product)</strong><br><span style="font-size:0.75rem;color:var(--text-muted);">For context next to the quotes</span></td>' +
+                '<td colspan="2" style="text-align:left;vertical-align:middle">' +
+                '<div>Last unit price we paid: ' +
+                lastTxt +
+                '</div>' +
+                '<div style="margin-top:0.35rem">12-month average (unit): ' +
+                avgTxt +
+                '</div></td>' +
+                '<td colspan="3" style="font-size:0.8rem;color:var(--text-muted);vertical-align:middle">Shading vs that average: greener if roughly 10%+ under, redder if roughly 10%+ over.</td></tr>'
+            );
         }
 
         async function openCompareModal(rfqId) {

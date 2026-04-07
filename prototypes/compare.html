@@ -62,7 +62,13 @@
         }
         function fmtDate(d) {
             if (!d) return '-';
-            try { return new Date(d).toLocaleDateString(); } catch (e) { return String(d); }
+            try {
+                var x = new Date(d);
+                if (isNaN(x.getTime())) return String(d);
+                return x.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+            } catch (e) {
+                return String(d);
+            }
         }
         function openQuotePdfPage(url) {
             document.getElementById('quotePdfFramePage').src = url;
@@ -75,14 +81,18 @@
             document.getElementById('quotePdfModalPage').style.display = 'none';
         }
         function benchRow(bench) {
-            var lastTxt = '—', avgTxt = '—';
+            var lastTxt = '—',
+                avgTxt = '—';
             if (bench.lastPrice != null) {
-                lastTxt = '$' + Number(bench.lastPrice).toFixed(2) + (bench.lastAt ? ' on ' + bench.lastAt : '');
+                var b = ['$' + Number(bench.lastPrice).toFixed(2)];
+                if (bench.lastAt) b.push(fmtDate(bench.lastAt));
+                lastTxt = b.join(' · ');
             }
             if (bench.avg12 != null && bench.avg12 > 0) {
-                avgTxt = '$' + Number(bench.avg12).toFixed(2) + ' (n=' + (bench.count12 || 0) + ')';
+                var n = parseInt(bench.count12, 10) || 0;
+                avgTxt = '$' + Number(bench.avg12).toFixed(2) + (n > 0 ? ' · ' + n + ' PO' + (n === 1 ? '' : 's') + ' (12 mo)' : '');
             }
-            return '<tr style="background:var(--slate-50,#f8fafc);font-weight:600;"><td colspan="2">Historical benchmark</td><td colspan="4">Last paid (unit): ' + lastTxt + ' · 12-mo avg: ' + avgTxt + '</td></tr>';
+            return '<tr style="background:var(--slate-50,#f8fafc);font-weight:600;"><td colspan="2">Recent buys</td><td colspan="4">Last unit paid: ' + lastTxt + ' · 12-month average (unit): ' + avgTxt + '</td></tr>';
         }
         (async function init() {
             const params = new URLSearchParams(window.location.search);
