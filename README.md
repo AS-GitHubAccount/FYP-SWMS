@@ -2,6 +2,8 @@
 
 Express API (`backend/`) and static HTML UI (`prototypes/`).
 
+**Start URL:** `https://fyp-swms-production.up.railway.app/prototypes/login.html`
+
 **Requirements:** Node 18+, MySQL 8 (or compatible).
 
 ### API

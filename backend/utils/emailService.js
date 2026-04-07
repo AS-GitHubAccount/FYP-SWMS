@@ -158,8 +158,116 @@ function getTransporter() {
     return transporter;
 }
 
+function sleepMs(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Resend default: 2 requests per second — space calls globally to avoid 429. */
+function getResendMinIntervalMs() {
+    const n = parseInt(process.env.RESEND_MIN_INTERVAL_MS || '550', 10);
+    return Number.isFinite(n) && n >= 200 ? n : 550;
+}
+
+/** Serialize Resend API calls; sleep only when the previous send finished too recently (≤2 req/s). */
+let resendSendChain = Promise.resolve();
+let lastResendCompleteAt = 0;
+
+function enqueueResendSend(runFetch) {
+    const gap = getResendMinIntervalMs();
+    const next = resendSendChain.then(async () => {
+        const now = Date.now();
+        if (lastResendCompleteAt > 0) {
+            const elapsed = now - lastResendCompleteAt;
+            if (elapsed < gap) await sleepMs(gap - elapsed);
+        }
+        try {
+            return await runFetch();
+        } finally {
+            lastResendCompleteAt = Date.now();
+        }
+    });
+    resendSendChain = next.catch(() => {
+        /* keep chain alive */
+    });
+    return next;
+}
+
+/**
+ * POST once to Resend; on 429 waits per Retry-After (or default) and retries up to maxRetries.
+ */
+async function postResendEmailOnce(payload, key, safeTimeout, attempt) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), safeTimeout);
+    try {
+        const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${key}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload),
+            signal: ctrl.signal
+        });
+        clearTimeout(timer);
+        const data = await res.json().catch(() => ({}));
+
+        if (res.status === 429) {
+            const maxRetries = Math.min(
+                5,
+                Math.max(1, parseInt(process.env.RESEND_429_MAX_RETRIES || '3', 10) || 3)
+            );
+            const ra = res.headers.get('retry-after');
+            let waitSec = ra ? parseFloat(ra) : NaN;
+            if (!Number.isFinite(waitSec) || waitSec < 0) waitSec = 1;
+            waitSec = Math.min(Math.max(waitSec, 0.5), 30);
+            if (attempt < maxRetries) {
+                console.warn(
+                    `[email] Resend 429 rate limit (attempt ${attempt + 1}/${maxRetries}), waiting ${waitSec}s before retry`
+                );
+                await sleepMs(Math.ceil(waitSec * 1000));
+                return postResendEmailOnce(payload, key, safeTimeout, attempt + 1);
+            }
+            const msg = data.message || (data.error && (data.error.message || data.error)) || 'Too many requests';
+            const str = typeof msg === 'string' ? msg : JSON.stringify(msg);
+            return {
+                ok: false,
+                userMessage: `Resend: ${augmentResendApiErrorMessage(str).slice(0, 600)}`,
+                raw: JSON.stringify(data).slice(0, 400)
+            };
+        }
+
+        if (!res.ok) {
+            const msg = data.message || (data.error && (data.error.message || data.error)) || JSON.stringify(data);
+            const str = typeof msg === 'string' ? msg : JSON.stringify(msg);
+            const augmented = augmentResendApiErrorMessage(str);
+            return {
+                ok: false,
+                userMessage: `Resend: ${augmented.slice(0, 600)}`,
+                raw: JSON.stringify(data).slice(0, 400)
+            };
+        }
+        return { ok: true };
+    } catch (e) {
+        clearTimeout(timer);
+        const aborted = e && (e.name === 'AbortError' || /aborted|AbortError/i.test(String(e.message || e)));
+        if (aborted) {
+            return {
+                ok: false,
+                userMessage: `Resend API did not respond within ${safeTimeout}ms. Check Railway logs and that outbound HTTPS to api.resend.com is allowed. If the server has no RESEND_API_KEY it may be falling back to SMTP (slow).`,
+                raw: 'timeout'
+            };
+        }
+        return {
+            ok: false,
+            userMessage: e.message || 'Resend request failed',
+            raw: String(e).slice(0, 300)
+        };
+    }
+}
+
 /**
  * Resend over HTTPS — works on Railway Free/Hobby where outbound SMTP 465/587 is often blocked.
+ * Throttled globally to stay under Resend's default 2 req/s; 429 triggers backoff retries.
  * @see https://resend.com/docs/api-reference/emails/send-email
  */
 async function sendViaResend(options) {
@@ -194,47 +302,8 @@ async function sendViaResend(options) {
 
     const fetchTimeoutMs = parseInt(process.env.RESEND_FETCH_TIMEOUT_MS || '20000', 10);
     const safeTimeout = Number.isFinite(fetchTimeoutMs) && fetchTimeoutMs >= 5000 ? fetchTimeoutMs : 20000;
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), safeTimeout);
-    try {
-        const res = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${key}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(payload),
-            signal: ctrl.signal
-        });
-        clearTimeout(timer);
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-            const msg = data.message || (data.error && (data.error.message || data.error)) || JSON.stringify(data);
-            const str = typeof msg === 'string' ? msg : JSON.stringify(msg);
-            const augmented = augmentResendApiErrorMessage(str);
-            return {
-                ok: false,
-                userMessage: `Resend: ${augmented.slice(0, 600)}`,
-                raw: JSON.stringify(data).slice(0, 400)
-            };
-        }
-        return { ok: true };
-    } catch (e) {
-        clearTimeout(timer);
-        const aborted = e && (e.name === 'AbortError' || /aborted|AbortError/i.test(String(e.message || e)));
-        if (aborted) {
-            return {
-                ok: false,
-                userMessage: `Resend API did not respond within ${safeTimeout}ms. Check Railway logs and that outbound HTTPS to api.resend.com is allowed. If the server has no RESEND_API_KEY it may be falling back to SMTP (slow).`,
-                raw: 'timeout'
-            };
-        }
-        return {
-            ok: false,
-            userMessage: e.message || 'Resend request failed',
-            raw: String(e).slice(0, 300)
-        };
-    }
+
+    return enqueueResendSend(() => postResendEmailOnce(payload, key, safeTimeout, 0));
 }
 
 function escapeHtmlForEmail(s) {
