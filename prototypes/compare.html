@@ -57,7 +57,7 @@
         function fetch2s(url) {
             return Promise.race([
                 fetch(url, { headers: headers() }),
-                new Promise(function(_, rej) { setTimeout(function() { rej(new Error('timeout')); }, 2000); })
+                new Promise(function(_, rej) { setTimeout(function() { rej(new Error('timeout')); }, 20000); })
             ]);
         }
         function fmtDate(d) {

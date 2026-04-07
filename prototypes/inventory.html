@@ -3845,11 +3845,13 @@
             }
         }
 
+        /** Compare / price-history calls (Railway cold start + DB can exceed a few seconds). */
         function compareFetchWithTimeout(url, headers, ms) {
+            var limit = typeof ms === 'number' && ms >= 3000 ? ms : 20000;
             return Promise.race([
                 fetch(url, headers),
                 new Promise(function(_, rej) {
-                    setTimeout(function() { rej(new Error('timeout')); }, ms || 2000);
+                    setTimeout(function() { rej(new Error('timeout')); }, limit);
                 })
             ]);
         }
@@ -3910,7 +3912,7 @@
             tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;"><span class="loading-spinner" style="margin-right:0.5rem;"></span>Loading…</td></tr>';
             if (info) info.textContent = '';
             try {
-                var res = await compareFetchWithTimeout(API_BASE_URL + '/rfqs/' + encodeURIComponent(rfqId), { headers: getAuthHeaders() }, 2000);
+                var res = await compareFetchWithTimeout(API_BASE_URL + '/rfqs/' + encodeURIComponent(rfqId), { headers: getAuthHeaders() });
                 var data = await res.json().catch(function() { return {}; });
                 if (!res.ok || !data.success || !data.data) throw new Error(data.error || 'RFQ not found');
                 var rfq = data.data;
@@ -3919,7 +3921,7 @@
                 var bench = { avg12: null, lastPrice: null, count12: 0, lastAt: null, lastSupplierName: null };
                 if (productId) {
                     try {
-                        var bRes = await compareFetchWithTimeout(API_BASE_URL + '/price-history/product/' + encodeURIComponent(productId), { headers: getAuthHeaders() }, 2000);
+                        var bRes = await compareFetchWithTimeout(API_BASE_URL + '/price-history/product/' + encodeURIComponent(productId), { headers: getAuthHeaders() });
                         var bData = await bRes.json().catch(function() { return {}; });
                         if (bRes.ok && bData.success && bData.data) bench = bData.data;
                     } catch (be) { /* optional benchmark */ }
@@ -3950,7 +3952,9 @@
             } catch (e) {
                 if (info) info.textContent = '';
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:3rem;color:var(--text-secondary);">Data currently unavailable.</td></tr>';
-                if (typeof showNotification === 'function') showNotification('Compare', (e && e.message === 'timeout') ? 'Request timed out.' : (e.message || 'Failed to load'), 'warning');
+                if (typeof showNotification === 'function') {
+                    showNotification('Compare', (e && e.message === 'timeout') ? 'Request timed out — try again in a moment (slow network or server wake-up).' : (e.message || 'Failed to load'), 'warning');
+                }
             }
         }
 
@@ -4016,7 +4020,7 @@
                 _priceTrendChartInstance = null;
             }
             try {
-                var res = await compareFetchWithTimeout(API_BASE_URL + '/price-history/product/' + pid, { headers: getAuthHeaders() }, 2000);
+                var res = await compareFetchWithTimeout(API_BASE_URL + '/price-history/product/' + pid, { headers: getAuthHeaders() });
                 var data = await res.json().catch(function() { return {}; });
                 if (spin) spin.style.display = 'none';
                 if (!res.ok || !data.success || !data.data) {
