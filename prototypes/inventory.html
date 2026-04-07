@@ -455,8 +455,8 @@
                 </div>
                 <div class="purchasing-table-filters" style="display:flex;flex-wrap:wrap;gap:0.75rem 1rem;align-items:flex-end;padding:0.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);background:#f9fafb;">
                     <div class="form-group" style="margin:0;min-width:12rem;flex:1 1 11rem;">
-                        <label class="form-label" for="prFilterSearch" style="font-size:0.75rem;margin-bottom:0.2rem;">ID, Request #, Product, Priority, Sending location</label>
-                        <input type="search" id="prFilterSearch" class="form-input" placeholder="Filter…" autocomplete="off" oninput="applyPurchaseRequestsSort()">
+                        <label class="form-label" for="prFilterSearch" style="font-size:0.75rem;margin-bottom:0.2rem;">Filter</label>
+                        <input type="search" id="prFilterSearch" class="form-input" placeholder="Search by ID, Request #, Product, Priority, Sending location" autocomplete="off" oninput="applyPurchaseRequestsSort()">
                     </div>
                     <div class="form-group" style="margin:0;min-width:13rem;">
                         <label class="form-label" for="prFilterStatus" style="font-size:0.75rem;margin-bottom:0.2rem;">Status</label>
@@ -500,14 +500,13 @@
             <div id="purchasing-section-rfqs" style="display: none;">
                 <div style="margin-bottom: 1rem;"><button type="button" class="btn btn-secondary" onclick="showPurchasingOverview()">← Back to Purchasing</button></div>
             <div id="purchasing-rfqs" class="card">
-                <div class="card-header" style="flex-direction: column; align-items: flex-start; gap: 0.35rem;">
-                    <h2 class="card-title" style="margin: 0;">3. RFQs & Quotations</h2>
-                    <p style="margin: 0; font-size: 0.8125rem; color: var(--text-secondary, #6b7280); font-weight: 400;">Shows RFQs <strong>after</strong> the supplier email has been sent. Draft RFQs (Preview &amp; Send not completed) stay in <strong>2. Purchase Requests</strong> only.</p>
+                <div class="card-header">
+                    <h2 class="card-title">3. RFQs & Quotations</h2>
                 </div>
                 <div class="purchasing-table-filters" style="display:flex;flex-wrap:wrap;gap:0.75rem 1rem;align-items:flex-end;padding:0.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);background:#f9fafb;">
                     <div class="form-group" style="margin:0;min-width:11rem;flex:1 1 10rem;">
-                        <label class="form-label" for="rfqFilterSearch" style="font-size:0.75rem;margin-bottom:0.2rem;">ID, RFQ #, Product</label>
-                        <input type="search" id="rfqFilterSearch" class="form-input" placeholder="Filter…" autocomplete="off" oninput="applyRfqsSort()">
+                        <label class="form-label" for="rfqFilterSearch" style="font-size:0.75rem;margin-bottom:0.2rem;">Filter</label>
+                        <input type="search" id="rfqFilterSearch" class="form-input" placeholder="Search by ID, RFQ #, Product" autocomplete="off" oninput="applyRfqsSort()">
                     </div>
                     <div class="form-group" style="margin:0;min-width:10rem;">
                         <label class="form-label" for="rfqFilterStatus" style="font-size:0.75rem;margin-bottom:0.2rem;">Status</label>
@@ -551,8 +550,8 @@
                 </div>
                 <div class="purchasing-table-filters" style="display:flex;flex-wrap:wrap;gap:0.75rem 1rem;align-items:flex-end;padding:0.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);background:#f9fafb;">
                     <div class="form-group" style="margin:0;min-width:11rem;flex:1 1 10rem;">
-                        <label class="form-label" for="poFilterSearch" style="font-size:0.75rem;margin-bottom:0.2rem;">ID, PO #, Product, Supplier</label>
-                        <input type="search" id="poFilterSearch" class="form-input" placeholder="Filter…" autocomplete="off" oninput="applyPurchaseOrdersSort()">
+                        <label class="form-label" for="poFilterSearch" style="font-size:0.75rem;margin-bottom:0.2rem;">Filter</label>
+                        <input type="search" id="poFilterSearch" class="form-input" placeholder="ID, PO #, Product, Supplier" autocomplete="off" oninput="applyPurchaseOrdersSort()">
                     </div>
                     <div class="form-group" style="margin:0;min-width:9rem;">
                         <label class="form-label" for="poFilterStatus" style="font-size:0.75rem;margin-bottom:0.2rem;">Status</label>
