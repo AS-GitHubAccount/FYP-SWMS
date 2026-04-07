@@ -655,7 +655,7 @@
                         <tbody id="compareQuotesBody"></tbody>
                     </table>
                 </div>
-                <p style="margin-top: 1rem; font-size: 0.875rem; color: var(--text-secondary);">Pick <strong>Award</strong> or <strong>Reject</strong> and add a reason (the box can’t be left blank). The row shading compares unit price to the 12-month average: greener when it’s clearly cheaper, redder when it’s clearly higher (we use about a 10% band).</p>
+                <div id="compareQuotesFootnote" class="compare-quotes-footnote" style="display: none; margin-top: 1rem; font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5;"></div>
             </div>
         </div>
         <!-- Price trend (12-month) — Purchase Request product -->
@@ -3897,39 +3897,45 @@
             }
         }
 
-        function buildCompareBenchmarkRows(bench) {
-            var lastTxt = '—';
-            if (bench && bench.lastPrice != null && !isNaN(parseFloat(bench.lastPrice))) {
-                var bits = ['$' + Number(bench.lastPrice).toFixed(2)];
-                if (bench.lastAt) bits.push(formatCompareBenchDate(bench.lastAt));
-                var sup = bench.lastSupplierName
-                    ? typeof escapeHtml === 'function'
-                        ? escapeHtml(bench.lastSupplierName)
-                        : bench.lastSupplierName
-                    : '';
-                if (sup) bits.push(sup);
-                lastTxt = bits.join(' · ');
-            }
-            var avgTxt = '—';
-            if (bench && bench.avg12 != null && bench.avg12 > 0) {
-                var n = parseInt(bench.count12, 10) || 0;
-                avgTxt =
-                    '$' +
-                    Number(bench.avg12).toFixed(2) +
-                    (n > 0 ? ' · from ' + n + ' PO' + (n === 1 ? '' : 's') + ' (12 mo)' : '');
-            }
+        function formatCompareLastPaidLine(bench) {
+            if (!bench || bench.lastPrice == null || isNaN(parseFloat(bench.lastPrice))) return '—';
+            var bits = ['$' + Number(bench.lastPrice).toFixed(2)];
+            if (bench.lastAt) bits.push(formatCompareBenchDate(bench.lastAt));
+            var sup = bench.lastSupplierName
+                ? typeof escapeHtml === 'function'
+                    ? escapeHtml(bench.lastSupplierName)
+                    : bench.lastSupplierName
+                : '';
+            if (sup) bits.push(sup);
+            return bits.join(' · ');
+        }
+
+        function renderCompareQuotesFootnoteHTML(bench) {
+            var lastLine = formatCompareLastPaidLine(bench);
             return (
-                '<tr class="compare-benchmark-row" style="background:var(--slate-50, #f8fafc);border-top:2px solid var(--border, #e5e7eb);">' +
-                '<td colspan="2"><strong>Recent buys (same product)</strong><br><span style="font-size:0.75rem;color:var(--text-muted);">For context next to the quotes</span></td>' +
-                '<td colspan="2" style="text-align:left;vertical-align:middle">' +
-                '<div>Last unit price we paid: ' +
-                lastTxt +
-                '</div>' +
-                '<div style="margin-top:0.35rem">12-month average (unit): ' +
-                avgTxt +
-                '</div></td>' +
-                '<td colspan="3" style="font-size:0.8rem;color:var(--text-muted);vertical-align:middle">Shading vs that average: greener if roughly 10%+ under, redder if roughly 10%+ over.</td></tr>'
+                '<p style="margin:0 0 0.65rem 0;"><strong>Last unit price we paid:</strong> ' +
+                lastLine +
+                '</p>' +
+                '<p style="margin:0 0 0.35rem 0;">Row shading compares unit price to the 12-month average (using a ~10% band):</p>' +
+                '<ul style="margin:0;padding-left:1.25rem;">' +
+                '<li><span style="color:#15803d;font-weight:600;">Green:</span> clearly cheaper</li>' +
+                '<li><span style="color:#b91c1c;font-weight:600;">Red:</span> clearly higher</li>' +
+                '</ul>'
             );
+        }
+
+        function setCompareQuotesFootnote(bench) {
+            var el = document.getElementById('compareQuotesFootnote');
+            if (!el) return;
+            el.innerHTML = renderCompareQuotesFootnoteHTML(bench || {});
+            el.style.display = 'block';
+        }
+
+        function clearCompareQuotesFootnote() {
+            var el = document.getElementById('compareQuotesFootnote');
+            if (!el) return;
+            el.innerHTML = '';
+            el.style.display = 'none';
         }
 
         async function openCompareModal(rfqId) {
@@ -3940,6 +3946,7 @@
             document.getElementById('compareQuotesModal').style.display = 'block';
             document.getElementById('compareModalBackdrop').style.display = 'block';
             tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;"><span class="loading-spinner" style="margin-right:0.5rem;"></span>Loading…</td></tr>';
+            clearCompareQuotesFootnote();
             if (info) info.textContent = '';
             try {
                 var res = await compareFetchWithTimeout(API_BASE_URL + '/rfqs/' + encodeURIComponent(rfqId), { headers: getAuthHeaders() });
@@ -3959,8 +3966,7 @@
                 if (info) info.textContent = (rfq.productName || '') + ' × ' + (rfq.quantity || '') + ' — RFQ ' + (rfq.rfqNumber || rfqId);
                 var avg = bench.avg12 != null ? parseFloat(bench.avg12) : null;
                 if (quotes.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-secondary);"><div style="font-size: 2rem; margin-bottom: 0.5rem;">💰</div><div style="font-weight: 500;">No quotations yet. Add quotes first.</div></td></tr>' +
-                        (productId ? buildCompareBenchmarkRows(bench) : '');
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-secondary);"><div style="font-size: 2rem; margin-bottom: 0.5rem;">💰</div><div style="font-weight: 500;">No quotations yet. Add quotes first.</div></td></tr>';
                 } else {
                     tbody.innerHTML = quotes.map(function(q) {
                         var unit = parseFloat(q.unitPrice || 0);
@@ -3976,11 +3982,13 @@
                         var qIdCell = q.attachmentPath ? '<span><i data-lucide="paperclip" style="width:14px;height:14px;vertical-align:middle;margin-right:0.2rem;color:var(--primary);" title="Has attachment"></i>' + (q.quotationId || '-') + '</span>' : String(q.quotationId || '-');
                         var actions = q.status === 'ACCEPTED' ? '<span class="badge badge-success">Awarded</span>' : q.status === 'REJECTED' ? '<span class="badge badge-danger">Rejected</span>' : '<button type="button" class="btn btn-sm btn-success" onclick="openAwardRejectModal(\'award\',' + q.quotationId + ')">Award</button> <button type="button" class="btn btn-sm btn-danger" onclick="openAwardRejectModal(\'reject\',' + q.quotationId + ')">Reject</button>';
                         return '<tr><td>' + qIdCell + '</td><td>' + (q.supplierName || '-') + '</td><td style="' + priceStyle + '">' + unit.toFixed(2) + '</td><td>' + Number(q.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td><td>' + (typeof formatDateForEmail !== 'undefined' ? formatDateForEmail(q.deliveryDate) : (q.deliveryDate || '-')) + '</td><td>' + att + '</td><td>' + actions + '</td></tr>';
-                    }).join('') + buildCompareBenchmarkRows(bench);
+                    }).join('');
                 }
+                setCompareQuotesFootnote(bench);
                 if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
             } catch (e) {
                 if (info) info.textContent = '';
+                clearCompareQuotesFootnote();
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:3rem;color:var(--text-secondary);">Data currently unavailable.</td></tr>';
                 if (typeof showNotification === 'function') {
                     showNotification('Compare', (e && e.message === 'timeout') ? 'Request timed out — try again in a moment (slow network or server wake-up).' : (e.message || 'Failed to load'), 'warning');

@@ -32,6 +32,7 @@
                     <tbody id="comparePageBody"></tbody>
                 </table>
             </div>
+            <div id="comparePageFootnote" style="display:none;margin-top:1rem;font-size:0.875rem;color:var(--text-secondary);line-height:1.5;"></div>
         </div>
     </div>
     <div id="quotePdfModalBackdrop" onclick="closeQuotePdfPage()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;"></div>
@@ -80,19 +81,25 @@
             document.getElementById('quotePdfModalBackdrop').style.display = 'none';
             document.getElementById('quotePdfModalPage').style.display = 'none';
         }
-        function benchRow(bench) {
-            var lastTxt = '—',
-                avgTxt = '—';
-            if (bench.lastPrice != null) {
-                var b = ['$' + Number(bench.lastPrice).toFixed(2)];
-                if (bench.lastAt) b.push(fmtDate(bench.lastAt));
-                lastTxt = b.join(' · ');
-            }
-            if (bench.avg12 != null && bench.avg12 > 0) {
-                var n = parseInt(bench.count12, 10) || 0;
-                avgTxt = '$' + Number(bench.avg12).toFixed(2) + (n > 0 ? ' · ' + n + ' PO' + (n === 1 ? '' : 's') + ' (12 mo)' : '');
-            }
-            return '<tr style="background:var(--slate-50,#f8fafc);font-weight:600;"><td colspan="2">Recent buys</td><td colspan="4">Last unit paid: ' + lastTxt + ' · 12-month average (unit): ' + avgTxt + '</td></tr>';
+        function formatLastPaidLinePage(bench) {
+            if (!bench || bench.lastPrice == null || isNaN(parseFloat(bench.lastPrice))) return '—';
+            var bits = ['$' + Number(bench.lastPrice).toFixed(2)];
+            if (bench.lastAt) bits.push(fmtDate(bench.lastAt));
+            if (bench.lastSupplierName) bits.push(String(bench.lastSupplierName).replace(/</g, ''));
+            return bits.join(' · ');
+        }
+        function renderComparePageFootnoteHTML(bench) {
+            var lastLine = formatLastPaidLinePage(bench || {});
+            return (
+                '<p style="margin:0 0 0.65rem 0;"><strong>Last unit price we paid:</strong> ' +
+                lastLine +
+                '</p>' +
+                '<p style="margin:0 0 0.35rem 0;">Row shading compares unit price to the 12-month average (using a ~10% band):</p>' +
+                '<ul style="margin:0;padding-left:1.25rem;">' +
+                '<li><span style="color:#15803d;font-weight:600;">Green:</span> clearly cheaper</li>' +
+                '<li><span style="color:#b91c1c;font-weight:600;">Red:</span> clearly higher</li>' +
+                '</ul>'
+            );
         }
         (async function init() {
             const params = new URLSearchParams(window.location.search);
@@ -125,7 +132,7 @@
                 info.textContent = (rfq.productName || '') + ' × ' + (rfq.quantity || '') + ' — RFQ ' + (rfq.rfqNumber || rfqId);
                 const quotes = rfq.quotations || [];
                 if (!quotes.length) {
-                    body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;">No quotations for this RFQ.</td></tr>' + benchRow(bench);
+                    body.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;">No quotations for this RFQ.</td></tr>';
                 } else {
                     body.innerHTML = quotes.map(function(q) {
                         var unit = parseFloat(q.unitPrice || 0);
@@ -139,7 +146,12 @@
                             ? '<button type="button" class="btn btn-sm btn-outline" onclick="openQuotePdfPage(\'' + pdfUrl.replace(/'/g, "\\'") + '\')"><i data-lucide="paperclip"></i></button>'
                             : '—';
                         return '<tr><td>' + (q.quotationId || '-') + '</td><td>' + (q.supplierName || '-') + '</td><td style="' + st + '">' + unit.toFixed(2) + '</td><td>' + Number(q.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</td><td>' + fmtDate(q.deliveryDate) + '</td><td>' + att + '</td></tr>';
-                    }).join('') + benchRow(bench);
+                    }).join('');
+                }
+                var fn = document.getElementById('comparePageFootnote');
+                if (fn) {
+                    fn.innerHTML = renderComparePageFootnoteHTML(bench);
+                    fn.style.display = 'block';
                 }
                 spin.style.display = 'none';
                 wrap.style.display = 'block';
