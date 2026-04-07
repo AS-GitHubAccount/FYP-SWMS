@@ -2627,7 +2627,7 @@
                     return {
                         statusLabel: 'Reviewing',
                         statusBadge: 'warning',
-                        actions: `<button type="button" class="btn btn-outline btn-sm" onclick="showPurchasingSection('rfqs')"><i data-lucide="arrow-right" style="width:12px;height:12px;vertical-align:middle;"></i> RFQs &amp; Quotations</button>`
+                        actions: `<button type="button" class="btn btn-view-sent btn-sm" onclick="openViewSentRfqModal(${rfqId})" style="margin-right:0.35rem;"><i data-lucide="mail" style="width:12px;height:12px;vertical-align:middle;"></i> View Sent</button><button type="button" class="btn btn-primary-green btn-sm" onclick="openCompareModal(${rfqId})"><i data-lucide="bar-chart-3" style="width:12px;height:12px;vertical-align:middle;"></i> Compare</button>`
                     };
                 }
                 if (rfqStatus === 'AWARDED' || rfqStatus === 'CLOSED') {
@@ -3269,6 +3269,11 @@
         function normalizeRfqStatus(status) {
             return String(status || '').trim().toUpperCase();
         }
+        /** RFQ can request withdrawal while still active (sent or quotes in, before award). */
+        function canRequestRfqWithdrawalStatus(status) {
+            const st = normalizeRfqStatus(status);
+            return st === 'SENT' || st === 'QUOTES_RECEIVED';
+        }
         /**
          * Use stored send snapshot when present; otherwise rebuild To/Subject/HTML from RFQ + PR
          * (older sends or failed snapshot columns).
@@ -3365,7 +3370,7 @@
                 const isAdmin = (sessionStorage.getItem('userRole') || '').toUpperCase() === 'ADMIN';
                 const withdrawSection = document.getElementById('viewSentRfqWithdrawalSection');
                 const approveBtn = document.getElementById('viewSentRfqApproveWithdrawBtn');
-                document.getElementById('viewSentRfqWithdrawBtn').style.display = st === 'SENT' ? 'inline-flex' : 'none';
+                document.getElementById('viewSentRfqWithdrawBtn').style.display = canRequestRfqWithdrawalStatus(rfq.status) ? 'inline-flex' : 'none';
                 if (st === 'WITHDRAW_PENDING') {
                     withdrawSection.style.display = 'block';
                     approveBtn.style.display = isAdmin ? 'inline-flex' : 'none';
@@ -3399,7 +3404,7 @@
             btn.style.cursor = ok ? 'pointer' : 'not-allowed';
         }
         function openWithdrawConfirmModal() {
-            if (!viewSentRfqCurrent || normalizeRfqStatus(viewSentRfqCurrent.status) !== 'SENT') return;
+            if (!viewSentRfqCurrent || !canRequestRfqWithdrawalStatus(viewSentRfqCurrent.status)) return;
             const ta = document.getElementById('withdrawRfqReason');
             const errEl = document.getElementById('withdrawRfqReasonError');
             if (ta) ta.value = '';
@@ -3650,7 +3655,7 @@
                 tbody.innerHTML = rfqs.map(r => {
                     const status = (r.status || '').toLowerCase();
                 const statusBadge = status === 'draft' ? 'secondary' : status === 'sent' ? 'info' : status === 'quotes_received' ? 'warning' : status === 'awarded' ? 'success' : status === 'withdraw_pending' ? 'warning' : status === 'withdrawn' ? 'dark' : 'dark';
-                const isSentLike = status === 'sent' || status === 'withdraw_pending' || status === 'withdrawn';
+                const isSentLike = status === 'sent' || status === 'quotes_received' || status === 'withdraw_pending' || status === 'withdrawn';
                 const showAddQuote = status !== 'awarded' && status !== 'closed' && status !== 'withdrawn';
                     return `<tr>
                         <td>${r.rfqId || '-'}</td>

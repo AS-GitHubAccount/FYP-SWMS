@@ -528,8 +528,12 @@ router.put('/:id/request-withdrawal', async (req, res) => {
         }
         const [rows] = await db.execute('SELECT rfqId, status FROM rfqs WHERE rfqId = ?', [rfqId]);
         if (rows.length === 0) return res.status(404).json({ success: false, error: 'RFQ not found' });
-        if (rows[0].status !== 'SENT') {
-            return res.status(400).json({ success: false, error: 'Only sent RFQs can be withdrawn' });
+        const curStatus = rows[0].status;
+        if (curStatus !== 'SENT' && curStatus !== 'QUOTES_RECEIVED') {
+            return res.status(400).json({
+                success: false,
+                error: 'Withdrawal is only available while the RFQ is sent or has quotes (before award).'
+            });
         }
         await db.execute(
             `UPDATE rfqs SET status = 'WITHDRAW_PENDING', withdrawal_reason = ?, withdrawal_requested_at = NOW(), withdrawal_requested_by = ? WHERE rfqId = ?`,
