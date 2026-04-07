@@ -60,7 +60,7 @@ function loadDbConfig() {
             const strictTls =
                 process.env.DB_SSL_REJECT_UNAUTHORIZED === 'true' ||
                 process.env.DB_SSL_REJECT_UNAUTHORIZED === '1';
-            // Aiven without a CA file on disk: encrypted TLS but skip chain verify (same as DEPLOY.md quick path).
+            // Aiven without a CA file on disk: encrypted TLS but skip chain verify unless strict TLS is forced.
             if (isAivenHost && !strictTls) {
                 allowInsecure = true;
             }
