@@ -2567,7 +2567,7 @@
             tbody.innerHTML = requests.map(r => {
                 const priority = (r.priority || 'medium').toLowerCase();
                 const w = getPurchaseRequestWorkflow(r);
-                const actions = `<button class="btn btn-primary-green" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="showPurchasingSection('requests')">View</button>`;
+                const actions = `<button class="btn btn-primary-green" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="openPurchasingViewForRequest(${r.requestId})">View</button>`;
                 const loc = r?.sendingLocation || '';
                 return `<tr>
                     <td>${r.requestNumber || r.requestId}</td>
@@ -2646,6 +2646,36 @@
                 }
             }
             return { statusLabel: (r.status || '-').replace(/_/g, ' '), statusBadge: 'secondary', actions: '' };
+        }
+
+        /** Which purchasing subsection (2 / 3 / 4) to open when viewing a PR from the overview. */
+        function getPurchasingViewSectionForPr(r) {
+            if (!r) return 'requests';
+            const prStatus = (r.status || '').toUpperCase();
+            const rfqStatus = (r.rfqStatus || '').toUpperCase();
+            const hasRfq = !!(r.rfqId != null && r.rfqId !== '');
+            if (prStatus === 'PENDING' || prStatus === 'REJECTED') return 'requests';
+            if (prStatus === 'APPROVED' && !hasRfq) return 'requests';
+            if (prStatus === 'APPROVED' && hasRfq) {
+                if (rfqStatus === 'DRAFT') return 'requests';
+                if (rfqStatus === 'AWARDED' || rfqStatus === 'CLOSED') return 'orders';
+                if (rfqStatus === 'SENT' || rfqStatus === 'WITHDRAW_PENDING' || rfqStatus === 'WITHDRAWN' || rfqStatus === 'QUOTES_RECEIVED') return 'rfqs';
+                return 'rfqs';
+            }
+            return 'requests';
+        }
+
+        function openPurchasingViewForRequest(requestId) {
+            const id = Number(requestId);
+            const list = Array.isArray(allPurchaseRequests) ? allPurchaseRequests : [];
+            const r = list.find(function (x) { return Number(x.requestId) === id; });
+            const section = r ? getPurchasingViewSectionForPr(r) : 'requests';
+            showPurchasingSection(section);
+            if (section === 'orders') {
+                setTimeout(function () {
+                    if (typeof scrollToPurchaseOrdersSection === 'function') scrollToPurchaseOrdersSection();
+                }, 350);
+            }
         }
 
         function scrollToPurchaseOrdersSection() {
